@@ -1,0 +1,3 @@
+
+fast_ma = vbt.MA.run(close_prices, 20).ma.values
+slow_ma = vbt.MA.run(close_prices, 100).ma.values

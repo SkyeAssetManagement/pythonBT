@@ -1,0 +1,103 @@
+Modular AmiBroker Trading System
+Symbol: ES
+Strategy: time_window_strategy_vectorized
+============================================================
+
+1. Loading strategy: time_window_strategy_vectorized
+   SUCCESS: Loaded strategy: Time Window Vectorized Strategy
+   SUCCESS: Parameter combinations: 1
+
+2. Loading data...
+   SUCCESS: Loaded 1965394 bars from Parquet (1m) in 1.38 seconds
+
+3. Validating data quality...
+   SUCCESS: Valid bars: 1/1965394 (0.0%)
+
+4. Running strategy backtest...
+   SUCCESS: Backtested 1 parameter combinations in 2.27 seconds
+   SUCCESS: Speed: 0.4 backtests/second
+
+5. Analyzing results...
+   SUCCESS: Best combination:
+     - entry_time: 09:30
+     - direction: long
+     - hold_time: 60
+     - entry_spread: 5
+     - exit_spread: 5
+     - max_trades_per_day: 1
+   SUCCESS: Total Return: -14.17%
+   SUCCESS: Sharpe Ratio: -18.59
+   INFO: Calculating UPI metrics for 1965394 data points...
+   INFO: Dataset too large (1965394 bars > 500000), skipping UPI calculation for performance
+   INFO: UPI calculation on datasets this large can take 10+ minutes
+   SUCCESS: Max Drawdown: -2.83%
+   SUCCESS: Total Trades: 7183
+
+6. Exporting results...
+Available trade columns: ['Exit Trade Id', 'Column', 'Size', 'Entry Order Id', 'Entry Index', 'Avg Entry Price', 'Entry Fees', 'Exit Order Id', 'Exit Index', 'Avg Exit Price', 'Exit Fees', 'PnL', 'Return', 'Direction', 'Status', 'Position Id']
+   INFO: Converting 7183 trades to timestamps using vectorized operations...
+   SUCCESS: Timestamp conversion completed using vectorized operations
+   INFO: Calculating equity data for portfolio...
+   INFO: Returns array shape: (1965394, 5)
+   SUCCESS: Cumulative returns calculated efficiently
+   SUCCESS: Exported trade list: results\tradelist.csv
+   SUCCESS: Exported equity curve: results\equity_curve.csv
+
+7. Launching Interactive Dashboard...
+   INFO: Multi-strategy results detected (5 combinations)
+   INFO: Selected best performing combination #5
+   INFO: Final value: $97,177.96
+   INFO: Prepared equity curve shape: (1965394,)
+   INFO: Prepared drawdown curve shape: (1965394,)
+   INFO: Attempting to launch interactive GUI dashboard...
+   INFO: Launching dashboard with 1965394 bars...
+   INFO: Initializing Qt application...
+   INFO: Created Qt application
+   INFO: Qt responsiveness test passed
+   INFO: Creating dashboard manager...
+   INFO: Initializing dashboard Qt components...
+   INFO: Creating dashboard window...
+   INFO: Dashboard window created
+   INFO: Timestamps already in nanoseconds for dashboard
+   PERFORMANCE: Dataset has 1,965,394 bars, aggressively decimating to 10,000 for lightning-fast dashboard
+   SUCCESS: Ultra-fast decimation from 1,965,394 to 10,000 bars
+   INFO: Loading 10000 bars into chart widget...
+   PERFORMANCE: Initial render 500 bars (of 10,000 total)
+   DEBUG: Rendering 500 bars with candle width 0.6
+   DEBUG: Body heights - min: 0.000000, max: 25.250000
+   DEBUG: Rendering 1000 bars with candle width 0.4
+   DEBUG: Rendering 1041 bars with candle width 0.4
+   SUCCESS: Price data loaded - 10000 bars
+   INFO: Price range: $2715.7500 - $6368.5000
+   INFO: Timestamp range: 1577901660000000000 - 1753113060000000000
+   INFO: Chart data buffer confirmed: 10000 bars
+   INFO: Chart candle item created successfully
+   INFO: Processing VBT format trade data with 7183 trades
+   INFO: 14366 trades added to dashboard
+   INFO: Equity curve added
+   INFO: Applying 5-decimal precision for forex data...
+   INFO: Dashboard precision set to: 5
+   INFO: Left axis precision: 5
+   INFO: Right axis precision: 5
+   INFO: Showing dashboard window...
+   SUCCESS: Dashboard launched successfully!
+   INFO: Close dashboard window to continue...
+   INFO: Chart Y-range set: 2533.11250 to 6551.13750
+   DEBUG: Rendering 204 bars with candle width 0.6
+   DEBUG: Body heights - min: 0.000000, max: 6.250000
+   INFO: Chart positioned at last 200 bars
+   INFO: Applying chart rendering...
+   INFO: Chart zoom, positioning and rendering applied
+   INFO: Processing Qt events to ensure responsiveness...
+   INFO: Starting Qt event loop (dashboard window should be visible now)...
+   NOTE: If dashboard doesn't appear, try using --no-viz flag instead
+   INFO: Dashboard closed by user
+   SUCCESS: Interactive dashboard completed!
+   INFO: Dashboard was closed by user
+
+SUCCESS: Strategy 'Time Window Vectorized Strategy' execution completed successfully!
+SUCCESS: All operations used vectorized array processing
+SUCCESS: Interactive dashboard launched for data visualization
+INFO: Close the dashboard window when finished analyzing results
+
+Results saved to: results

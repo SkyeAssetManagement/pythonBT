@@ -1,0 +1,167 @@
+"""
+SIMPLE VIEWPORT TEST: Load data in memory, render viewport only
+Track time - if over 2 minutes, we need different solution
+"""
+import time
+import numpy as np
+import pandas as pd
+import datetime
+from pathlib import Path
+import matplotlib
+matplotlib.use('Agg')
+
+
+def simple_viewport_test():
+    """Simple test without complex timeout handling"""
+    
+    print("=== SIMPLE VIEWPORT TEST ===")
+    start_overall = time.time()
+    
+    timestamp = datetime.datetime.now().strftime("%H%M%S")
+    test_dir = Path("quick_tests") / f"simple_test_{timestamp}"
+    test_dir.mkdir(parents=True, exist_ok=True)
+    
+    try:
+        # Step 1: Create test data (500k points for reasonable test)
+        print("1. Creating test dataset...")
+        create_start = time.time()
+        
+        n_points = 500000  # 500k bars
+        dates = pd.date_range('2020-01-01', periods=n_points, freq='1min')
+        
+        np.random.seed(42)
+        base_price = 4000.0
+        prices = base_price + np.cumsum(np.random.normal(0, 0.3, n_points))
+        
+        df = pd.DataFrame({
+            'Open': np.roll(prices, 1),
+            'High': prices + np.abs(np.random.normal(0, 0.8, n_points)),
+            'Low': prices - np.abs(np.random.normal(0, 0.8, n_points)), 
+            'Close': prices,
+            'Volume': np.random.randint(100, 5000, n_points)
+        }, index=dates)
+        
+        df.iloc[0, 0] = base_price  # Fix first open
+        
+        create_time = time.time() - create_start
+        memory_mb = df.memory_usage(deep=True).sum() / 1024 / 1024
+        
+        print(f"   Created {n_points:,} bars in {create_time:.2f}s ({memory_mb:.1f} MB)")
+        
+        # Step 2: Test viewport rendering
+        print("2. Testing viewport rendering...")
+        
+        import mplfinance as mpf
+        
+        # Test small viewport first (most critical)
+        viewport_size = 2000  # 2k bars - typical view
+        start_idx = len(df) // 2 - viewport_size // 2
+        
+        viewport_data = df.iloc[start_idx:start_idx + viewport_size]
+        
+        render_start = time.time()
+        
+        style = mpf.make_mpf_style(base_mpf_style='charles')
+        output_file = test_dir / "viewport_test.png"
+        
+        mpf.plot(
+            viewport_data,
+            type='candle',
+            style=style,
+            volume=True,
+            savefig=output_file,
+            figsize=(12, 8),
+            warn_too_much_data=viewport_size + 100
+        )
+        
+        render_time = time.time() - render_start
+        bars_per_sec = viewport_size / render_time
+        
+        print(f"   Rendered {viewport_size:,} bars in {render_time:.2f}s")
+        print(f"   Performance: {bars_per_sec:,.0f} bars/second")
+        
+        # Step 3: Test viewport extraction speed
+        print("3. Testing viewport extraction...")
+        
+        extract_times = []
+        
+        for i in range(20):  # 20 quick extractions
+            start_pos = np.random.randint(0, len(df) - viewport_size)
+            
+            extract_start = time.time()
+            viewport = df.iloc[start_pos:start_pos + viewport_size]
+            extract_time = time.time() - extract_start
+            
+            extract_times.append(extract_time)
+        
+        avg_extract = np.mean(extract_times)
+        fps_equivalent = 1 / avg_extract
+        
+        print(f"   Average extraction: {avg_extract:.4f}s ({fps_equivalent:.1f} FPS)")
+        
+        # Overall timing
+        total_time = time.time() - start_overall
+        
+        print(f"\n=== RESULTS ===")
+        print(f"Total test time: {total_time:.2f}s")
+        print(f"Data creation: {create_time:.2f}s")
+        print(f"Viewport render: {render_time:.2f}s")
+        print(f"Viewport extract: {avg_extract:.4f}s")
+        
+        # Quick verdict
+        if total_time > 120:  # Over 2 minutes
+            print(f"\n[X] TOO SLOW: {total_time:.1f}s > 2 minutes")
+            print("Need different solution")
+            verdict = "TOO_SLOW"
+        elif render_time > 5:  # Render too slow
+            print(f"\n[X] RENDER TOO SLOW: {render_time:.2f}s for {viewport_size:,} bars")
+            print("Need different solution")
+            verdict = "RENDER_SLOW"
+        elif avg_extract > 0.1:  # Extract too slow for smooth interaction
+            print(f"\n[WARNING] EXTRACT SLOW: {avg_extract:.4f}s may feel laggy")
+            print("Marginal - might work with optimization")
+            verdict = "MARGINAL"
+        else:
+            print(f"\n[OK] LOOKS GOOD!")
+            print("Fast enough for interactive use")
+            verdict = "SUCCESS"
+        
+        # Save result
+        with open(test_dir / "result.txt", 'w') as f:
+            f.write(f"Verdict: {verdict}\n")
+            f.write(f"Total time: {total_time:.2f}s\n")
+            f.write(f"Render time: {render_time:.2f}s\n")
+            f.write(f"Extract time: {avg_extract:.4f}s\n")
+        
+        return verdict, total_time, render_time, avg_extract
+        
+    except Exception as e:
+        total_time = time.time() - start_overall
+        print(f"\n[X] ERROR after {total_time:.2f}s: {e}")
+        return "ERROR", total_time, 0, 0
+
+
+if __name__ == "__main__":
+    print("SIMPLE VIEWPORT TEST")
+    print("Quick test to see if viewport approach is viable")
+    print()
+    
+    verdict, total_time, render_time, extract_time = simple_viewport_test()
+    
+    print(f"\n=== FINAL VERDICT: {verdict} ===")
+    
+    if verdict == "SUCCESS":
+        print("[OK] PROCEED with mplfinance viewport approach")
+        print("Performance is good enough for interactive charting")
+    elif verdict == "MARGINAL":
+        print("[WARNING] PROCEED WITH CAUTION")
+        print("May work but could feel sluggish")
+    else:
+        print("[X] ABANDON mplfinance approach")
+        print("Too slow - need alternative like:")
+        print("- Plotly with WebGL")
+        print("- Bokeh with server-side rendering")
+        print("- Custom JavaScript charting")
+        print("- Lightweight-charts (if data size limits acceptable)")
+    
+    print(f"\nTiming: Total {total_time:.1f}s, Render {render_time:.2f}s, Extract {extract_time:.4f}s")

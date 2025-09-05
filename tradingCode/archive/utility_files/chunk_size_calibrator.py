@@ -1,0 +1,205 @@
+#!/usr/bin/env python3
+"""
+Chunk Size Calibrator
+Pre-test system to find optimal chunk size for VectorBT optimization
+"""
+
+import sys
+import time
+import pandas as pd
+import numpy as np
+import logging
+import psutil
+import gc
+import vectorbtpro as vbt
+from typing import Tuple
+
+sys.path.append('src')
+from src.data.parquet_converter import ParquetConverter
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+class ChunkSizeCalibrator:
+    """Calibrates optimal chunk size for memory-efficient optimization"""
+    
+    def __init__(self):
+        self.memory_gb = psutil.virtual_memory().total / (1024**3)
+        logger.info(f"System memory: {self.memory_gb:.1f}GB")
+    
+    def load_test_data(self) -> pd.Series:
+        """Load data for testing"""
+        logger.info("Loading test data...")
+        
+        try:
+            parquet_converter = ParquetConverter()
+            data = parquet_converter.load_or_convert("GC", "1m", "diffAdjusted")
+            data = parquet_converter.filter_data_by_date(data, "2000-01-01", "2024-12-31")
+            
+            close_series = pd.Series(
+                data['close'], 
+                index=pd.to_datetime(data['datetime_ns']),
+                name='close'
+            )
+            
+            logger.info(f"Loaded {len(close_series):,} bars")
+            return close_series
+            
+        except Exception as e:
+            logger.error(f"Data loading failed: {e}")
+            return None
+    
+    def test_chunk_size(self, data: pd.Series, chunk_size: int) -> Tuple[bool, float, str]:
+        """
+        Test if a chunk size works without memory errors
+        
+        Returns:
+            (success, time_taken, error_message)
+        """
+        logger.info(f"Testing chunk size: {chunk_size}")
+        
+        try:
+            # Clear memory before test
+            gc.collect()
+            
+            # Generate test parameter combinations
+            fast_ma_values = np.arange(10, 10 + chunk_size, 1)  # Sequential values
+            slow_ma_values = np.arange(100, 100 + chunk_size, 1)
+            param_combinations = np.column_stack([fast_ma_values, slow_ma_values])
+            
+            start_time = time.time()
+            
+            # Test signal generation
+            entries_dict = {}
+            exits_dict = {}
+            
+            for i, combo in enumerate(param_combinations):
+                fast_period = int(combo[0])
+                slow_period = int(combo[1])
+                
+                # Calculate MAs
+                fast_ma = vbt.MA.run(data, fast_period).ma
+                slow_ma = vbt.MA.run(data, slow_period).ma
+                
+                # Generate signals
+                entries = fast_ma.vbt.crossed_above(slow_ma)
+                exits = fast_ma.vbt.crossed_below(slow_ma)
+                
+                entries_dict[i] = entries
+                exits_dict[i] = exits
+            
+            # Convert to DataFrames
+            entries_df = pd.DataFrame(entries_dict, index=data.index)
+            exits_df = pd.DataFrame(exits_dict, index=data.index)
+            
+            # Test portfolio creation
+            close_df = pd.concat([data] * chunk_size, axis=1, keys=range(chunk_size))
+            
+            pf = vbt.Portfolio.from_signals(
+                close=close_df,
+                entries=entries_df,
+                exits=exits_df,
+                size=np.inf,
+                init_cash=100000,
+                fees=0.001,
+                freq='1min'
+            )
+            
+            # Test metrics extraction
+            total_returns = pf.total_return * 100
+            sharpe_ratios = pf.sharpe_ratio
+            max_drawdowns = pf.max_drawdown * 100
+            
+            time_taken = time.time() - start_time
+            
+            # Clear memory after test
+            del pf, entries_df, exits_df, close_df
+            gc.collect()
+            
+            logger.info(f"[OK] Chunk size {chunk_size} succeeded in {time_taken:.2f}s")
+            return True, time_taken, ""
+            
+        except Exception as e:
+            error_msg = str(e)
+            logger.info(f"[X] Chunk size {chunk_size} failed: {error_msg}")
+            
+            # Clear memory after failure
+            gc.collect()
+            
+            return False, 0, error_msg
+    
+    def find_optimal_chunk_size(self, data: pd.Series) -> int:
+        """Find the largest chunk size that works reliably"""
+        
+        logger.info("=== FINDING OPTIMAL CHUNK SIZE ===")
+        
+        # Test sizes in descending order to find the largest that works
+        test_sizes = [400, 300, 200, 150, 100, 75, 50, 40, 30, 25, 20, 15, 10]
+        
+        optimal_size = 10  # Fallback minimum
+        optimal_time = 0
+        
+        for chunk_size in test_sizes:
+            success, time_taken, error = self.test_chunk_size(data, chunk_size)
+            
+            if success:
+                optimal_size = chunk_size
+                optimal_time = time_taken
+                
+                # Test it twice more to ensure reliability
+                logger.info(f"Testing {chunk_size} again for reliability...")
+                success2, _, _ = self.test_chunk_size(data, chunk_size)
+                success3, _, _ = self.test_chunk_size(data, chunk_size)
+                
+                if success2 and success3:
+                    logger.info(f"[OK] Chunk size {chunk_size} is reliable!")
+                    break
+                else:
+                    logger.info(f"[X] Chunk size {chunk_size} failed reliability test")
+                    continue
+        
+        logger.info(f"=== OPTIMAL CHUNK SIZE: {optimal_size} ===")
+        logger.info(f"Processing time per chunk: {optimal_time:.2f}s")
+        
+        # Calculate full test estimates
+        total_combinations = 9540  # Valid MA combinations (MA2 > MA1)
+        total_chunks = (total_combinations + optimal_size - 1) // optimal_size
+        estimated_total_time = total_chunks * optimal_time
+        
+        logger.info(f"Full test estimates:")
+        logger.info(f"  Total chunks: {total_chunks}")
+        logger.info(f"  Estimated time: {estimated_total_time:.0f}s ({estimated_total_time/60:.1f} minutes / {estimated_total_time/3600:.1f} hours)")
+        logger.info(f"  Rate: {optimal_size/optimal_time:.1f} combinations/second")
+        
+        return optimal_size
+
+def main():
+    """Main calibration function"""
+    
+    print("=" * 80)
+    print("CHUNK SIZE CALIBRATOR")
+    print("Finding optimal chunk size for memory-efficient optimization")
+    print("=" * 80)
+    
+    calibrator = ChunkSizeCalibrator()
+    
+    # Load data
+    data = calibrator.load_test_data()
+    if data is None:
+        print("ERROR: Could not load test data")
+        return
+    
+    # Find optimal chunk size
+    optimal_chunk_size = calibrator.find_optimal_chunk_size(data)
+    
+    print(f"\n" + "=" * 80)
+    print("CALIBRATION COMPLETE")
+    print("=" * 80)
+    print(f"Optimal chunk size: {optimal_chunk_size}")
+    print(f"Use this value in the modular optimizer")
+    print("=" * 80)
+    
+    return optimal_chunk_size
+
+if __name__ == "__main__":
+    main()

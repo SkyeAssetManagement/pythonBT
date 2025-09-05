@@ -1,0 +1,2 @@
+total_time,ma_calculation_time,signal_generation_time,backtesting_time,results_extraction_time,combinations_tested,rate_per_second,data_bars
+63.24229121208191,1.5092456340789795,1.707871675491333,19.583807945251465,40.440338373184204,25,0.3953050960181525,6522902

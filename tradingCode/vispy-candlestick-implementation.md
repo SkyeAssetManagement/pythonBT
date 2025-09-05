@@ -1,0 +1,337 @@
+# High-Performance VisPy Candlestick Implementation Plan for 7 Million Data Points
+
+## Executive Summary
+
+VisPy doesn't have native candlestick support, but this allows us to create a highly optimized custom implementation using GPU instancing and modern OpenGL techniques. This plan details how to render 7 million candlesticks at 60+ FPS using VisPy's low-level OpenGL interface.
+
+## Core Architecture
+
+### 1. GPU Instancing Strategy
+
+Each candlestick consists of:
+- **1 rectangle** (body): 2 triangles
+- **2 lines** (wicks): 4 vertices
+
+Using instanced rendering, we'll render all candlesticks with just 2-3 draw calls:
+
+```python
+# Pseudocode for instanced rendering approach
+glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 7_000_000)  # Bodies
+glDrawArraysInstanced(GL_LINES, 0, 4, 7_000_000)      # Wicks
+```
+
+### 2. Memory Layout
+
+```python
+# Per-instance data structure (32 bytes per candle)
+candlestick_data = np.zeros(7_000_000, dtype=[
+    ('timestamp', np.float32),      # 4 bytes
+    ('open', np.float32),          # 4 bytes
+    ('high', np.float32),          # 4 bytes
+    ('low', np.float32),           # 4 bytes
+    ('close', np.float32),         # 4 bytes
+    ('volume', np.float32),        # 4 bytes (for width scaling)
+    ('color_index', np.uint32),   # 4 bytes (0=red, 1=green)
+    ('_padding', np.float32),      # 4 bytes (alignment)
+])
+# Total: ~214 MB for 7M candles
+```
+
+## Implementation Steps
+
+### Phase 1: Basic Setup
+
+```python
+import numpy as np
+from vispy import app, gloo
+from vispy.util.transforms import perspective, translate, rotate
+
+class CandlestickCanvas(app.Canvas):
+    def __init__(self, ohlcv_data):
+        app.Canvas.__init__(self, keys='interactive', size=(1920, 1080))
+        self.ohlcv_data = ohlcv_data
+        self.program_bodies = None
+        self.program_wicks = None
+        self.vbo_instance = None
+        self.init_gl()
+```
+
+### Phase 2: Shader Implementation
+
+```glsl
+// Vertex shader for candlestick bodies
+#version 330 core
+// Base quad vertices (will be instanced)
+attribute vec2 a_position;  // [-0.5, -0.5] to [0.5, 0.5]
+
+// Per-instance attributes
+attribute float a_timestamp;
+attribute float a_open;
+attribute float a_high;
+attribute float a_low;
+attribute float a_close;
+attribute float a_volume;
+attribute uint a_color_index;
+
+// Uniforms
+uniform mat4 u_projection;
+uniform mat4 u_view;
+uniform vec2 u_viewport_range;  // visible time range
+uniform float u_candle_width;   // dynamic width based on zoom
+
+varying vec3 v_color;
+
+void main() {
+    // Calculate candle body position
+    float x = a_timestamp;
+    float y_bottom = min(a_open, a_close);
+    float y_top = max(a_open, a_close);
+    float height = y_top - y_bottom;
+    
+    // Transform base quad to candle body
+    vec2 pos = a_position;
+    pos.x *= u_candle_width;
+    pos.y *= height;
+    pos.y += y_bottom + height * 0.5;
+    
+    // Apply view-projection
+    gl_Position = u_projection * u_view * vec4(x + pos.x, pos.y, 0.0, 1.0);
+    
+    // Color based on direction
+    v_color = a_color_index == 0u ? vec3(0.8, 0.2, 0.2) : vec3(0.2, 0.8, 0.2);
+}
+```
+
+```glsl
+// Fragment shader
+#version 330 core
+varying vec3 v_color;
+
+void main() {
+    gl_FragColor = vec4(v_color, 1.0);
+}
+```
+
+### Phase 3: Data Management
+
+```python
+class DataPipeline:
+    def __init__(self, max_points=7_000_000):
+        self.max_points = max_points
+        self.visible_range = [0, 50000]  # Start with 50k visible
+        self.lod_levels = self.create_lod_levels()
+        
+    def create_lod_levels(self):
+        """Pre-compute multiple LOD levels for different zoom ranges"""
+        levels = {}
+        for zoom_factor in [1, 10, 100, 1000]:
+            stride = zoom_factor
+            levels[zoom_factor] = self.data[::stride]
+        return levels
+    
+    def get_visible_data(self, time_range, viewport_width):
+        """Return appropriate LOD based on zoom level"""
+        visible_points = time_range[1] - time_range[0]
+        if visible_points > viewport_width * 10:
+            # Use lower LOD
+            return self.lod_levels[1000]
+        else:
+            # Use full resolution
+            return self.data[time_range[0]:time_range[1]]
+```
+
+### Phase 4: GPU Buffer Management
+
+```python
+class GPUBufferManager:
+    def __init__(self, gloo_program):
+        self.program = gloo_program
+        self.instance_vbo = None
+        self.chunk_size = 100_000  # Upload in chunks
+        
+    def upload_data(self, candlestick_data):
+        """Stream data to GPU in chunks to avoid stalling"""
+        self.instance_vbo = gloo.VertexBuffer(candlestick_data)
+        
+        # Bind instance attributes with divisor=1
+        self.program['a_timestamp'] = (self.instance_vbo, 'f4', (32, 0), 1)
+        self.program['a_open'] = (self.instance_vbo, 'f4', (32, 4), 1)
+        self.program['a_high'] = (self.instance_vbo, 'f4', (32, 8), 1)
+        self.program['a_low'] = (self.instance_vbo, 'f4', (32, 12), 1)
+        self.program['a_close'] = (self.instance_vbo, 'f4', (32, 16), 1)
+        self.program['a_volume'] = (self.instance_vbo, 'f4', (32, 20), 1)
+        self.program['a_color_index'] = (self.instance_vbo, 'u4', (32, 24), 1)
+```
+
+### Phase 5: Optimized Rendering Loop
+
+```python
+def on_draw(self, event):
+    gloo.clear(color='black')
+    
+    # Frustum culling on CPU
+    visible_range = self.calculate_visible_range()
+    start_idx, end_idx = visible_range
+    instance_count = end_idx - start_idx
+    
+    if instance_count > 0:
+        # Update uniforms
+        self.program_bodies['u_projection'] = self.projection
+        self.program_bodies['u_view'] = self.view
+        self.program_bodies['u_candle_width'] = self.calculate_candle_width()
+        
+        # Draw candlestick bodies (instanced)
+        self.program_bodies.draw('triangles', 
+                                indices=self.body_indices,
+                                instances=instance_count,
+                                offset=start_idx)
+        
+        # Draw wicks (instanced)
+        self.program_wicks.draw('lines',
+                               indices=self.wick_indices,
+                               instances=instance_count,
+                               offset=start_idx)
+```
+
+### Phase 6: VectorBT Integration
+
+```python
+class VectorBTBridge:
+    def __init__(self, vispy_chart):
+        self.chart = vispy_chart
+        self.indicator_programs = {}
+        
+    def add_indicator(self, name, vbt_indicator):
+        """Convert VectorBT indicator to GPU buffer"""
+        indicator_data = vbt_indicator.values.astype(np.float32)
+        
+        # Create separate shader program for indicator
+        program = self.create_indicator_program(indicator_type=name)
+        vbo = gloo.VertexBuffer(indicator_data)
+        program['a_value'] = vbo
+        
+        self.indicator_programs[name] = program
+        
+    def update_from_vbt(self, vbt_data):
+        """Real-time update from VectorBT calculations"""
+        # Convert pandas/numpy to GPU-friendly format
+        gpu_data = self.convert_to_gpu_format(vbt_data)
+        self.chart.update_data(gpu_data)
+```
+
+### Phase 7: Interactive Features
+
+```python
+class InteractionHandler:
+    def __init__(self, chart):
+        self.chart = chart
+        self.pan_start = None
+        self.zoom_center = None
+        
+    def on_mouse_wheel(self, event):
+        """Smooth zooming with LOD switching"""
+        zoom_factor = 1.1 if event.delta[1] > 0 else 0.9
+        
+        # Update viewport
+        self.chart.zoom(zoom_factor, event.pos)
+        
+        # Switch LOD if necessary
+        visible_candles = self.chart.get_visible_count()
+        if visible_candles > 100_000:
+            self.chart.set_lod(2)  # Lower detail
+        else:
+            self.chart.set_lod(1)  # Full detail
+            
+    def jump_to_trade(self, trade_timestamp):
+        """Instantly jump to specific trade location"""
+        # Binary search for timestamp
+        idx = np.searchsorted(self.chart.timestamps, trade_timestamp)
+        
+        # Center viewport on trade
+        self.chart.center_on_index(idx)
+        
+        # Highlight trade candle
+        self.chart.highlight_candle(idx)
+```
+
+## Performance Optimizations
+
+### 1. GPU Memory Management
+```python
+# Use persistent mapped buffers for dynamic updates
+GL_MAP_PERSISTENT_BIT = 0x0040
+GL_MAP_COHERENT_BIT = 0x0080
+buffer_flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT
+```
+
+### 2. Multi-threaded Data Loading
+```python
+import threading
+from queue import Queue
+
+class AsyncDataLoader:
+    def __init__(self):
+        self.load_queue = Queue()
+        self.worker = threading.Thread(target=self._load_worker)
+        self.worker.start()
+        
+    def _load_worker(self):
+        while True:
+            chunk_info = self.load_queue.get()
+            data = self.load_chunk(chunk_info)
+            self.upload_to_gpu(data)
+```
+
+### 3. Viewport Culling
+```python
+def calculate_visible_range(self):
+    """Only process candles in viewport"""
+    view_matrix_inv = np.linalg.inv(self.view_matrix)
+    left_time = self.screen_to_time(0)
+    right_time = self.screen_to_time(self.width)
+    
+    # Binary search for efficiency
+    start = np.searchsorted(self.timestamps, left_time)
+    end = np.searchsorted(self.timestamps, right_time)
+    
+    # Add buffer for smooth scrolling
+    buffer = int((end - start) * 0.1)
+    return max(0, start - buffer), min(len(self.data), end + buffer)
+```
+
+## Memory Requirements
+
+- **OHLCV Data**: 7M x 32 bytes = 214 MB
+- **Vertex Buffers**: ~50 MB (base geometry)
+- **Index Buffers**: ~10 MB
+- **Indicator Buffers**: ~200 MB (10 indicators)
+- **Total GPU Memory**: ~500 MB
+
+## Expected Performance
+
+With this implementation:
+- **Initial Load**: 5-10 seconds for 7M candles
+- **Render Time**: 60-120 FPS for full dataset
+- **Pan/Zoom**: <16ms response time
+- **Memory Usage**: <1GB GPU RAM
+- **Trade Jump**: <50ms to locate and display
+
+## Testing Strategy
+
+```python
+def benchmark_performance():
+    sizes = [10_000, 100_000, 1_000_000, 7_000_000]
+    for size in sizes:
+        data = generate_test_data(size)
+        chart = CandlestickCanvas(data)
+        
+        # Measure metrics
+        fps = chart.measure_fps(duration=10)
+        memory = chart.get_gpu_memory_usage()
+        
+        print(f"Size: {size:,}, FPS: {fps:.1f}, Memory: {memory:.1f}MB")
+```
+
+## Conclusion
+
+This VisPy implementation leverages GPU instancing to achieve maximum performance for 7 million candlesticks. By using custom shaders and efficient data structures, we can achieve 60+ FPS while maintaining smooth interaction and VectorBT integration. The lack of native candlestick support in VisPy is actually an advantage, allowing us to optimize specifically for your use case.

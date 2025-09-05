@@ -1,0 +1,155 @@
+"""
+Debug the exact command that the user is running to see why candlesticks aren't showing
+"""
+
+import sys
+import subprocess
+import time
+from pathlib import Path
+
+def debug_exact_command():
+    """Debug the exact command with the time_window_strategy_vectorized"""
+    print("="*70)
+    print("DEBUGGING EXACT USER COMMAND")
+    print("="*70)
+    
+    # The exact command the user is running
+    cmd = [
+        sys.executable, "main.py", 
+        "ES", "time_window_strategy_vectorized", 
+        "--useDefaults", "--start", "2020-01-01"
+    ]
+    
+    print(f"Running exact command: {' '.join(cmd)}")
+    print("Looking for candlestick rendering issues...")
+    
+    try:
+        # Run the command and capture output
+        process = subprocess.Popen(
+            cmd,
+            cwd=Path(__file__).parent,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            universal_newlines=True
+        )
+        
+        # Monitor output for 30 seconds
+        start_time = time.time()
+        output_lines = []
+        
+        while time.time() - start_time < 30:
+            if process.poll() is not None:
+                break
+            
+            try:
+                line = process.stdout.readline()
+                if line:
+                    output_lines.append(line.strip())
+                    print(f"OUTPUT: {line.strip()}")
+                    
+                    # Look for specific candlestick-related messages
+                    if any(keyword in line.lower() for keyword in [
+                        'candlestick', 'rendering', 'debug', 'chart', 'dashboard'
+                    ]):
+                        print(f"*** CANDLESTICK RELATED: {line.strip()}")
+                        
+            except Exception as e:
+                print(f"Error reading output: {e}")
+                break
+        
+        # Terminate if still running
+        if process.poll() is None:
+            print("Terminating process after 30 seconds...")
+            process.terminate()
+            time.sleep(2)
+            if process.poll() is None:
+                process.kill()
+        
+        print("\n" + "="*70)
+        print("ANALYSIS OF OUTPUT:")
+        print("="*70)
+        
+        # Analyze the output
+        strategy_loaded = any("strategy" in line.lower() for line in output_lines)
+        dashboard_launched = any("dashboard" in line.lower() for line in output_lines)
+        candlestick_rendered = any("candlestick" in line.lower() for line in output_lines)
+        error_occurred = any("error" in line.lower() for line in output_lines)
+        
+        print(f"Strategy loaded: {strategy_loaded}")
+        print(f"Dashboard launched: {dashboard_launched}")
+        print(f"Candlesticks rendered: {candlestick_rendered}")
+        print(f"Errors occurred: {error_occurred}")
+        
+        # Look for specific issues
+        if error_occurred:
+            print("\nERRORS FOUND:")
+            for line in output_lines:
+                if "error" in line.lower():
+                    print(f"  {line}")
+        
+        return output_lines
+        
+    except Exception as e:
+        print(f"Failed to run command: {e}")
+        return None
+
+def analyze_dashboard_launch():
+    """Check if the dashboard is actually launching correctly"""
+    print("\n" + "="*70)
+    print("CHECKING DASHBOARD COMPONENTS")
+    print("="*70)
+    
+    # Check if the time_window_strategy exists
+    strategy_file = Path(__file__).parent / "strategies" / "time_window_strategy_vectorized.py"
+    if strategy_file.exists():
+        print(f"[OK] Strategy file exists: {strategy_file}")
+    else:
+        print(f"[X] Strategy file missing: {strategy_file}")
+        return False
+    
+    # Check if dashboard components exist
+    chart_widget = Path(__file__).parent / "src" / "dashboard" / "chart_widget.py"
+    if chart_widget.exists():
+        print(f"[OK] Chart widget exists: {chart_widget}")
+    else:
+        print(f"[X] Chart widget missing: {chart_widget}")
+        return False
+    
+    # Check if data exists
+    data_dir = Path(__file__).parent.parent / "dataRaw" / "1m" / "ES" / "Current"
+    if data_dir.exists():
+        csv_files = list(data_dir.glob("*.csv"))
+        if csv_files:
+            print(f"[OK] Data files found: {len(csv_files)} files")
+            print(f"  Example: {csv_files[0].name}")
+        else:
+            print(f"[X] No CSV files in data directory")
+            return False
+    else:
+        print(f"[X] Data directory missing: {data_dir}")
+        return False
+    
+    return True
+
+def main():
+    """Main debug function"""
+    print("Starting debug of user's exact command...")
+    
+    # Check components first
+    if not analyze_dashboard_launch():
+        print("Basic components missing - cannot proceed with debug")
+        return
+    
+    # Run the exact command
+    output = debug_exact_command()
+    
+    if output:
+        print(f"\nCaptured {len(output)} lines of output")
+        print("Debug session complete - check output above for issues")
+    else:
+        print("Failed to capture output from command")
+
+if __name__ == "__main__":
+    main()

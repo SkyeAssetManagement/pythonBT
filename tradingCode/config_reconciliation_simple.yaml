@@ -1,0 +1,31 @@
+
+data:
+  amibroker_path: "dummy"
+  data_frequency: "1T"
+
+backtest:
+  initial_cash: 100000
+  position_size: 5000
+  position_size_type: "value"
+  execution_price: "formula"
+  buy_execution_formula: "(H + L + C) / 3"
+  sell_execution_formula: "(H + L + C) / 3"
+  signal_lag: 0
+  fees: 0.0
+  fixed_fees: 0.0
+  slippage: 0.0
+  direction: "both"
+  min_size: 0.0000000001
+  call_seq: "auto"
+  freq: "1T"
+  phased_trading_enabled: true
+  phased_entry_bars: 5
+  phased_exit_bars: 5
+  phased_entry_distribution: "linear"
+  phased_exit_distribution: "linear"
+  consolidate_phased_trades: true
+
+output:
+  results_dir: "results_reconciliation"
+  trade_list_filename: "trades_reconciliation.csv"
+  equity_curve_filename: "equity_reconciliation.csv"

@@ -45,6 +45,13 @@ data/*.csv
 *.csv.gz
 *.parquet
 
+# Large data directories (14GB+ data)
+dataRaw/1m/
+
+# Large result files (100MB+)
+tradingCode/results/equity_curve.csv
+tradingCode/dashboard_error.log
+
 # Results and outputs
 results/*.png
 results/*.jpg

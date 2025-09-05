@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+"""
+Test that the strategy now correctly interprets entry times as EST
+"""
+
+import numpy as np
+import pandas as pd
+from strategies.time_window_strategy_vectorized import TimeWindowVectorizedSingle
+
+def test_est_timing():
+    """Test that 14:30 entry time is now interpreted as EST"""
+    
+    print("TESTING EST TIME INTERPRETATION FIX")
+    print("=" * 50)
+    
+    # Create sample data with UTC timestamps
+    # We'll create timestamps for 14:30 EST (which is 19:30 UTC)
+    base_time = pd.Timestamp('2025-01-01 19:30:00').value  # 19:30 UTC = 14:30 EST
+    
+    # Create 1-minute bars around this time
+    timestamps = []
+    for i in range(-10, 10):  # 20 minutes of data
+        timestamps.append(base_time + i * 60 * 1_000_000_000)  # Add minutes in nanoseconds
+    
+    timestamps = np.array(timestamps)
+    n_bars = len(timestamps)
+    
+    # Create sample OHLC data
+    sample_data = {
+        'datetime': timestamps,
+        'open': np.full(n_bars, 6240.0),
+        'high': np.full(n_bars, 6245.0),
+        'low': np.full(n_bars, 6235.0),
+        'close': np.full(n_bars, 6240.0),
+        'volume': np.full(n_bars, 1000)
+    }
+    
+    # Create strategy with 14:30 entry time
+    strategy = TimeWindowVectorizedSingle()
+    
+    # Test default parameters
+    params = strategy.get_parameter_combinations()[0]
+    print(f"Strategy parameters:")
+    for key, value in params.items():
+        print(f"  {key}: {value}")
+    print()
+    
+    # Generate signals
+    entries, exits = strategy._generate_signals_for_params(sample_data, params)
+    
+    print("Signal generation results:")
+    print(f"  Total bars: {n_bars}")
+    print(f"  Entry signals: {np.sum(entries)}")
+    print(f"  Exit signals: {np.sum(exits)}")
+    
+    # Check which bars have signals
+    entry_indices = np.where(entries)[0]
+    exit_indices = np.where(exits)[0]
+    
+    if len(entry_indices) > 0:
+        print(f"\nEntry signal at bar index: {entry_indices[0]}")
+        entry_timestamp = timestamps[entry_indices[0]]
+        
+        # Convert to readable format (should show EST time)
+        timestamp_sec = entry_timestamp / 1_000_000_000
+        est_timestamp_sec = timestamp_sec + (5 * 3600)  # Add 5 hours for EST display
+        readable_time = pd.to_datetime(est_timestamp_sec, unit='s').strftime('%H:%M:%S')
+        
+        print(f"Entry time (EST): {readable_time}")
+        
+        if readable_time.startswith("14:3"):  # Should be 14:31 or similar
+            print("[OK] SUCCESS: Entry time is now correctly interpreted as EST!")
+        else:
+            print(f"[X] ISSUE: Expected ~14:31 EST, got {readable_time}")
+    
+    if len(exit_indices) > 0:
+        print(f"\nExit signal at bar index: {exit_indices[0]}")
+        exit_timestamp = timestamps[exit_indices[0]]
+        
+        timestamp_sec = exit_timestamp / 1_000_000_000
+        est_timestamp_sec = timestamp_sec + (5 * 3600)  # Add 5 hours for EST display
+        readable_time = pd.to_datetime(est_timestamp_sec, unit='s').strftime('%H:%M:%S')
+        
+        print(f"Exit time (EST): {readable_time}")
+        
+        # Should be 30 minutes after entry (15:01 or similar)
+        if readable_time.startswith("15:0"):
+            print("[OK] SUCCESS: Exit time shows proper 30min hold in EST!")
+        else:
+            print(f"[X] ISSUE: Expected ~15:01 EST, got {readable_time}")
+
+if __name__ == "__main__":
+    test_est_timing()
+    
+    print("\n" + "=" * 50)
+    print("COMMANDS FOR SINGLE RUN:")  
+    print("python main.py ES time_window_strategy_vectorized_single")
+    print()
+    print("This will run with defaults:")
+    print("- entry_time: 09:30 (EST)")
+    print("- hold_time: 60 minutes") 
+    print("- direction: long")
+    print("- No optimization, just single parameter set")

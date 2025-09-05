@@ -1,0 +1,508 @@
+# src/dashboard/simple_chart_renderer.py
+# Reliable Chart Renderer - Step 1 Implementation
+# 
+# Uses PyQtGraph instead of VisPy for guaranteed reliability
+# Still supports 7M+ datapoints with viewport optimization
+# No GPU dependencies - works on any system
+
+import numpy as np
+from typing import Dict, Optional, Tuple, List
+import time
+import pyqtgraph as pg
+from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtWidgets import QApplication, QVBoxLayout, QHBoxLayout, QWidget, QLabel
+
+class HighPerformanceCandlestickItem(pg.GraphicsObject):
+    """
+    High-performance candlestick item for PyQtGraph
+    Optimized for rendering large datasets with viewport culling
+    """
+    
+    def __init__(self, data=None):
+        pg.GraphicsObject.__init__(self)
+        self.data = data
+        self.visible_data = None
+        self.viewport_range = [0, 500]  # Default viewport
+        
+    def setData(self, data):
+        """Set OHLCV data for rendering"""
+        self.data = data
+        self.updateVisibleData()
+        self.informViewBoundsChanged()
+        
+    def updateVisibleData(self):
+        """Update visible data based on viewport"""
+        if self.data is None:
+            return
+            
+        start_idx = max(0, int(self.viewport_range[0]))
+        end_idx = min(len(self.data), int(self.viewport_range[1]))
+        
+        # Add buffer for smooth scrolling
+        buffer = 50
+        start_idx = max(0, start_idx - buffer)
+        end_idx = min(len(self.data), end_idx + buffer)
+        
+        # Extract visible data slice
+        if start_idx < end_idx:
+            self.visible_data = {
+                'x': np.arange(start_idx, end_idx),
+                'open': self.data['open'][start_idx:end_idx],
+                'high': self.data['high'][start_idx:end_idx], 
+                'low': self.data['low'][start_idx:end_idx],
+                'close': self.data['close'][start_idx:end_idx]
+            }
+        else:
+            self.visible_data = None
+    
+    def setViewportRange(self, start, end):
+        """Set viewport range for optimization"""
+        self.viewport_range = [start, end]
+        self.updateVisibleData()
+        self.update()
+    
+    def boundingRect(self):
+        """Return bounding rectangle for visible data"""
+        if self.visible_data is None or len(self.visible_data['x']) == 0:
+            return QtCore.QRectF(0, 0, 0, 0)
+            
+        x_min = self.visible_data['x'][0] - 0.5
+        x_max = self.visible_data['x'][-1] + 0.5
+        y_min = np.min(self.visible_data['low'])
+        y_max = np.max(self.visible_data['high'])
+        
+        return QtCore.QRectF(x_min, y_min, x_max - x_min, y_max - y_min)
+    
+    def paint(self, p, *args):
+        """Paint the candlesticks"""
+        if self.visible_data is None or len(self.visible_data['x']) == 0:
+            return
+        
+        # Get current view range for optimization
+        view_range = self.getViewBox().viewRange()
+        x_range = view_range[0]
+        
+        # Further cull data to visible screen area
+        visible_mask = (
+            (self.visible_data['x'] >= x_range[0] - 1) & 
+            (self.visible_data['x'] <= x_range[1] + 1)
+        )
+        
+        if not np.any(visible_mask):
+            return
+            
+        # Extract screen-visible data
+        x = self.visible_data['x'][visible_mask]
+        opens = self.visible_data['open'][visible_mask]
+        highs = self.visible_data['high'][visible_mask]
+        lows = self.visible_data['low'][visible_mask]
+        closes = self.visible_data['close'][visible_mask]
+        
+        # Calculate candle width based on zoom level
+        x_pixel_range = p.deviceTransform().mapRect(QtCore.QRectF(0, 0, 1, 1)).width()
+        candle_width = max(0.1, min(0.8, 50.0 / len(x) if len(x) > 0 else 0.8))
+        
+        # Set up pens for drawing
+        bull_pen = pg.mkPen(color=(0, 200, 50), width=1)  # Green for bullish
+        bear_pen = pg.mkPen(color=(200, 50, 0), width=1)   # Red for bearish
+        bull_brush = pg.mkBrush(color=(0, 200, 50, 100))
+        bear_brush = pg.mkBrush(color=(200, 50, 0, 100))
+        
+        p.setRenderHint(QtGui.QPainter.Antialiasing, False)  # Faster rendering
+        
+        # Draw candlesticks
+        for i in range(len(x)):
+            xi = x[i]
+            o, h, l, c = opens[i], highs[i], lows[i], closes[i]
+            
+            # Determine if bullish or bearish
+            is_bull = c >= o
+            pen = bull_pen if is_bull else bear_pen
+            brush = bull_brush if is_bull else bear_brush
+            
+            p.setPen(pen)
+            p.setBrush(brush)
+            
+            # Draw wick (high-low line)
+            p.drawLine(QtCore.QPointF(xi, l), QtCore.QPointF(xi, h))
+            
+            # Draw body (open-close rectangle)
+            body_height = abs(c - o)
+            body_bottom = min(o, c)
+            
+            if body_height < 0.001:  # Doji - draw as thin line
+                p.drawLine(QtCore.QPointF(xi - candle_width/2, o), 
+                          QtCore.QPointF(xi + candle_width/2, o))
+            else:
+                # Regular candle body
+                rect = QtCore.QRectF(xi - candle_width/2, body_bottom, 
+                                   candle_width, body_height)
+                p.drawRect(rect)
+
+class ReliableChartRenderer(QtWidgets.QWidget):
+    """
+    Reliable chart renderer using PyQtGraph
+    Guaranteed to work on any system without GPU dependencies
+    """
+    
+    def __init__(self, width=1400, height=800, parent=None):
+        super().__init__(parent)
+        
+        self.data = None
+        self.data_length = 0
+        self.viewport_start = 0
+        self.viewport_end = 500
+        
+        # Performance tracking
+        self.last_update_time = 0
+        self.fps_counter = 0
+        self.fps_start_time = time.time()
+        
+        self._setup_ui(width, height)
+        self._setup_chart()
+        
+        print(f"   SUCCESS: Reliable chart renderer initialized")
+        print(f"   INFO: Using PyQtGraph backend (no GPU required)")
+    
+    def _setup_ui(self, width, height):
+        """Set up the UI layout"""
+        self.setWindowTitle("High-Performance Trading Chart - Step 1")
+        self.resize(width, height)
+        
+        # Main layout
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(5, 5, 5, 5)
+        
+        # Info panel
+        info_layout = QHBoxLayout()
+        
+        self.info_label = QLabel("Chart initialized - loading data...")
+        self.info_label.setStyleSheet("""
+            QLabel {
+                color: white;
+                background-color: #333333;
+                padding: 5px;
+                border: 1px solid #555555;
+                font-family: monospace;
+                font-size: 9pt;
+            }
+        """)
+        info_layout.addWidget(self.info_label)
+        
+        self.fps_label = QLabel("FPS: --")
+        self.fps_label.setStyleSheet(self.info_label.styleSheet())
+        self.fps_label.setFixedWidth(100)
+        info_layout.addWidget(self.fps_label)
+        
+        layout.addLayout(info_layout)
+        
+        # Chart area
+        self.chart_widget = pg.PlotWidget()
+        self.chart_widget.setBackground('#2b2b2b')
+        layout.addWidget(self.chart_widget)
+        
+        # Controls
+        controls_layout = QHBoxLayout()
+        
+        self.zoom_in_btn = QtWidgets.QPushButton("Zoom In")
+        self.zoom_out_btn = QtWidgets.QPushButton("Zoom Out") 
+        self.pan_left_btn = QtWidgets.QPushButton("← Pan Left")
+        self.pan_right_btn = QtWidgets.QPushButton("Pan Right ->")
+        self.reset_btn = QtWidgets.QPushButton("Reset View")
+        self.screenshot_btn = QtWidgets.QPushButton("Screenshot")
+        
+        for btn in [self.zoom_in_btn, self.zoom_out_btn, self.pan_left_btn, 
+                   self.pan_right_btn, self.reset_btn, self.screenshot_btn]:
+            btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #404040;
+                    color: white;
+                    border: 1px solid #666666;
+                    padding: 5px 10px;
+                    margin: 2px;
+                }
+                QPushButton:hover {
+                    background-color: #505050;
+                }
+                QPushButton:pressed {
+                    background-color: #606060;
+                }
+            """)
+            controls_layout.addWidget(btn)
+        
+        layout.addLayout(controls_layout)
+        
+        # Connect controls
+        self.zoom_in_btn.clicked.connect(self.zoom_in)
+        self.zoom_out_btn.clicked.connect(self.zoom_out)
+        self.pan_left_btn.clicked.connect(self.pan_left)
+        self.pan_right_btn.clicked.connect(self.pan_right)
+        self.reset_btn.clicked.connect(self.reset_view)
+        self.screenshot_btn.clicked.connect(self.take_screenshot)
+        
+        # Set dark theme
+        self.setStyleSheet("QWidget { background-color: #2b2b2b; }")
+    
+    def _setup_chart(self):
+        """Set up the chart widget"""
+        # Configure plot
+        self.plot = self.chart_widget.getPlotItem()
+        self.plot.setTitle("Candlestick Chart", color='white', size='12pt')
+        self.plot.setLabel('left', 'Price', color='white')
+        self.plot.setLabel('bottom', 'Time (Bar Index)', color='white')
+        
+        # Grid
+        self.plot.showGrid(x=True, y=True, alpha=0.3)
+        
+        # Create candlestick item
+        self.candlestick_item = HighPerformanceCandlestickItem()
+        self.plot.addItem(self.candlestick_item)
+        
+        # Enable mouse interaction
+        self.chart_widget.setMouseEnabled(x=True, y=True)
+        
+        # Connect view change events
+        self.plot.sigRangeChanged.connect(self._on_range_changed)
+    
+    def load_data(self, ohlcv_data: Dict[str, np.ndarray]) -> bool:
+        """Load OHLCV data into the chart"""
+        try:
+            print(f"   INFO: Loading {len(ohlcv_data['close']):,} candlesticks...")
+            
+            start_time = time.time()
+            
+            # Store data
+            self.data = {
+                'open': np.asarray(ohlcv_data['open'], dtype=np.float32),
+                'high': np.asarray(ohlcv_data['high'], dtype=np.float32),
+                'low': np.asarray(ohlcv_data['low'], dtype=np.float32),
+                'close': np.asarray(ohlcv_data['close'], dtype=np.float32)
+            }
+            self.data_length = len(self.data['close'])
+            
+            # Set to candlestick item
+            self.candlestick_item.setData(self.data)
+            
+            # Set initial viewport to last 500 bars
+            self.reset_view()
+            
+            load_time = time.time() - start_time
+            
+            # Update info
+            price_range = f"${self.data['low'].min():.5f} - ${self.data['high'].max():.5f}"
+            self.info_label.setText(
+                f"Loaded {self.data_length:,} bars | "
+                f"Range: {price_range} | "
+                f"Load time: {load_time:.3f}s | "
+                f"Speed: {self.data_length/load_time:.0f} bars/sec"
+            )
+            
+            print(f"   SUCCESS: Chart loaded in {load_time:.3f}s")
+            print(f"   PERFORMANCE: {self.data_length/load_time:.0f} bars/second")
+            
+            return True
+            
+        except Exception as e:
+            print(f"   ERROR: Failed to load data: {e}")
+            return False
+    
+    def _on_range_changed(self):
+        """Handle viewport range changes"""
+        if self.data is None:
+            return
+            
+        # Get current view range
+        view_range = self.plot.viewRange()
+        x_range = view_range[0]
+        
+        # Update viewport
+        self.viewport_start = max(0, int(x_range[0]))
+        self.viewport_end = min(self.data_length, int(x_range[1]))
+        
+        # Update candlestick viewport
+        self.candlestick_item.setViewportRange(self.viewport_start, self.viewport_end)
+        
+        # Update FPS counter
+        current_time = time.time()
+        self.fps_counter += 1
+        
+        if current_time - self.fps_start_time >= 1.0:
+            fps = self.fps_counter / (current_time - self.fps_start_time)
+            self.fps_label.setText(f"FPS: {fps:.1f}")
+            self.fps_counter = 0
+            self.fps_start_time = current_time
+    
+    def zoom_in(self):
+        """Zoom in on the chart"""
+        self.plot.scaleBy(x=0.5, y=1.0)
+    
+    def zoom_out(self):
+        """Zoom out on the chart"""
+        self.plot.scaleBy(x=2.0, y=1.0)
+    
+    def pan_left(self):
+        """Pan left"""
+        view_range = self.plot.viewRange()[0]
+        pan_amount = (view_range[1] - view_range[0]) * 0.1
+        view_box = self.plot.getViewBox()
+        view_box.translateBy(x=-pan_amount, y=0)
+    
+    def pan_right(self):
+        """Pan right"""
+        view_range = self.plot.viewRange()[0]
+        pan_amount = (view_range[1] - view_range[0]) * 0.1
+        view_box = self.plot.getViewBox()
+        view_box.translateBy(x=pan_amount, y=0)
+    
+    def reset_view(self):
+        """Reset view to show last 500 bars"""
+        if self.data_length > 500:
+            start_idx = self.data_length - 500
+            end_idx = self.data_length
+        else:
+            start_idx = 0
+            end_idx = self.data_length
+        
+        # Calculate price range for the viewport
+        if self.data is not None:
+            viewport_low = self.data['low'][start_idx:end_idx].min()
+            viewport_high = self.data['high'][start_idx:end_idx].max()
+            padding = (viewport_high - viewport_low) * 0.1
+            
+            self.plot.setRange(
+                xRange=[start_idx, end_idx],
+                yRange=[viewport_low - padding, viewport_high + padding],
+                padding=0.02
+            )
+    
+    def take_screenshot(self):
+        """Take a screenshot of the chart"""
+        try:
+            # Get current timestamp
+            timestamp = time.strftime("%Y%m%d_%H%M%S")
+            filename = f"chart_screenshot_{timestamp}.png"
+            
+            # Export the chart
+            exporter = pg.exporters.ImageExporter(self.plot)
+            exporter.export(filename)
+            
+            print(f"   INFO: Screenshot saved: {filename}")
+            
+            # Update info
+            current_text = self.info_label.text()
+            self.info_label.setText(f"{current_text} | Screenshot: {filename}")
+            
+        except Exception as e:
+            print(f"   WARNING: Screenshot failed: {e}")
+    
+    def navigate_to_index(self, index: int):
+        """Navigate chart to specific index"""
+        if self.data is None:
+            return
+        
+        # Center view on the target index
+        viewport_size = 200  # Show 200 bars around target
+        start_idx = max(0, index - viewport_size//2)
+        end_idx = min(self.data_length, index + viewport_size//2)
+        
+        # Calculate price range
+        viewport_low = self.data['low'][start_idx:end_idx].min()
+        viewport_high = self.data['high'][start_idx:end_idx].max()
+        padding = (viewport_high - viewport_low) * 0.1
+        
+        self.plot.setRange(
+            xRange=[start_idx, end_idx],
+            yRange=[viewport_low - padding, viewport_high + padding],
+            padding=0.02
+        )
+        
+        print(f"   INFO: Navigated to index {index}")
+
+def create_test_data(num_candles: int = 10000) -> Dict[str, np.ndarray]:
+    """Create synthetic OHLCV test data"""
+    print(f"   INFO: Creating {num_candles:,} synthetic candlesticks...")
+    
+    np.random.seed(42)  # Reproducible
+    
+    # Generate realistic price walk
+    base_price = 1.2000
+    price_volatility = 0.001
+    
+    price_changes = np.random.normal(0, price_volatility, num_candles)
+    prices = np.cumsum(price_changes) + base_price
+    
+    # Generate OHLC
+    opens = prices.copy()
+    closes = opens + np.random.normal(0, price_volatility/2, num_candles)
+    
+    high_noise = np.random.exponential(price_volatility/4, num_candles)
+    low_noise = np.random.exponential(price_volatility/4, num_candles)
+    
+    highs = np.maximum(opens, closes) + high_noise
+    lows = np.minimum(opens, closes) - low_noise
+    
+    volumes = np.random.lognormal(10, 0.5, num_candles)
+    timestamps = np.arange(num_candles, dtype=np.int64)
+    
+    return {
+        'datetime': timestamps,
+        'open': opens.astype(np.float32),
+        'high': highs.astype(np.float32),
+        'low': lows.astype(np.float32),
+        'close': closes.astype(np.float32),
+        'volume': volumes.astype(np.float32)
+    }
+
+def test_reliable_chart():
+    """Test the reliable chart renderer"""
+    print(f"\n=== TESTING RELIABLE CHART RENDERER ===")
+    
+    try:
+        app = QApplication.instance()
+        if app is None:
+            app = QApplication([])
+        
+        # Create test data
+        print(f"Creating test data...")
+        test_data = create_test_data(100000)  # 100K for performance test
+        
+        # Create chart
+        print(f"Creating chart renderer...")
+        chart = ReliableChartRenderer(width=1600, height=900)
+        
+        # Load data
+        print(f"Loading data into chart...")
+        success = chart.load_data(test_data)
+        
+        if success:
+            print(f"SUCCESS: Chart ready for interaction")
+            print(f"")
+            print(f"CONTROLS:")
+            print(f"  - Zoom In/Out buttons")
+            print(f"  - Pan Left/Right buttons")  
+            print(f"  - Reset View button")
+            print(f"  - Screenshot button")
+            print(f"  - Mouse wheel: zoom")
+            print(f"  - Mouse drag: pan")
+            print(f"")
+            print(f"Showing chart - close window to continue...")
+            
+            chart.show()
+            chart.raise_()
+            chart.activateWindow()
+            
+            app.exec_()
+            return True
+        else:
+            print(f"ERROR: Failed to load data")
+            return False
+            
+    except Exception as e:
+        print(f"ERROR: Chart test failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+if __name__ == "__main__":
+    test_reliable_chart()

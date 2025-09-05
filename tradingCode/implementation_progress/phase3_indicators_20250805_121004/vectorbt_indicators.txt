@@ -1,0 +1,48 @@
+VectorBT Pro Indicators
+===================================
+
+MARKET DATA:
+  Start Date: 2020-01-01
+  End Date:   2020-01-18
+  Duration:   17 days
+  Total Bars: 25,000
+
+PRICE PERFORMANCE:
+  Start Price:  $3999.47
+  End Price:    $3602.04
+  Price Return: -9.94%
+  Min Price:    $3601.02
+  Max Price:    $4444.36
+
+RISK METRICS:
+  Daily Vol:      0.20%
+  Best Day:       +0.05%
+  Worst Day:      -0.06%
+  Max Drawdown:   -8.25%
+
+TRADING ACTIVITY:
+  Total Trades:  25
+  Buy Orders:    11
+  Sell Orders:   14
+  Avg Size:      200
+  Total Volume:  5,000
+
+P&L ANALYSIS:
+  Total P&L:     $-51,523.32
+  Avg P&L:       $-3680.24
+  Win Rate:      21.4%
+  Winners:       3
+  Losers:        11
+  Avg Winner:    $+7216.95
+  Avg Loser:     $-6652.20
+  Best Trade:    $+10237.51
+  Worst Trade:   $-14020.92
+
+PORTFOLIO METRICS:
+  Total Return:  +15.75%
+  Sharpe Ratio:  1.85
+  Calmar Ratio:  1.91
+
+VOLUME ANALYSIS:
+  Avg Volume:    2,204
+  Total Volume:  55,093,231

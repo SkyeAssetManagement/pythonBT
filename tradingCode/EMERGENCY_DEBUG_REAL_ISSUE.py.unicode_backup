@@ -1,0 +1,204 @@
+"""
+EMERGENCY DEBUG: Find out exactly what's happening when main.py runs
+We need to trace the ACTUAL code path, not assume what's being used
+"""
+
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+def trace_main_execution():
+    """Add debug prints to main.py to see exactly what's happening"""
+    print("="*70)
+    print("EMERGENCY DEBUG: TRACING MAIN.PY EXECUTION")
+    print("="*70)
+    
+    main_file = Path(__file__).parent / "main.py"
+    
+    # Read main.py to understand the flow
+    if main_file.exists():
+        with open(main_file, 'r') as f:
+            content = f.read()
+        
+        print("Main.py content preview:")
+        lines = content.split('\n')
+        for i, line in enumerate(lines[:50], 1):
+            if 'dashboard' in line.lower() or 'chart' in line.lower():
+                print(f"  {i}: {line}")
+    
+    # Check what dashboard files exist
+    dashboard_dir = Path(__file__).parent / "src" / "dashboard"
+    if dashboard_dir.exists():
+        print(f"\\nDashboard files found:")
+        for file in dashboard_dir.glob("*.py"):
+            print(f"  {file.name}")
+    
+    return True
+
+def find_candlestick_implementations():
+    """Find ALL candlestick implementations in the codebase"""
+    print("\\n" + "="*70)
+    print("FINDING ALL CANDLESTICK IMPLEMENTATIONS")
+    print("="*70)
+    
+    search_dirs = [
+        Path(__file__).parent / "src",
+        Path(__file__).parent,
+    ]
+    
+    candlestick_files = []
+    
+    for search_dir in search_dirs:
+        if search_dir.exists():
+            for py_file in search_dir.rglob("*.py"):
+                try:
+                    with open(py_file, 'r', encoding='utf-8', errors='ignore') as f:
+                        content = f.read()
+                        
+                    if 'candlestick' in content.lower() or 'class.*Item' in content:
+                        if 'draw' in content.lower() or 'paint' in content.lower():
+                            candlestick_files.append(py_file)
+                            print(f"Found candlestick code in: {py_file}")
+                            
+                            # Show key methods
+                            lines = content.split('\\n')
+                            for i, line in enumerate(lines):
+                                if ('def ' in line and ('draw' in line.lower() or 'paint' in line.lower() or 'candlestick' in line.lower())):
+                                    print(f"  Line {i+1}: {line.strip()}")
+                                    
+                except Exception as e:
+                    continue
+    
+    return candlestick_files
+
+def check_if_changes_applied():
+    """Check if my changes are actually in the file being used"""
+    print("\\n" + "="*70)
+    print("CHECKING IF MY CHANGES ARE APPLIED")
+    print("="*70)
+    
+    chart_widget = Path(__file__).parent / "src" / "dashboard" / "chart_widget.py"
+    
+    if chart_widget.exists():
+        with open(chart_widget, 'r', encoding='utf-8', errors='ignore') as f:
+            content = f.read()
+        
+        # Check for my debug messages
+        if "DRAW DEBUG: Drawing" in content:
+            print("✓ My debug code IS in chart_widget.py")
+        else:
+            print("✗ My debug code is NOT in chart_widget.py")
+        
+        # Check for my rewritten method
+        if "COMPLETELY REWRITTEN: Fix black blob issue" in content:
+            print("✓ My rewritten drawing method IS in chart_widget.py")
+        else:
+            print("✗ My rewritten drawing method is NOT in chart_widget.py")
+        
+        # Check for the old batch drawing
+        if "painter.drawRects(up_rects)" in content:
+            print("⚠ Old batch drawing code is still present")
+        else:
+            print("✓ Old batch drawing code has been removed")
+        
+        return True
+    else:
+        print("✗ chart_widget.py file not found!")
+        return False
+
+def run_with_output_capture():
+    """Run the actual command and capture ALL output"""
+    print("\\n" + "="*70)
+    print("RUNNING ACTUAL COMMAND WITH OUTPUT CAPTURE")
+    print("="*70)
+    
+    cmd = [
+        sys.executable, "main.py", 
+        "ES", "time_window_strategy_vectorized", 
+        "--useDefaults", "--start", "2020-01-01"
+    ]
+    
+    print(f"Command: {' '.join(cmd)}")
+    print("Looking for ANY debug output...")
+    
+    try:
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            cwd=Path(__file__).parent,
+            bufsize=1
+        )
+        
+        debug_found = False
+        lines_captured = 0
+        
+        start_time = time.time()
+        while time.time() - start_time < 30:
+            if process.poll() is not None:
+                break
+                
+            line = process.stdout.readline()
+            if line:
+                lines_captured += 1
+                line = line.strip()
+                print(f"[{lines_captured:03d}] {line}")
+                
+                # Look for my debug messages
+                if "DRAW DEBUG" in line or "CANDLESTICK DEBUG" in line:
+                    debug_found = True
+                    print(f"*** FOUND MY DEBUG: {line}")
+        
+        process.terminate()
+        
+        print(f"\\nCaptured {lines_captured} lines of output")
+        
+        if debug_found:
+            print("✓ My debug code IS being executed")
+        else:
+            print("✗ My debug code is NOT being executed")
+            print("This means either:")
+            print("  1. The wrong file is being used")
+            print("  2. The candlestick code is not being called")
+            print("  3. There's a different code path")
+        
+        return debug_found
+        
+    except Exception as e:
+        print(f"Error running command: {e}")
+        return False
+
+def main():
+    """Main emergency debug function"""
+    print("EMERGENCY DEBUG SESSION STARTING...")
+    print("We need to find out why the changes aren't working!")
+    
+    # Step 1: Trace main.py
+    trace_main_execution()
+    
+    # Step 2: Find all candlestick code
+    candlestick_files = find_candlestick_implementations()
+    
+    # Step 3: Check if changes are applied
+    changes_applied = check_if_changes_applied()
+    
+    # Step 4: Run and capture output
+    debug_found = run_with_output_capture()
+    
+    print("\\n" + "="*70)
+    print("EMERGENCY DEBUG SUMMARY")
+    print("="*70)
+    print(f"Candlestick files found: {len(candlestick_files)}")
+    print(f"Changes applied to chart_widget.py: {changes_applied}")
+    print(f"Debug output found when running: {debug_found}")
+    
+    if not debug_found:
+        print("\\n*** CRITICAL ISSUE IDENTIFIED ***")
+        print("My changes are NOT being executed!")
+        print("This explains why there's been zero progress.")
+        print("We need to find the ACTUAL file being used.")
+
+if __name__ == "__main__":
+    main()

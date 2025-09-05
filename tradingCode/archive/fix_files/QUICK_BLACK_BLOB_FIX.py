@@ -1,0 +1,87 @@
+"""
+QUICK BLACK BLOB FIX - Run this once to fix your main.py dashboard
+This makes a minimal change to force the working candlestick renderer
+"""
+import shutil
+from pathlib import Path
+
+def apply_quick_fix():
+    """Apply the minimal fix to chart_widget.py"""
+    
+    print("=== QUICK BLACK BLOB FIX ===")
+    print("This will fix your existing main.py to show proper candlesticks")
+    
+    chart_widget_path = Path("src/dashboard/chart_widget.py")
+    
+    if not chart_widget_path.exists():
+        print(f"ERROR: {chart_widget_path} not found")
+        return False
+    
+    # Create backup
+    backup_path = chart_widget_path.with_suffix('.py.backup_before_fix')
+    shutil.copy(chart_widget_path, backup_path)
+    print(f"[OK] Backup created: {backup_path}")
+    
+    # Read the file
+    with open(chart_widget_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    
+    # Make the minimal fix - force SimpleCandlestickItem usage
+    # Look for the line that decides which candlestick item to use
+    if 'self.candle_item = SimpleCandlestickItem(data_buffer)' in content:
+        print("[OK] SimpleCandlestickItem is already being used")
+        
+        # Force it to always use SimpleCandlestickItem by commenting out complex version
+        if 'self.candle_item = CandlestickItem(' in content:
+            content = content.replace(
+                'self.candle_item = CandlestickItem(',
+                '# FIXED: Black blob issue - using SimpleCandlestickItem instead\n        # self.candle_item = CandlestickItem('
+            )
+            print("[OK] Disabled complex CandlestickItem that causes black blobs")
+        
+        # Ensure SimpleCandlestickItem is always used
+        if 'if len(data_buffer) < 1000:' in content:
+            # Force it to always use SimpleCandlestickItem regardless of data size
+            content = content.replace(
+                'if len(data_buffer) < 1000:',
+                'if True:  # FIXED: Always use SimpleCandlestickItem to prevent black blobs'
+            )
+            print("[OK] Forced SimpleCandlestickItem to always be used")
+    
+    # Write the fixed file
+    with open(chart_widget_path, 'w', encoding='utf-8') as f:
+        f.write(content)
+    
+    print("[OK] Applied black blob fix to chart_widget.py")
+    print("[OK] Your main.py should now show proper candlesticks!")
+    print()
+    print("TEST: Run your original command:")
+    print("python main.py ES simpleSMA --start \"2025-07-01\"")
+    
+    return True
+
+def restore_backup():
+    """Restore from backup if needed"""
+    
+    chart_widget_path = Path("src/dashboard/chart_widget.py") 
+    backup_path = chart_widget_path.with_suffix('.py.backup_before_fix')
+    
+    if backup_path.exists():
+        shutil.copy(backup_path, chart_widget_path)
+        print(f"[OK] Restored from backup: {backup_path}")
+        return True
+    else:
+        print("ERROR: No backup found")
+        return False
+
+if __name__ == "__main__":
+    import sys
+    
+    if len(sys.argv) > 1 and sys.argv[1] == 'restore':
+        print("=== RESTORING BACKUP ===")
+        restore_backup()
+    else:
+        apply_quick_fix()
+        print()
+        print("If you need to undo this fix, run:")
+        print("python QUICK_BLACK_BLOB_FIX.py restore")

@@ -1,0 +1,30 @@
+
+data:
+  amibroker_path: "dummy"
+  data_frequency: "5T"
+
+backtest:
+  initial_cash: 100000
+  position_size: 1000              # $1000 total position
+  position_size_type: "value"      # EXPLICITLY use value sizing
+  execution_price: "close"
+  signal_lag: 0
+  fees: 0.0
+  fixed_fees: 0.0
+  slippage: 0.0
+  direction: "both"                # Trade direction
+  min_size: 0.0000000001
+  call_seq: "auto"
+  freq: "5T"
+  
+  # Phased trading configuration
+  phased_trading_enabled: true
+  phased_entry_bars: 5            # Split into 5 trades
+  phased_exit_bars: 1             # Single exit
+  phased_entry_distribution: "linear"
+  consolidate_phased_trades: false  # FORCE SEPARATE TRADES
+
+output:
+  results_dir: "results_phased_verify"
+  trade_list_filename: "tradelist_verify.csv"
+  equity_curve_filename: "equity_verify.csv"

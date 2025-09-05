@@ -1,0 +1,192 @@
+#!/usr/bin/env python3
+"""
+Quick test with 100 combinations in single chunk to calibrate optimal chunk size
+"""
+
+import sys
+import time
+import pandas as pd
+import numpy as np
+import logging
+import gc
+import vectorbtpro as vbt
+from typing import Tuple
+
+sys.path.append('src')
+from src.data.parquet_converter import ParquetConverter
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+def test_100_combinations():
+    """Test 100 combinations in a single chunk"""
+    
+    logger.info("=== TESTING 100 COMBINATIONS IN SINGLE CHUNK ===")
+    
+    # Load data
+    logger.info("Loading test data...")
+    start_time = time.time()
+    
+    parquet_converter = ParquetConverter()
+    data = parquet_converter.load_or_convert("GC", "1m", "diffAdjusted")
+    data = parquet_converter.filter_data_by_date(data, "2000-01-01", "2024-12-31")
+    
+    close_series = pd.Series(
+        data['close'], 
+        index=pd.to_datetime(data['datetime_ns']),
+        name='close'
+    )
+    
+    load_time = time.time() - start_time
+    logger.info(f"Loaded {len(close_series):,} bars in {load_time:.2f}s")
+    
+    # Generate 100 parameter combinations
+    # MA1: 10-100 step 10 (10 values), MA2: 100-1000 step 100 (10 values) = 100 combinations
+    ma1_values = np.arange(10, 101, 10)  # [10, 20, 30, ..., 100]
+    ma2_values = np.arange(100, 1001, 100)  # [100, 200, 300, ..., 1000]
+    
+    param_combinations = []
+    for ma1 in ma1_values:
+        for ma2 in ma2_values:
+            if ma2 > ma1:  # Valid combination
+                param_combinations.append([ma1, ma2])
+    
+    param_combinations = np.array(param_combinations)
+    chunk_size = len(param_combinations)
+    
+    logger.info(f"Testing {chunk_size} combinations in single chunk")
+    
+    # Test the chunk processing
+    test_start = time.time()
+    
+    try:
+        # Generate signals for all combinations
+        entries_dict = {}
+        exits_dict = {}
+        
+        logger.info("Generating signals...")
+        signal_start = time.time()
+        
+        for i, combo in enumerate(param_combinations):
+            fast_period = int(combo[0])
+            slow_period = int(combo[1])
+            
+            # Calculate MAs
+            fast_ma = vbt.MA.run(close_series, fast_period).ma
+            slow_ma = vbt.MA.run(close_series, slow_period).ma
+            
+            # Generate signals
+            entries = fast_ma.vbt.crossed_above(slow_ma)
+            exits = fast_ma.vbt.crossed_below(slow_ma)
+            
+            entries_dict[i] = entries
+            exits_dict[i] = exits
+        
+        # Convert to DataFrames
+        entries_df = pd.DataFrame(entries_dict, index=close_series.index)
+        exits_df = pd.DataFrame(exits_dict, index=close_series.index)
+        
+        signal_time = time.time() - signal_start
+        logger.info(f"Signal generation completed in {signal_time:.2f}s")
+        
+        # Test portfolio creation
+        logger.info("Creating portfolio...")
+        portfolio_start = time.time()
+        
+        close_df = pd.concat([close_series] * chunk_size, axis=1, keys=range(chunk_size))
+        
+        pf = vbt.Portfolio.from_signals(
+            close=close_df,
+            entries=entries_df,
+            exits=exits_df,
+            size=np.inf,
+            init_cash=100000,
+            fees=0.001,
+            freq='1min'
+        )
+        
+        portfolio_time = time.time() - portfolio_start
+        logger.info(f"Portfolio creation completed in {portfolio_time:.2f}s")
+        
+        # Test metrics extraction
+        logger.info("Extracting metrics...")
+        metrics_start = time.time()
+        
+        total_returns = pf.total_return * 100
+        sharpe_ratios = pf.sharpe_ratio
+        max_drawdowns = pf.max_drawdown * 100
+        
+        metrics_time = time.time() - metrics_start
+        logger.info(f"Metrics extraction completed in {metrics_time:.2f}s")
+        
+        total_time = time.time() - test_start
+        
+        # Results
+        logger.info("=== TEST RESULTS ===")
+        logger.info(f"[OK] SUCCESS: {chunk_size} combinations processed in {total_time:.2f}s")
+        logger.info(f"Signal generation: {signal_time:.2f}s")
+        logger.info(f"Portfolio creation: {portfolio_time:.2f}s") 
+        logger.info(f"Metrics extraction: {metrics_time:.2f}s")
+        logger.info(f"Rate: {chunk_size/total_time:.2f} combinations/second")
+        
+        # Memory cleanup
+        del pf, entries_df, exits_df, close_df
+        gc.collect()
+        
+        # Calculate estimates for larger chunk sizes
+        logger.info("=== CHUNK SIZE ESTIMATES ===")
+        for test_chunk in [100, 200, 300, 400, 500, 750, 1000]:
+            estimated_time = test_chunk * (total_time / chunk_size)
+            logger.info(f"Chunk size {test_chunk}: ~{estimated_time:.1f}s ({estimated_time/60:.1f} min)")
+        
+        return True, total_time, chunk_size
+        
+    except Exception as e:
+        logger.error(f"[X] FAILED: {e}")
+        gc.collect()
+        return False, 0, chunk_size
+
+def main():
+    """Main test function"""
+    
+    print("=" * 80)
+    print("CHUNK SIZE TEST - 100 COMBINATIONS")
+    print("Testing optimal chunk size for VectorBT optimization")
+    print("=" * 80)
+    
+    success, total_time, combinations = test_100_combinations()
+    
+    if success:
+        rate = combinations / total_time
+        print(f"\n" + "=" * 80)
+        print("TEST SUCCESSFUL")
+        print("=" * 80)
+        print(f"Combinations: {combinations}")
+        print(f"Time: {total_time:.2f}s")
+        print(f"Rate: {rate:.2f} combinations/second")
+        
+        # Recommend chunk sizes
+        print(f"\nRECOMMENDED CHUNK SIZES:")
+        if rate > 5:
+            print(f"Conservative (safe): 500-750 combinations")
+            print(f"Optimal (fast): 750-1000 combinations")
+        elif rate > 2:
+            print(f"Conservative (safe): 300-500 combinations") 
+            print(f"Optimal (fast): 500-750 combinations")
+        else:
+            print(f"Conservative (safe): 100-300 combinations")
+            print(f"Optimal (fast): 300-500 combinations")
+        
+        # Full test estimate
+        full_combinations = 9540  # Valid MA combinations
+        full_time = full_combinations / rate
+        print(f"\nFull test estimate ({full_combinations:,} combinations): {full_time:.0f}s ({full_time/60:.1f} min / {full_time/3600:.1f} hours)")
+        
+    else:
+        print(f"\n" + "=" * 80)
+        print("TEST FAILED")
+        print("Use smaller chunk sizes (25-50 combinations)")
+        print("=" * 80)
+
+if __name__ == "__main__":
+    main()

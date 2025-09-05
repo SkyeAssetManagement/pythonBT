@@ -1,0 +1,57 @@
+# Configuration file for Modular AmiBroker Trading System
+# All default values are explicitly defined here
+
+# Data source configuration
+data:
+  amibroker_path: "C:\\Users\\skyeAM\\OneDrive - Verona Capital\\Documents\\ABDatabase\\OneModel5MinDataABDB_1"
+  data_frequency: "1T"                    # Data frequency (5T = 5 minutes)
+  
+# Strategy parameters (can be overridden by individual strategies)
+strategy:
+  fast_ma_period: 20                      # Fast moving average period
+  slow_ma_period: 100                     # Slow moving average period
+  
+# Backtesting configuration
+backtest:
+  # Portfolio settings
+  initial_cash: 100000                    # Starting cash amount in dollars
+  position_size: 1                        # Position size per trade ($1 for clean percentage/dollar relationship)
+  position_size_type: "value"             # Size type: "value" (dollars), "amount" (shares), "percent" (% of portfolio)
+  
+  # Execution settings
+  execution_price: "close"                # Price for execution: "close", "open", "high", "low", or "formula"
+  signal_lag: 1                           # Bars to lag signals (1 = signal today, execute next bar, 0 = same bar)
+  
+  # Formula-based execution pricing (OHLC variables: O, H, L, C)
+  # Common formulas: "C" (close), "(H+L+C)/3" (typical), "(H+L)/2" (median), "H" (high), "L" (low)
+  buy_execution_formula: "(H + L + C) / 3"    # Formula for buy signals (long entries, short exits)
+  sell_execution_formula: "(H + L + C) / 3"   # Formula for sell signals (long exits, short entries)
+  
+  # VectorBT Pro friction costs - applied to each trade
+  fees: 0.000                             # Percentage commission on trade value (0.001 = 0.1% of trade size)
+  fixed_fees: 0.0                         # Fixed dollar commission per trade (e.g., $1.00 per trade)
+  slippage: 0.0000                        # Percentage slippage on entry/exit price (0.0005 = 0.05% of price)
+  
+  # Portfolio settings
+  direction: "both"                       # Trade direction: "long", "short", or "both"
+  min_size: 0.0000000001                 # Minimum position size for granularity (1e-10)
+  call_seq: "auto"                        # VectorBT call sequence: "auto" or "reverse"
+  freq: "5T"                             # Data frequency for VectorBT (should match data_frequency)
+  
+# Peak detection settings (if used by strategies)
+peak_detection:
+  min_time_stop: 1                        # Minimum bars for time-based stops
+  max_time_stop: 100                      # Maximum bars for time-based stops
+  
+# Output configuration
+output:
+  results_dir: "results"                  # Directory to save backtest results
+  trade_list_filename: "tradelist.csv"   # Filename for trade list export
+  equity_curve_filename: "equity_curve.csv"  # Filename for equity curve export
+  performance_filename: "performance_summary.csv"  # Filename for performance metrics
+  
+# System settings
+system:
+  random_seed: 42                         # Random seed for reproducible results (null for random)
+  max_workers: null                       # Maximum parallel workers (null = auto-detect)
+  memory_limit: null                      # Memory limit in GB (null = no limit)

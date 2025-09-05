@@ -1,0 +1,45 @@
+================================================================================
+VECTORBT PRO OPTIMIZATION ANALYSIS
+================================================================================
+Generated: 2025-07-29 18:34:52
+
+SYSTEM CONFIGURATION:
+  CPUs: 32
+  Memory: 127.9 GB
+  Data Period: 2000-01-01 to 2024-12-31
+  Total Bars: 6,522,902
+
+VECTORIZED OPTIMIZATION PERFORMANCE:
+  Total Time: 63.24s (1.1 minutes)
+  MA Calculation: 1.51s
+  Signal Generation: 1.71s
+  Portfolio Backtesting: 19.58s
+  Results Extraction: 40.44s
+  Rate: 0.40 backtests/second
+  Combinations: 25
+
+RESULTS ANALYSIS:
+  Total Combinations: 25
+  Successful: 25
+  Failed: 0
+
+BEST RESULTS BY TOTAL RETURN:
+  MA1: 50, MA2: 500
+  Total Return: -100.00%
+  Sharpe Ratio: -15.65
+  Max Drawdown: -100.00%
+  Trade Count: 11799
+
+BEST RESULTS BY SHARPE RATIO:
+  MA1: 50, MA2: 500
+  Sharpe Ratio: -15.65
+  Total Return: -100.00%
+  Max Drawdown: -100.00%
+  Trade Count: 11799
+
+SUMMARY STATISTICS:
+  Avg Total Return: -100.00%
+  Std Total Return: 0.00%
+  Avg Sharpe Ratio: -23.76
+  Avg Trade Count: 15385
+  Avg Max Drawdown: -100.00%

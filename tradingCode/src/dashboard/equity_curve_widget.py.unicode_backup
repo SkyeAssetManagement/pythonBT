@@ -1,0 +1,576 @@
+# src/dashboard/equity_curve_widget.py
+# Synchronized Equity Curve Widget - Step 3
+# High-performance equity curve visualization synchronized with candlestick chart
+
+import numpy as np
+import pandas as pd
+from typing import Dict, List, Optional, Tuple
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt
+from PyQt5.QtGui import QColor, QPen, QBrush
+import pyqtgraph as pg
+
+class EquityCurveWidget(QWidget):
+    """
+    High-performance equity curve widget with synchronized navigation
+    Features:
+    - Real-time equity curve visualization
+    - Synchronized with candlestick chart navigation
+    - Trade entry/exit markers on equity curve
+    - Performance statistics overlay
+    - Drawdown visualization
+    """
+    
+    # Signal emitted when user clicks on equity curve to navigate
+    time_selected = pyqtSignal(int)  # timestamp/index
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        
+        # Data storage
+        self.equity_data = None
+        self.drawdown_data = None
+        self.trade_markers = []
+        self.current_viewport = (0, 500)
+        
+        # Chart components
+        self.plot_widget = None
+        self.equity_curve = None
+        self.drawdown_curve = None
+        self.trade_scatter = None
+        
+        # Performance tracking
+        self.stats_labels = {}
+        
+        self._setup_ui()
+        self._setup_chart()
+        self._setup_styling()
+        
+        print("SUCCESS: Equity curve widget initialized")
+    
+    def _setup_ui(self):
+        """Setup the widget UI layout"""
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(5, 5, 5, 5)
+        layout.setSpacing(2)
+        
+        # Title bar with statistics
+        title_layout = QHBoxLayout()
+        
+        title_label = QLabel("EQUITY CURVE & DRAWDOWN")
+        title_label.setAlignment(Qt.AlignLeft)
+        title_label.setStyleSheet("""
+            QLabel {
+                color: white;
+                font-weight: bold;
+                font-size: 10pt;
+                padding: 4px;
+                background-color: #404040;
+                border: 1px solid #555555;
+            }
+        """)
+        title_layout.addWidget(title_label)
+        
+        # Statistics labels
+        self._create_stats_labels(title_layout)
+        
+        layout.addLayout(title_layout)
+        
+        # Chart area
+        self.plot_widget = pg.PlotWidget()
+        self.plot_widget.setMinimumHeight(200)
+        self.plot_widget.setMaximumHeight(300)
+        layout.addWidget(self.plot_widget)
+        
+        # Set stretch factors
+        layout.setStretchFactor(self.plot_widget, 1)
+    
+    def _create_stats_labels(self, layout):
+        """Create performance statistics labels"""
+        stats = [
+            ("Total Return:", "total_return"),
+            ("Max DD:", "max_drawdown"),
+            ("Sharpe:", "sharpe_ratio"),
+            ("Win Rate:", "win_rate")
+        ]
+        
+        for label_text, key in stats:
+            # Label
+            label = QLabel(label_text)
+            label.setStyleSheet("color: #cccccc; font-size: 8pt; padding: 2px;")
+            layout.addWidget(label)
+            
+            # Value
+            value_label = QLabel("0.00")
+            value_label.setStyleSheet("color: white; font-size: 8pt; font-weight: bold; padding: 2px;")
+            layout.addWidget(value_label)
+            
+            self.stats_labels[key] = value_label
+        
+        layout.addStretch()
+    
+    def _setup_chart(self):
+        """Setup the equity curve chart"""
+        # Configure plot widget
+        self.plot_widget.setBackground('#1e1e1e')
+        self.plot_widget.showGrid(True, True, alpha=0.3)
+        
+        # Setup axes
+        self.plot_widget.setLabel('left', 'Portfolio Value', color='white', size='10pt')
+        self.plot_widget.setLabel('bottom', 'Time (Bars)', color='white', size='10pt')
+        
+        # Create view boxes for equity and drawdown
+        self.equity_viewbox = self.plot_widget.plotItem.vb
+        self.drawdown_viewbox = pg.ViewBox()
+        
+        # Add second y-axis for drawdown
+        self.plot_widget.plotItem.scene().addItem(self.drawdown_viewbox)
+        self.plot_widget.plotItem.getAxis('right').linkToView(self.drawdown_viewbox)
+        self.plot_widget.plotItem.getAxis('right').setLabel('Drawdown %', color='red', size='9pt')
+        self.plot_widget.plotItem.getAxis('right').show()
+        
+        # Link drawdown viewbox to main viewbox for synchronized zooming
+        self.drawdown_viewbox.setXLink(self.equity_viewbox)
+        
+        # Create curve items
+        self.equity_curve = pg.PlotCurveItem(
+            pen=pg.mkPen(color='#00ff7f', width=2),  # SpringGreen
+            name='Equity'
+        )
+        self.equity_viewbox.addItem(self.equity_curve)
+        
+        self.drawdown_curve = pg.PlotCurveItem(
+            pen=pg.mkPen(color='#ff6b6b', width=1, style=Qt.DotLine),
+            brush=pg.mkBrush(color=(255, 107, 107, 50)),  # Semi-transparent red
+            fillLevel=0,
+            name='Drawdown'
+        )
+        self.drawdown_viewbox.addItem(self.drawdown_curve)
+        
+        # Trade markers
+        self.trade_scatter = pg.ScatterPlotItem(
+            size=8,
+            brush=pg.mkBrush(255, 255, 255, 180),
+            pen=pg.mkPen('white', width=1)
+        )
+        self.equity_viewbox.addItem(self.trade_scatter)
+        
+        # Click handling
+        self.plot_widget.plotItem.scene().sigMouseClicked.connect(self._on_chart_clicked)
+        
+        print("SUCCESS: Equity curve chart configured")
+    
+    def _setup_styling(self):
+        """Apply professional styling"""
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #2b2b2b;
+                color: white;
+                border: 1px solid #555555;
+            }
+        """)
+    
+    def load_equity_data(self, equity_series: np.ndarray, timestamps: np.ndarray = None) -> bool:
+        """
+        Load equity curve data
+        
+        Args:
+            equity_series: Array of portfolio values over time
+            timestamps: Optional timestamp array (uses indices if None)
+        """
+        try:
+            print(f"Loading equity curve with {len(equity_series)} data points...")
+            
+            # Store data
+            self.equity_data = np.asarray(equity_series, dtype=np.float64)
+            
+            if timestamps is not None:
+                self.timestamps = np.asarray(timestamps, dtype=np.int64)
+            else:
+                self.timestamps = np.arange(len(equity_series), dtype=np.int64)
+            
+            # Calculate drawdown
+            self._calculate_drawdown()
+            
+            # Update chart
+            self._update_equity_curve()
+            
+            # Calculate statistics
+            self._calculate_statistics()
+            
+            print(f"SUCCESS: Equity curve loaded - {len(self.equity_data)} points")
+            return True
+            
+        except Exception as e:
+            print(f"ERROR: Failed to load equity data: {e}")
+            return False
+    
+    def _calculate_drawdown(self):
+        """Calculate drawdown series from equity data"""
+        if self.equity_data is None:
+            return
+        
+        # Calculate running maximum (peak)
+        running_max = np.maximum.accumulate(self.equity_data)
+        
+        # Calculate drawdown as percentage
+        self.drawdown_data = ((self.equity_data - running_max) / running_max) * 100
+        
+        print(f"Drawdown calculated - Max: {self.drawdown_data.min():.2f}%")
+    
+    def _update_equity_curve(self):
+        """Update the equity curve visualization"""
+        if self.equity_data is None:
+            return
+        
+        try:
+            # Update equity curve
+            self.equity_curve.setData(self.timestamps, self.equity_data)
+            
+            # Update drawdown curve
+            if self.drawdown_data is not None:
+                self.drawdown_curve.setData(self.timestamps, self.drawdown_data)
+                
+                # Update drawdown viewbox range
+                self.drawdown_viewbox.setGeometry(self.equity_viewbox.sceneBoundingRect())
+                dd_min = self.drawdown_data.min()
+                dd_max = max(0, self.drawdown_data.max())
+                self.drawdown_viewbox.setYRange(dd_min * 1.1, dd_max * 1.1, padding=0)
+            
+            print("Equity curve visualization updated")
+            
+        except Exception as e:
+            print(f"ERROR: Failed to update equity curve: {e}")
+    
+    def add_trade_markers(self, trades_data: List[Dict]) -> bool:
+        """
+        Add trade entry/exit markers to equity curve
+        
+        Args:
+            trades_data: List of trade dictionaries with entry_time, exit_time, pnl
+        """
+        try:
+            if not trades_data or self.equity_data is None:
+                return False
+            
+            print(f"Adding {len(trades_data)} trade markers to equity curve...")
+            
+            marker_positions = []
+            marker_colors = []
+            marker_symbols = []
+            marker_sizes = []
+            
+            for trade in trades_data:
+                entry_time = int(trade.get('entry_time', 0))
+                exit_time = int(trade.get('exit_time', entry_time + 1))
+                pnl = float(trade.get('pnl', 0))
+                
+                # Find corresponding equity values
+                entry_idx = np.searchsorted(self.timestamps, entry_time)
+                exit_idx = np.searchsorted(self.timestamps, exit_time)
+                
+                if entry_idx < len(self.equity_data):
+                    # Entry marker
+                    marker_positions.append([entry_time, self.equity_data[entry_idx]])
+                    marker_colors.append([0.2, 0.6, 0.9, 0.8])  # Blue for entry
+                    marker_symbols.append('t1')  # Triangle up
+                    marker_sizes.append(10)
+                    
+                if exit_idx < len(self.equity_data):
+                    # Exit marker
+                    marker_positions.append([exit_time, self.equity_data[exit_idx]])
+                    if pnl > 0:
+                        marker_colors.append([0.2, 0.8, 0.2, 0.8])  # Green for profit
+                        marker_symbols.append('s')  # Square
+                    else:
+                        marker_colors.append([0.8, 0.2, 0.2, 0.8])  # Red for loss
+                        marker_symbols.append('x')  # X
+                    marker_sizes.append(8)
+            
+            if marker_positions:
+                # Update scatter plot
+                self.trade_scatter.setData(
+                    pos=marker_positions,
+                    brush=[pg.mkBrush(*color) for color in marker_colors],
+                    symbol=marker_symbols,
+                    size=marker_sizes
+                )
+                
+                print(f"SUCCESS: {len(marker_positions)} trade markers added")
+                return True
+            
+        except Exception as e:
+            print(f"ERROR: Failed to add trade markers: {e}")
+            
+        return False
+    
+    def _calculate_statistics(self):
+        """Calculate and display performance statistics"""
+        if self.equity_data is None or len(self.equity_data) < 2:
+            return
+        
+        try:
+            initial_value = self.equity_data[0]
+            final_value = self.equity_data[-1]
+            
+            # Total return
+            total_return = ((final_value - initial_value) / initial_value) * 100
+            
+            # Maximum drawdown
+            max_drawdown = self.drawdown_data.min() if self.drawdown_data is not None else 0
+            
+            # Simple Sharpe ratio approximation (assumes daily data)
+            returns = np.diff(self.equity_data) / self.equity_data[:-1]
+            sharpe_ratio = np.mean(returns) / np.std(returns) * np.sqrt(252) if np.std(returns) > 0 else 0
+            
+            # Win rate (approximate from positive return periods)
+            positive_returns = returns > 0
+            win_rate = np.mean(positive_returns) * 100 if len(returns) > 0 else 0
+            
+            # Update labels
+            self.stats_labels['total_return'].setText(f"{total_return:+.1f}%")
+            self.stats_labels['max_drawdown'].setText(f"{max_drawdown:.1f}%")
+            self.stats_labels['sharpe_ratio'].setText(f"{sharpe_ratio:.2f}")
+            self.stats_labels['win_rate'].setText(f"{win_rate:.1f}%")
+            
+            # Color coding
+            return_color = "#2E7D32" if total_return > 0 else "#C62828"
+            self.stats_labels['total_return'].setStyleSheet(f"color: {return_color}; font-size: 8pt; font-weight: bold; padding: 2px;")
+            
+            dd_color = "#C62828" if max_drawdown < -5 else "#FF9800" if max_drawdown < -2 else "#2E7D32"
+            self.stats_labels['max_drawdown'].setStyleSheet(f"color: {dd_color}; font-size: 8pt; font-weight: bold; padding: 2px;")
+            
+            print(f"Statistics calculated - Return: {total_return:+.1f}%, DD: {max_drawdown:.1f}%")
+            
+        except Exception as e:
+            print(f"ERROR: Failed to calculate statistics: {e}")
+    
+    def sync_viewport(self, start_time: int, end_time: int):
+        """
+        Synchronize viewport with main chart
+        
+        Args:
+            start_time: Start timestamp/index
+            end_time: End timestamp/index
+        """
+        try:
+            self.current_viewport = (start_time, end_time)
+            
+            # Update chart viewport
+            padding = (end_time - start_time) * 0.05  # 5% padding
+            self.plot_widget.setXRange(
+                start_time - padding,
+                end_time + padding,
+                padding=0
+            )
+            
+            # Auto-range Y axis for visible data
+            if self.equity_data is not None:
+                start_idx = np.searchsorted(self.timestamps, start_time)
+                end_idx = np.searchsorted(self.timestamps, end_time)
+                
+                if start_idx < end_idx and end_idx <= len(self.equity_data):
+                    visible_equity = self.equity_data[start_idx:end_idx]
+                    if len(visible_equity) > 0:
+                        y_min = visible_equity.min()
+                        y_max = visible_equity.max()
+                        y_padding = (y_max - y_min) * 0.1
+                        self.plot_widget.setYRange(
+                            y_min - y_padding,
+                            y_max + y_padding,
+                            padding=0
+                        )
+            
+            print(f"Equity curve viewport synced: {start_time} - {end_time}")
+            
+        except Exception as e:
+            print(f"ERROR: Failed to sync viewport: {e}")
+    
+    @pyqtSlot(int, int)
+    def navigate_to_trade(self, entry_time: int, exit_time: int):
+        """Navigate to specific trade on equity curve"""
+        try:
+            # Center view on trade
+            trade_duration = exit_time - entry_time
+            padding = max(50, trade_duration * 3)
+            
+            start_view = entry_time - padding
+            end_view = exit_time + padding
+            
+            self.sync_viewport(start_view, end_view)
+            
+            print(f"Equity curve navigated to trade: {entry_time} - {exit_time}")
+            
+        except Exception as e:
+            print(f"ERROR: Failed to navigate to trade: {e}")
+    
+    def _on_chart_clicked(self, event):
+        """Handle chart click events"""
+        try:
+            if event.button() != Qt.LeftButton:
+                return
+            
+            # Get click position in data coordinates
+            pos = event.pos()
+            mouse_point = self.equity_viewbox.mapSceneToView(pos)
+            
+            x_pos = int(mouse_point.x())
+            
+            # Find nearest timestamp
+            if self.timestamps is not None:
+                nearest_idx = np.searchsorted(self.timestamps, x_pos)
+                if 0 <= nearest_idx < len(self.timestamps):
+                    selected_time = self.timestamps[nearest_idx]
+                    self.time_selected.emit(selected_time)
+                    print(f"Equity curve clicked - selected time: {selected_time}")
+            
+        except Exception as e:
+            print(f"ERROR: Chart click handling failed: {e}")
+    
+    def reset_view(self):
+        """Reset view to show all data"""
+        if self.equity_data is not None and len(self.equity_data) > 0:
+            self.plot_widget.autoRange()
+            print("Equity curve view reset")
+    
+    def get_performance_summary(self) -> Dict[str, float]:
+        """Get performance statistics summary"""
+        if self.equity_data is None:
+            return {}
+        
+        try:
+            initial_value = self.equity_data[0]
+            final_value = self.equity_data[-1]
+            total_return = ((final_value - initial_value) / initial_value) * 100
+            max_drawdown = self.drawdown_data.min() if self.drawdown_data is not None else 0
+            
+            returns = np.diff(self.equity_data) / self.equity_data[:-1]
+            sharpe_ratio = np.mean(returns) / np.std(returns) * np.sqrt(252) if np.std(returns) > 0 else 0
+            
+            return {
+                'total_return': total_return,
+                'max_drawdown': max_drawdown,
+                'sharpe_ratio': sharpe_ratio,
+                'final_value': final_value,
+                'initial_value': initial_value
+            }
+            
+        except Exception as e:
+            print(f"ERROR: Failed to get performance summary: {e}")
+            return {}
+
+
+def create_test_equity_data(num_points: int = 1000) -> Tuple[np.ndarray, np.ndarray]:
+    """Create realistic test equity curve data"""
+    print(f"Creating test equity curve data with {num_points} points...")
+    
+    np.random.seed(42)
+    
+    # Generate realistic equity curve with drawdowns
+    initial_capital = 10000.0
+    
+    # Random walk with positive drift
+    returns = np.random.normal(0.001, 0.02, num_points)  # Daily returns
+    
+    # Add some volatility clustering and occasional drawdowns
+    volatility = np.random.exponential(0.01, num_points)
+    returns = returns * (1 + volatility)
+    
+    # Create some significant drawdowns
+    drawdown_starts = np.random.choice(num_points, size=3, replace=False)
+    for start in drawdown_starts:
+        length = np.random.randint(10, 50)
+        end = min(start + length, num_points)
+        returns[start:end] = np.random.normal(-0.005, 0.015, end-start)
+    
+    # Calculate cumulative equity
+    equity_multiplier = np.cumprod(1 + returns)
+    equity_curve = initial_capital * equity_multiplier
+    timestamps = np.arange(num_points)
+    
+    print(f"Test equity data created - Range: ${equity_curve[0]:,.0f} - ${equity_curve[-1]:,.0f}")
+    
+    return equity_curve, timestamps
+
+
+def test_equity_curve_widget():
+    """Test the equity curve widget"""
+    print("TESTING EQUITY CURVE WIDGET - STEP 3")
+    print("="*50)
+    
+    from PyQt5.QtWidgets import QApplication
+    import sys
+    
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication(sys.argv)
+    
+    try:
+        # Create test data
+        equity_data, timestamps = create_test_equity_data(2000)
+        
+        # Create widget
+        widget = EquityCurveWidget()
+        
+        # Load data
+        success = widget.load_equity_data(equity_data, timestamps)
+        if not success:
+            print("ERROR: Failed to load equity data")
+            return False
+        
+        # Add some test trades
+        test_trades = []
+        for i in range(20):
+            entry_time = np.random.randint(100, 1800)
+            exit_time = entry_time + np.random.randint(5, 100)
+            pnl = np.random.normal(50, 200)  # Random P&L
+            
+            test_trades.append({
+                'entry_time': entry_time,
+                'exit_time': exit_time,
+                'pnl': pnl
+            })
+        
+        widget.add_trade_markers(test_trades)
+        
+        # Test viewport sync
+        widget.sync_viewport(500, 1000)
+        
+        # Show widget
+        widget.setWindowTitle("Equity Curve Widget Test - Step 3")
+        widget.resize(1200, 400)
+        widget.show()
+        
+        print("SUCCESS: Equity curve widget test displayed")
+        print("Features demonstrated:")
+        print("• Equity curve with drawdown overlay")
+        print("• Trade entry/exit markers")
+        print("• Performance statistics")
+        print("• Synchronized viewport")
+        print("• Interactive navigation")
+        
+        return True
+        
+    except Exception as e:
+        print(f"ERROR: Equity curve widget test failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+if __name__ == "__main__":
+    success = test_equity_curve_widget()
+    
+    if success:
+        print("\n" + "="*50)
+        print("EQUITY CURVE WIDGET - STEP 3 SUCCESS!")
+        print("="*50)
+        print("✓ High-performance equity curve visualization")
+        print("✓ Synchronized drawdown overlay") 
+        print("✓ Trade markers with entry/exit indication")
+        print("✓ Real-time performance statistics")
+        print("✓ Interactive navigation and viewport sync")
+        print("✓ Professional trading dashboard styling")
+        print("\nREADY FOR INTEGRATION INTO STEP 3 DASHBOARD")
+    else:
+        print("\nEquity curve widget needs additional work")

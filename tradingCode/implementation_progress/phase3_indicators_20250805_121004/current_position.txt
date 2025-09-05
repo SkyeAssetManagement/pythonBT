@@ -1,0 +1,7 @@
+CURRENT POSITION INFO
+==============================
+
+Current Time:  2020-01-18 18:09:00
+Current Price: $3602.04
+Price Change:  $-397.43
+Price Change%: -9.94%

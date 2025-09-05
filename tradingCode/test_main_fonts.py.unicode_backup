@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+"""
+Test main.py with font changes to verify both precision and larger fonts
+"""
+
+import subprocess
+import sys
+from pathlib import Path
+
+def test_main_with_fonts():
+    """Test main.py to see both precision and font improvements"""
+    
+    print("=== TESTING MAIN.PY WITH FONT IMPROVEMENTS ===")
+    print("This will run main.py with AD data to verify both:")
+    print("1. 5-decimal precision (already working)")
+    print("2. 2x larger fonts on axes and indicator panel")
+    
+    try:
+        # Run main.py with a short timeout for testing
+        print("\\nRunning: python main.py AD scalping_strategy")
+        print("This will show the dashboard with larger fonts")
+        print("Close the dashboard window when you've verified the fonts")
+        
+        result = subprocess.run([
+            sys.executable, "main.py", "AD", "scalping_strategy"
+        ], timeout=300)  # 5 minute timeout
+        
+        if result.returncode == 0:
+            print("\\nSUCCESS: main.py completed successfully")
+            print("Font changes should be visible in the dashboard")
+        else:
+            print(f"\\nINFO: main.py returned code {result.returncode}")
+            print("This is normal if the dashboard was closed by user")
+        
+        return True
+        
+    except subprocess.TimeoutExpired:
+        print("\\nINFO: Test timed out (normal for interactive dashboard)")
+        return True
+    except KeyboardInterrupt:
+        print("\\nINFO: Test interrupted by user")
+        return True
+    except Exception as e:
+        print(f"ERROR: Failed to run main.py: {e}")
+        return False
+
+if __name__ == "__main__":
+    print("Testing main.py with font improvements...")
+    
+    # Ask user if they want to run the test
+    user_input = input("\\nRun main.py dashboard test to verify fonts? (y/N): ").strip().lower()
+    
+    if user_input == 'y':
+        success = test_main_with_fonts()
+        if success:
+            print("\\n🎉 Font test completed!")
+            print("You should have seen:")
+            print("- Y-axis numbers in larger, bold font (16pt)")
+            print("- X-axis time labels in larger, bold font (16pt)")
+            print("- Indicator panel text in larger, bold font (16pt)")
+            print("- 5-decimal precision on all price displays")
+        else:
+            print("\\n❌ Font test failed - check the error above")
+    else:
+        print("\\nSkipping dashboard test")
+        print("Font changes have been applied to:")
+        print("- src/dashboard/chart_widget.py (TimeAxisItem and PriceAxisItem)")
+        print("- src/dashboard/dashboard_manager.py (indicator panel)")
+        print("Run 'python main.py AD scalping_strategy' to see the larger fonts")

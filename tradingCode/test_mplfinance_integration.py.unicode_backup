@@ -1,0 +1,397 @@
+"""
+Final integration test for mplfinance dashboard
+Tests the complete integration with the main trading system
+"""
+import sys
+import time
+import numpy as np
+import pandas as pd
+from pathlib import Path
+
+# Add src to path for imports
+src_path = Path(__file__).parent / "src"
+if str(src_path) not in sys.path:
+    sys.path.insert(0, str(src_path))
+
+def test_main_integration():
+    """Test integration with main.py data loading"""
+    
+    print("=== MPLFINANCE INTEGRATION TEST ===")
+    
+    try:
+        # Test with actual main.py data flow
+        from src.data.parquet_loader import ParquetLoader
+        from src.data.parquet_converter import ParquetConverter
+        from src.backtest.vbt_engine import VectorBTEngine
+        from strategies.simpleSMA import SimpleSMAStrategy
+        
+        print("✓ Successfully imported main trading components")
+        
+        # Test data loading
+        loader = ParquetLoader()
+        
+        # Look for existing data files
+        data_dir = Path("dataRaw")
+        if data_dir.exists():
+            parquet_files = list(data_dir.glob("*.parquet"))
+            if parquet_files:
+                print(f"Found {len(parquet_files)} parquet files")
+                
+                # Load the first file for testing
+                test_file = parquet_files[0]
+                print(f"Testing with: {test_file}")
+                
+                # Load data
+                start_time = time.time()
+                data = loader.load_parquet_file(test_file)
+                load_time = time.time() - start_time
+                
+                print(f"✓ Loaded {len(data):,} bars in {load_time:.2f}s")
+                
+                # Test the viewport approach with actual data
+                return test_mplfinance_with_real_data(data)
+            else:
+                print("No parquet files found, creating synthetic data")
+                return test_mplfinance_with_synthetic_data()
+        else:
+            print("No dataRaw directory found, creating synthetic data")
+            return test_mplfinance_with_synthetic_data()
+            
+    except ImportError as e:
+        print(f"Import failed: {e}")
+        print("Testing with synthetic data only")
+        return test_mplfinance_with_synthetic_data()
+    except Exception as e:
+        print(f"Data loading failed: {e}")
+        print("Falling back to synthetic data")
+        return test_mplfinance_with_synthetic_data()
+
+def test_mplfinance_with_real_data(data):
+    """Test mplfinance with real trading data"""
+    
+    print(f"\n--- TESTING WITH REAL DATA ---")
+    print(f"Data shape: {data.shape}")
+    print(f"Columns: {list(data.columns)}")
+    
+    try:
+        # Convert to mplfinance format
+        price_data = prepare_price_data_from_df(data)
+        
+        # Test viewport rendering
+        return test_viewport_rendering(price_data, "Real Data")
+        
+    except Exception as e:
+        print(f"Real data test failed: {e}")
+        return False
+
+def test_mplfinance_with_synthetic_data():
+    """Test mplfinance with synthetic data"""
+    
+    print(f"\n--- TESTING WITH SYNTHETIC DATA ---")
+    
+    # Create large synthetic dataset for stress testing
+    n_bars = 1000000  # 1M bars
+    print(f"Creating {n_bars:,} synthetic bars...")
+    
+    timestamps = pd.date_range('2020-01-01', periods=n_bars, freq='1min')
+    base_price = 4000.0
+    
+    # Generate realistic price movement
+    price_changes = np.random.normal(0, 0.5, n_bars)
+    prices = base_price + np.cumsum(price_changes)
+    
+    # Create OHLC with realistic spreads
+    opens = prices.copy()
+    closes = prices + np.random.normal(0, 0.2, n_bars)
+    highs = np.maximum(opens, closes) + np.abs(np.random.normal(0, 1, n_bars))
+    lows = np.minimum(opens, closes) - np.abs(np.random.normal(0, 1, n_bars))
+    volumes = np.random.randint(100, 1000, n_bars)
+    
+    price_data = {
+        'datetime': timestamps,
+        'open': opens,
+        'high': highs,
+        'low': lows,
+        'close': closes,
+        'volume': volumes
+    }
+    
+    return test_viewport_rendering(price_data, "Synthetic Data")
+
+def prepare_price_data_from_df(df):
+    """Convert DataFrame to price_data dict format"""
+    
+    # Map common column names
+    column_mapping = {
+        'Open': 'open', 'OPEN': 'open', 'open': 'open',
+        'High': 'high', 'HIGH': 'high', 'high': 'high',  
+        'Low': 'low', 'LOW': 'low', 'low': 'low',
+        'Close': 'close', 'CLOSE': 'close', 'close': 'close',
+        'Volume': 'volume', 'VOLUME': 'volume', 'volume': 'volume'
+    }
+    
+    price_data = {}
+    
+    # Map columns
+    for col in df.columns:
+        if col in column_mapping:
+            price_data[column_mapping[col]] = df[col].values
+    
+    # Use index as datetime if it's a DatetimeIndex
+    if isinstance(df.index, pd.DatetimeIndex):
+        price_data['datetime'] = df.index
+    else:
+        # Create synthetic timestamps
+        price_data['datetime'] = pd.date_range('2020-01-01', periods=len(df), freq='1min')
+    
+    # Ensure we have all required columns
+    required_cols = ['open', 'high', 'low', 'close']
+    for col in required_cols:
+        if col not in price_data:
+            if 'close' in price_data:
+                # Use close price as fallback
+                price_data[col] = price_data['close']
+            else:
+                # Use first numeric column as fallback
+                numeric_col = None
+                for df_col in df.columns:
+                    if df[df_col].dtype in [np.float64, np.int64]:
+                        numeric_col = df_col
+                        break
+                
+                if numeric_col:
+                    price_data[col] = df[numeric_col].values
+                else:
+                    # Last resort - synthetic data
+                    price_data[col] = np.random.normal(100, 5, len(df))
+    
+    # Ensure volume exists
+    if 'volume' not in price_data:
+        price_data['volume'] = np.ones(len(df))
+    
+    return price_data
+
+def test_viewport_rendering(price_data, data_source):
+    """Test viewport rendering with the price data"""
+    
+    print(f"\n--- VIEWPORT RENDERING TEST ({data_source}) ---")
+    
+    try:
+        # Import the viewport manager
+        from src.dashboard.hybrid_mplfinance_dashboard import MplfinanceViewportManager
+        
+        # Convert to DataFrame
+        df = pd.DataFrame({
+            'Open': price_data['open'],
+            'High': price_data['high'],
+            'Low': price_data['low'],
+            'Close': price_data['close'],
+            'Volume': price_data['volume']
+        }, index=price_data['datetime'])
+        
+        print(f"DataFrame created: {len(df):,} bars")
+        
+        # Create viewport manager
+        viewport_manager = MplfinanceViewportManager(df)
+        
+        # Test different viewport scenarios
+        test_scenarios = [
+            (0.0, 2000, "Start position"),
+            (0.5, 2000, "Middle position"),
+            (1.0, 2000, "End position"),
+            (0.5, 5000, "Large viewport"),
+        ]
+        
+        output_dir = Path("dashboard_output") / "integration_test"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        all_success = True
+        
+        for position, size, description in test_scenarios:
+            print(f"\nTesting: {description}")
+            
+            # Jump to position
+            viewport_manager.jump_to_position(position)
+            viewport_manager.viewport_size = size
+            
+            # Render chart
+            chart_file = output_dir / f"integration_{description.replace(' ', '_')}.png"
+            
+            start_time = time.time()
+            render_time, performance = viewport_manager.render_current_viewport(
+                output_file=chart_file,
+                title_suffix=f" - Integration Test ({data_source})"
+            )
+            
+            if performance['success']:
+                metadata = performance['viewport_metadata']
+                print(f"  ✓ SUCCESS: {metadata['final_size']:,} bars in {render_time:.2f}s")
+                print(f"    Performance: {performance['bars_per_second']:,.0f} bars/s")
+                print(f"    Memory: {metadata['memory_mb']:.1f}MB")
+                if metadata['decimation_factor'] > 1:
+                    print(f"    LOD: {metadata['decimation_factor']}x decimation applied")
+            else:
+                print(f"  ✗ FAILED: {performance.get('error', 'Unknown error')}")
+                all_success = False
+        
+        return all_success
+        
+    except Exception as e:
+        print(f"Viewport rendering test failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+def test_hybrid_dashboard_integration():
+    """Test the complete hybrid dashboard"""
+    
+    print(f"\n--- HYBRID DASHBOARD INTEGRATION TEST ---")
+    
+    try:
+        from src.dashboard.hybrid_mplfinance_dashboard import HybridDashboardManager
+        from PyQt5 import QtWidgets
+        
+        # Create Qt application
+        app = QtWidgets.QApplication([])
+        
+        # Create dashboard
+        dashboard = HybridDashboardManager()
+        
+        # Test initialization
+        if dashboard.initialize_qt_app():
+            print("✓ Qt application initialized")
+        else:
+            print("✗ Qt application initialization failed")
+            return False
+        
+        # Test window creation
+        dashboard.create_main_window()
+        print("✓ Hybrid dashboard window created")
+        
+        # Test with small dataset (avoid long loading times)
+        n_bars = 10000
+        timestamps = pd.date_range('2020-01-01', periods=n_bars, freq='1min')
+        base_price = 4000.0
+        
+        prices = base_price + np.cumsum(np.random.normal(0, 0.5, n_bars))
+        
+        price_data = {
+            'datetime': timestamps,
+            'open': prices + np.random.normal(0, 0.1, n_bars),
+            'high': prices + np.abs(np.random.normal(0, 0.5, n_bars)),
+            'low': prices - np.abs(np.random.normal(0, 0.5, n_bars)),
+            'close': prices,
+            'volume': np.random.randint(100, 1000, n_bars)
+        }
+        
+        print(f"Testing dashboard with {n_bars:,} bars...")
+        
+        # Load data (synchronous for testing)
+        import asyncio
+        
+        async def test_load():
+            await dashboard.load_backtest_data(price_data)
+            return True
+        
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        try:
+            success = loop.run_until_complete(test_load())
+            if success:
+                print("✓ Data loaded into hybrid dashboard")
+            else:
+                print("✗ Failed to load data into hybrid dashboard")
+                return False
+        finally:
+            loop.close()
+        
+        # Show dashboard briefly
+        dashboard.show()
+        print("✓ Dashboard displayed successfully")
+        
+        # Clean up
+        dashboard.main_window.close()
+        app.quit()
+        
+        return True
+        
+    except Exception as e:
+        print(f"Hybrid dashboard test failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+def main():
+    """Run all integration tests"""
+    
+    print("MPLFINANCE INTEGRATION TEST SUITE")
+    print("=" * 50)
+    
+    tests = [
+        ("Data Loading Integration", test_main_integration),
+        ("Hybrid Dashboard Integration", test_hybrid_dashboard_integration),
+    ]
+    
+    results = []
+    
+    for test_name, test_func in tests:
+        print(f"\n🧪 Running: {test_name}")
+        print("-" * 40)
+        
+        try:
+            start_time = time.time()
+            success = test_func()
+            test_time = time.time() - start_time
+            
+            result = {
+                'name': test_name,
+                'success': success,
+                'time': test_time
+            }
+            results.append(result)
+            
+            if success:
+                print(f"✅ PASSED ({test_time:.2f}s)")
+            else:
+                print(f"❌ FAILED ({test_time:.2f}s)")
+                
+        except Exception as e:
+            test_time = time.time() - start_time
+            print(f"💥 ERROR: {e} ({test_time:.2f}s)")
+            
+            results.append({
+                'name': test_name,
+                'success': False,
+                'time': test_time,
+                'error': str(e)
+            })
+    
+    # Final summary
+    print(f"\n📊 TEST SUMMARY")
+    print("=" * 30)
+    
+    passed = sum(1 for r in results if r['success'])
+    total = len(results)
+    total_time = sum(r['time'] for r in results)
+    
+    print(f"Tests passed: {passed}/{total}")
+    print(f"Total time: {total_time:.2f}s")
+    
+    for result in results:
+        status = "✅ PASS" if result['success'] else "❌ FAIL"
+        print(f"  {status} {result['name']} ({result['time']:.2f}s)")
+        if 'error' in result:
+            print(f"    Error: {result['error']}")
+    
+    if passed == total:
+        print(f"\n🎉 ALL TESTS PASSED!")
+        print("mplfinance integration is ready for production use")
+        return True
+    else:
+        print(f"\n⚠️  {total - passed} TESTS FAILED")
+        print("Review failures before proceeding to production")
+        return False
+
+if __name__ == "__main__":
+    success = main()

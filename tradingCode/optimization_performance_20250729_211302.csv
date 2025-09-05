@@ -1,0 +1,2 @@
+parallel_process,parallel_thread
+"{'time': 1192.9306700229645, 'combinations': 9540, 'rate': 7.997111852121591, 'mode': 'parallel_process'}","{'time': 9271.103886604309, 'combinations': 9540, 'rate': 1.0290036781687038, 'mode': 'parallel_thread'}"

@@ -1,0 +1,332 @@
+# vispy_native_backend_test.py
+# Test VisPy with native backend and comprehensive debugging
+
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent / "src"))
+
+import os
+import time
+
+# Set Qt environment variables BEFORE importing
+os.environ['QT_OPENGL'] = 'desktop'
+
+# Qt thread affinity fix - MUST be before Qt imports
+from PyQt5.QtCore import QCoreApplication, Qt
+QCoreApplication.setAttribute(Qt.AA_DontCheckOpenGLContextThreadAffinity, True)
+QCoreApplication.setAttribute(Qt.AA_UseDesktopOpenGL, True)
+
+print("VISPY NATIVE BACKEND TEST - COMPREHENSIVE DEBUGGING")
+print("="*60)
+
+def test_vispy_backends():
+    """Test different VisPy backends to find working one"""
+    import vispy
+    from vispy import app
+    
+    print(f"VisPy version: {vispy.__version__}")
+    print("Available backends:")
+    
+    backends_to_test = ['PyQt5', 'PyQt6', 'PySide2', 'PySide6', 'Glfw']
+    working_backend = None
+    
+    for backend_name in backends_to_test:
+        try:
+            print(f"  Testing {backend_name}...")
+            backend = app.use_app(backend_name)
+            print(f"    SUCCESS: {backend_name} available")
+            
+            # Test canvas creation
+            canvas = app.Canvas(title=f'Test {backend_name}', size=(400, 300), show=False)
+            print(f"    SUCCESS: Canvas created with {backend_name}")
+            
+            if working_backend is None:
+                working_backend = backend_name
+                
+        except Exception as e:
+            print(f"    FAILED: {backend_name} - {e}")
+    
+    return working_backend
+
+def test_minimal_vispy_render():
+    """Test minimal VisPy rendering with debugging"""
+    from vispy import app, gloo
+    import numpy as np
+    
+    print("\nTesting minimal VisPy rendering...")
+    
+    try:
+        # Use best available backend
+        working_backend = test_vispy_backends()
+        if not working_backend:
+            print("ERROR: No working backend found")
+            return False
+        
+        print(f"\nUsing backend: {working_backend}")
+        backend = app.use_app(working_backend)
+        
+        # Create canvas with debugging
+        print("Creating canvas...")
+        canvas = app.Canvas(
+            title='VisPy Step 1 Test',
+            size=(800, 600),
+            show=False
+        )
+        print("SUCCESS: Canvas created")
+        
+        # Test shader compilation
+        print("Testing shader compilation...")
+        vertex_shader = """
+        #version 120
+        attribute vec2 a_position;
+        void main() {
+            gl_Position = vec4(a_position, 0.0, 1.0);
+        }
+        """
+        
+        fragment_shader = """
+        #version 120
+        void main() {
+            gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+        }
+        """
+        
+        program = gloo.Program(vertex_shader, fragment_shader)
+        print("SUCCESS: Shaders compiled")
+        
+        # Test simple geometry
+        vertices = np.array([[-0.5, -0.5], [0.5, -0.5], [0.0, 0.5]], dtype=np.float32)
+        program['a_position'] = gloo.VertexBuffer(vertices)
+        print("SUCCESS: Geometry uploaded")
+        
+        # Test events
+        frame_count = 0
+        test_complete = False
+        
+        @canvas.connect
+        def on_draw(event):
+            nonlocal frame_count, test_complete
+            gloo.clear(color=(0.1, 0.1, 0.1, 1.0))
+            program.draw('triangles')
+            frame_count += 1
+            
+            # Auto-exit after a few frames
+            if frame_count >= 3:
+                print(f"SUCCESS: Rendered {frame_count} frames")
+                test_complete = True
+                canvas.close()
+                app.quit()
+        
+        @canvas.connect
+        def on_key_press(event):
+            if event.key in ['q', 'Q']:
+                print("Manual quit")
+                canvas.close()
+                app.quit()
+        
+        print("SUCCESS: Events connected")
+        
+        # Show canvas with timeout
+        print("Showing canvas...")
+        canvas.show()
+        
+        # Run with timeout
+        import threading
+        def timeout_quit():
+            time.sleep(5)
+            if not test_complete:
+                print("TIMEOUT: Auto-closing after 5 seconds")
+                try:
+                    canvas.close()
+                    app.quit()
+                except:
+                    pass
+        
+        timeout_thread = threading.Thread(target=timeout_quit, daemon=True)
+        timeout_thread.start()
+        
+        # Run event loop
+        print("Running event loop...")
+        app.run()
+        
+        print(f"Event loop completed - rendered {frame_count} frames")
+        return frame_count > 0
+        
+    except Exception as e:
+        print(f"ERROR: Minimal render test failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+def create_simple_candlestick_test():
+    """Create simple candlestick rendering test"""
+    from vispy import app, gloo
+    from vispy.util.transforms import ortho
+    import numpy as np
+    
+    print("\nTesting candlestick rendering...")
+    
+    try:
+        # Initialize backend
+        backend = app.use_app('PyQt5')
+        canvas = app.Canvas(
+            title='Candlestick Test',
+            size=(1200, 800),
+            show=False
+        )
+        
+        # Simple candlestick shader
+        vertex_shader = """
+        #version 120
+        attribute vec2 a_position;
+        attribute vec3 a_color;
+        uniform mat4 u_projection;
+        varying vec3 v_color;
+        
+        void main() {
+            gl_Position = u_projection * vec4(a_position, 0.0, 1.0);
+            v_color = a_color;
+        }
+        """
+        
+        fragment_shader = """
+        #version 120
+        varying vec3 v_color;
+        void main() {
+            gl_FragColor = vec4(v_color, 0.8);
+        }
+        """
+        
+        program = gloo.Program(vertex_shader, fragment_shader)
+        
+        # Generate simple candlestick data
+        num_candles = 100
+        x_positions = np.linspace(0, 99, num_candles)
+        
+        # Simple price data
+        np.random.seed(42)
+        opens = 1.2 + np.cumsum(np.random.normal(0, 0.001, num_candles))
+        closes = opens + np.random.normal(0, 0.001, num_candles)
+        
+        # Generate vertices for rectangles (candlestick bodies)
+        vertices = []
+        colors = []
+        
+        candle_width = 0.7
+        
+        for i in range(num_candles):
+            x = x_positions[i]
+            o, c = opens[i], closes[i]
+            
+            bottom = min(o, c)
+            top = max(o, c)
+            
+            # Rectangle vertices (2 triangles)
+            x1, x2 = x - candle_width/2, x + candle_width/2
+            y1, y2 = bottom, top
+            
+            rect_verts = [
+                [x1, y1], [x2, y1], [x2, y2],
+                [x1, y1], [x2, y2], [x1, y2]
+            ]
+            vertices.extend(rect_verts)
+            
+            # Color based on direction
+            color = [0.0, 0.8, 0.2] if c >= o else [0.8, 0.2, 0.0]
+            colors.extend([color] * 6)
+        
+        # Upload to GPU
+        vertices = np.array(vertices, dtype=np.float32)
+        colors = np.array(colors, dtype=np.float32)
+        
+        program['a_position'] = gloo.VertexBuffer(vertices)
+        program['a_color'] = gloo.VertexBuffer(colors)
+        
+        # Set projection
+        y_min, y_max = opens.min(), opens.max()
+        padding = (y_max - y_min) * 0.1
+        projection = ortho(-5, 105, y_min - padding, y_max + padding, -1, 1)
+        program['u_projection'] = projection
+        
+        # Test rendering
+        frames_rendered = 0
+        
+        @canvas.connect
+        def on_draw(event):
+            nonlocal frames_rendered
+            gloo.clear(color=(0.05, 0.05, 0.05, 1.0))
+            program.draw('triangles')
+            frames_rendered += 1
+            
+            if frames_rendered >= 5:
+                print(f"SUCCESS: Candlestick test rendered {frames_rendered} frames")
+                canvas.close()
+                app.quit()
+        
+        @canvas.connect
+        def on_key_press(event):
+            if event.key in ['q', 'Q']:
+                canvas.close()
+                app.quit()
+        
+        # Auto-exit timer
+        def auto_exit():
+            time.sleep(3)
+            if frames_rendered < 5:
+                print("Auto-exit timeout")
+                try:
+                    canvas.close()
+                    app.quit()
+                except:
+                    pass
+        
+        import threading
+        threading.Thread(target=auto_exit, daemon=True).start()
+        
+        print("Showing candlestick test...")
+        canvas.show()
+        app.run()
+        
+        print(f"Candlestick test complete: {frames_rendered} frames")
+        return frames_rendered > 0
+        
+    except Exception as e:
+        print(f"ERROR: Candlestick test failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+if __name__ == "__main__":
+    print("Starting comprehensive VisPy debugging...")
+    
+    # Test 1: Backend availability
+    working_backend = test_vispy_backends()
+    if not working_backend:
+        print("FAILED: No working VisPy backend found")
+        sys.exit(1)
+    
+    # Test 2: Minimal rendering
+    print("\n" + "="*60)
+    minimal_success = test_minimal_vispy_render()
+    
+    if minimal_success:
+        print("SUCCESS: Minimal VisPy rendering working")
+        
+        # Test 3: Candlestick rendering
+        print("\n" + "="*60)
+        candlestick_success = create_simple_candlestick_test()
+        
+        if candlestick_success:
+            print("\n" + "="*60)
+            print("FINAL RESULT: SUCCESS!")
+            print("="*60)
+            print("✓ VisPy backends working")
+            print("✓ Basic rendering working")
+            print("✓ Candlestick rendering working")
+            print("✓ OpenGL context issues resolved")
+            print("\nVisPy Step 1 is ready for full implementation!")
+        else:
+            print("FAILED: Candlestick rendering test")
+    else:
+        print("FAILED: Minimal VisPy rendering test")
+        print("OpenGL context issues not resolved")

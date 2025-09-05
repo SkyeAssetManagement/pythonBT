@@ -1,0 +1,193 @@
+#!/usr/bin/env python3
+"""
+FINAL COMPREHENSIVE SOLUTION
+Combine all successful elements to create a complete working dashboard
+with 5-decimal precision, visible candlesticks, and positioned trade arrows
+"""
+
+import sys
+import numpy as np
+import pandas as pd
+from pathlib import Path
+import asyncio
+import time
+
+# Add src to path
+src_path = Path(__file__).parent / "src"
+if str(src_path) not in sys.path:
+    sys.path.insert(0, str(src_path))
+
+from PyQt5 import QtWidgets
+from src.dashboard.dashboard_manager import DashboardManager
+
+async def create_final_working_dashboard():
+    """Create the complete working dashboard with all issues resolved"""
+    
+    print("=== FINAL COMPREHENSIVE SOLUTION ===")
+    
+    # Use proven successful chart setup from Step 3
+    n_bars = 15  # Smaller dataset for stability
+    
+    # Create realistic forex price movement with 5 decimal places
+    close_prices = np.array([
+        0.65432, 0.65445, 0.65401, 0.65467, 0.65423,
+        0.65456, 0.65434, 0.65478, 0.65412, 0.65398,
+        0.65441, 0.65459, 0.65427, 0.65463, 0.65439
+    ])
+    
+    open_prices = np.roll(close_prices, 1)
+    open_prices[0] = 0.65430
+    
+    # Large spreads for clear visibility
+    spread = 0.00050
+    high_prices = close_prices + spread
+    low_prices = close_prices - spread
+    
+    volume = np.full(n_bars, 10000.0)
+    
+    # Simple, stable timestamp generation
+    base_time = 1609459200  # 2021-01-01 00:00:00 UTC
+    timestamps = np.array([
+        (base_time + i * 60) * 1_000_000_000
+        for i in range(n_bars)
+    ], dtype=np.int64)
+    
+    print(f"Created {n_bars} bars of forex data")
+    print(f"Price range: {np.min(low_prices):.5f} - {np.max(high_prices):.5f}")
+    print(f"Sample close prices: {close_prices[:5]}")
+    
+    price_data = {
+        'timestamps': timestamps,
+        'open': open_prices,
+        'high': high_prices,
+        'low': low_prices,
+        'close': close_prices,
+        'volume': volume
+    }
+    
+    # Create trades with PERFECT timestamp matching
+    trades_data = [
+        {
+            'trade_id': 'BUY_FINAL',
+            'timestamp': timestamps[5],   # Bar 5
+            'side': 'buy',
+            'price': 0.65456,           # Exact 5 decimals
+            'quantity': 100000,
+            'pnl': None
+        },
+        {
+            'trade_id': 'SELL_FINAL',
+            'timestamp': timestamps[10],  # Bar 10
+            'side': 'sell',
+            'price': 0.65441,           # Exact 5 decimals
+            'quantity': 100000,
+            'pnl': -150.00              # Loss
+        }
+    ]
+    
+    print("\\n=== TRADE POSITIONING ANALYSIS ===")
+    for i, trade in enumerate(trades_data):
+        idx = 5 if i == 0 else 10
+        candle_high = high_prices[idx]
+        candle_low = low_prices[idx]
+        candle_range = candle_high - candle_low
+        
+        print(f"Trade {i+1} ({trade['side']}):")
+        print(f"  Bar: {idx}, Price: {trade['price']:.5f}")
+        print(f"  Candle: H={candle_high:.5f}, L={candle_low:.5f}")
+        
+        if trade['side'] == 'buy':
+            expected_y = candle_low - (candle_range * 0.02)
+            print(f"  BUY arrow expected at: {expected_y:.5f} (BELOW {candle_low:.5f})")
+        else:
+            expected_y = candle_high + (candle_range * 0.02)
+            print(f"  SELL arrow expected at: {expected_y:.5f} (ABOVE {candle_high:.5f})")
+    
+    trade_df = pd.DataFrame(trades_data)
+    portfolio_data = {'equity_curve': np.linspace(10000, 10150, n_bars)}
+    
+    # Initialize dashboard
+    dashboard = DashboardManager()
+    
+    if not dashboard.initialize_qt_app():
+        print("ERROR: Failed to initialize Qt")
+        return None
+    
+    dashboard.create_main_window()
+    
+    print("\\nLoading data...")
+    await dashboard.load_backtest_data(price_data, trade_df, portfolio_data)
+    
+    print("\\nForcing 5-decimal precision...")
+    dashboard.force_precision(5)
+    
+    print(f"Dashboard precision: {dashboard.price_precision}")
+    if hasattr(dashboard.main_chart, 'left_price_axis'):
+        print(f"Left axis precision: {dashboard.main_chart.left_price_axis.precision}")
+    if hasattr(dashboard.main_chart, 'right_price_axis'):
+        print(f"Right axis precision: {dashboard.main_chart.right_price_axis.precision}")
+    
+    # Show dashboard
+    dashboard.show()
+    
+    # Enhanced rendering process
+    print("\\nEnhanced rendering...")
+    for i in range(10):
+        dashboard.app.processEvents()
+        time.sleep(0.2)
+    
+    # Set optimal chart range
+    if hasattr(dashboard, 'main_chart'):
+        chart = dashboard.main_chart
+        
+        y_min = float(np.min(low_prices))
+        y_max = float(np.max(high_prices))
+        y_padding = (y_max - y_min) * 0.05
+        
+        print(f"Setting chart range: Y=[{y_min - y_padding:.5f}, {y_max + y_padding:.5f}]")
+        chart.setYRange(y_min - y_padding, y_max + y_padding)
+        chart.setXRange(0, n_bars - 1)
+        
+        # Force update multiple times
+        for i in range(3):
+            chart.update()
+            dashboard.app.processEvents()
+            time.sleep(0.5)
+    
+    # Verify trade arrows
+    print("\\n=== FINAL VERIFICATION ===")
+    if hasattr(dashboard.main_chart, 'trade_markers'):
+        markers = dashboard.main_chart.trade_markers
+        print(f"Trade markers: {list(markers.keys())}")
+    
+    # Take final screenshot
+    screenshot_path = Path(__file__).parent / "FINAL_SOLUTION.png"
+    if dashboard.main_window:
+        pixmap = dashboard.main_window.grab()
+        pixmap.save(str(screenshot_path))
+        print(f"\\nFINAL SCREENSHOT SAVED: {screenshot_path}")
+    
+    print(f"\\n{'='*80}")
+    print(f"FINAL VERIFICATION CHECKLIST:")
+    print(f"1. Y-axes show 5-decimal precision (0.65400, 0.65450, etc.)")
+    print(f"2. Candlesticks are visible and properly scaled")
+    print(f"3. Data window shows 'Precision set to 5 decimal places'")
+    print(f"4. Trade list shows exact 5-decimal prices")
+    print(f"5. Buy arrows positioned BELOW candle lows")
+    print(f"6. Sell arrows positioned ABOVE candle highs")
+    print(f"{'='*80}")
+    
+    return dashboard
+
+if __name__ == "__main__":
+    dashboard = asyncio.run(create_final_working_dashboard())
+    
+    if dashboard and dashboard.app:
+        print("\\n🎉 FINAL SOLUTION COMPLETE! 🎉")
+        print("Check FINAL_SOLUTION.png for verification")
+        print("Press Ctrl+C to exit")
+        try:
+            dashboard.app.exec_()
+        except KeyboardInterrupt:
+            print("\\nExiting...")
+            dashboard.app.quit()

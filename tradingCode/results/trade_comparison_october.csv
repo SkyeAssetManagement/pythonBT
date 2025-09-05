@@ -1,0 +1,3 @@
+Trade,Our_Entry_Price,AB_Entry_Price,Entry_Price_Diff,Our_Exit_Price,AB_Exit_Price,Exit_Price_Diff,Our_Entry_Time,AB_Entry_Time,Our_Exit_Time,AB_Exit_Time,Our_PnL_$,Our_PnL_%,AB_PnL_%,PnL_Match_Diff,Our_Direction,AB_Direction
+72,0.6643,0.6643,0.0,0.66375,0.66375,0.0,2024-10-24 16:20:00,2024-10-24 16:20:00,2024-10-24 19:40:00,2024-10-24 19:45:00,-0.0008279391841036,-0.08279391841035999,-0.08,0.0027939184103599884,Long,Long
+73,0.66375,0.66375,0.0,0.66375,0.66375,0.0,2024-10-24 19:40:00,2024-10-24 19:45:00,2024-10-25 05:25:00,2024-10-25 05:25:00,0.0,0.0,-0.0,0.0,Short,Short

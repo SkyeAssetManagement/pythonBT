@@ -1,0 +1,3 @@
+Exit Trade Id,Column,Size,Entry Order Id,Entry Index,Avg Entry Price,Entry Fees,Exit Order Id,Exit Index,Avg Exit Price,Exit Fees,PnL,Return,Direction,Status,Position Id
+0,0,1.996007984031936,0,20,100.2,0.0,1,100,101.0,0.0,1.5968063872255414,0.007984031936127707,Long,Closed,0
+1,0,1.9704433497536946,2,150,101.5,0.0,3,168,101.68,0.0,0.3546798029556726,0.001773399014778363,Long,Closed,1

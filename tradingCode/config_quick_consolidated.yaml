@@ -1,0 +1,29 @@
+
+data:
+  amibroker_path: "dummy"
+  data_frequency: "5T"
+backtest:
+  initial_cash: 100000
+  position_size: 1000
+  position_size_type: "value"
+  execution_price: "close"
+  signal_lag: 0
+  fees: 0.0
+  fixed_fees: 0.0
+  slippage: 0.0
+  direction: "long"
+  min_size: 0.0000000001
+  call_seq: "auto"
+  freq: "5T"
+  phased_trading_enabled: true
+  phased_entry_bars: 5
+  phased_exit_bars: 3
+  phased_entry_distribution: "linear"
+  phased_exit_distribution: "exponential"
+  phased_entry_price_method: "limit"
+  phased_exit_price_method: "limit"
+  consolidate_phased_trades: true
+output:
+  results_dir: "results_quick"
+  trade_list_filename: "trades.csv"
+  equity_curve_filename: "equity.csv"

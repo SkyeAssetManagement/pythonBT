@@ -1,0 +1,628 @@
+import numpy as np
+import yaml
+import argparse
+import time
+import warnings
+import importlib
+import inspect
+import asyncio
+import threading
+from pathlib import Path
+from typing import Dict, Any, Optional
+import pandas as pd
+
+warnings.filterwarnings('ignore')
+
+# Import CLI controls for dashboard automation
+try:
+    import dashboard_cli_controller
+    print("Dashboard CLI controls enabled")
+except ImportError:
+    print("Dashboard CLI controls not available")
+
+from src.data.parquet_loader import ParquetLoader
+from src.data.parquet_converter import ParquetConverter
+from src.data.array_validator import ArrayValidator
+from src.backtest.vbt_engine import VectorBTEngine
+from strategies.base_strategy import BaseStrategy
+import numpy as np  # Required for optimized decimation
+
+# High-Performance Step 6 Ultimate Dashboard Integration
+try:
+    import sys
+    import os
+    from pathlib import Path
+    
+    # Import Step 6 Ultimate Dashboard
+    sys.path.insert(0, str(Path(__file__).parent))
+    from step6_complete_final import FinalTradingDashboard, create_ultimate_test_data
+    from PyQt5.QtWidgets import QApplication
+    
+    ULTIMATE_DASHBOARD_AVAILABLE = True
+    print(f"SUCCESS: Step 6 Ultimate Professional Dashboard available")
+except ImportError as e:
+    print(f"WARNING: Ultimate dashboard not available: {e}")
+    ULTIMATE_DASHBOARD_AVAILABLE = False
+
+
+def load_strategy(strategy_name: str) -> BaseStrategy:
+    """
+    Dynamically load a strategy from the strategies folder.
+    Supports both module names and specific class names.
+    
+    Args:
+        strategy_name: Name of the strategy file or specific class name
+        
+    Returns:
+        Strategy instance
+    """
+    try:
+        # Handle special case: time_window_strategy_vectorized_single (legacy support)
+        if strategy_name == 'time_window_strategy_vectorized_single':
+            # Redirect to main strategy - this will use --useDefaults if specified
+            strategy_name = 'time_window_strategy_vectorized'
+        
+        # Standard module import
+        module = importlib.import_module(f'strategies.{strategy_name}')
+        
+        # Find strategy classes that inherit from BaseStrategy
+        strategy_classes = []
+        for name, obj in inspect.getmembers(module):
+            if (inspect.isclass(obj) and 
+                issubclass(obj, BaseStrategy) and 
+                obj != BaseStrategy):
+                strategy_classes.append((name, obj))
+        
+        if not strategy_classes:
+            raise ValueError(f"No strategy classes found in {strategy_name}")
+        
+        # Prefer single strategy over parameter sweep
+        strategy_class = None
+        for name, cls in strategy_classes:
+            if 'Single' in name:  # Prefer Single classes
+                strategy_class = cls
+                break
+            elif 'Strategy' in name and 'Sweep' not in name:
+                strategy_class = cls
+        
+        # Fall back to first class if no specific strategy found
+        if strategy_class is None:
+            strategy_class = strategy_classes[0][1]
+            
+        return strategy_class()
+        
+    except ImportError as e:
+        raise ImportError(f"Could not import strategy '{strategy_name}': {e}")
+
+
+
+
+# All dashboard functions removed - will be rebuilt with VisPy implementation
+
+def main(symbol: str, strategy_name: str, config_path: str = "config.yaml", 
+         start_date: str = None, end_date: str = None, 
+         launch_viz: bool = True, use_defaults: bool = False, 
+         intraday_performance: bool = False, use_plotly: bool = False):
+    """
+    Main execution function for the modular trading system.
+    
+    Args:
+        symbol: Symbol to backtest
+        strategy_name: Name of strategy file to load
+        config_path: Path to configuration file
+        start_date: Start date for backtesting (YYYY-MM-DD format)
+        end_date: End date for backtesting (YYYY-MM-DD format)
+        launch_viz: Whether to launch the visualization dashboard
+        use_defaults: Use only default parameters instead of optimization
+        intraday_performance: Calculate performance using intraday data (default: False, uses end-of-day)
+    """
+    print(f"Modular AmiBroker Trading System")
+    print(f"Symbol: {symbol}")
+    print(f"Strategy: {strategy_name}")
+    print("=" * 60)
+    
+    # Load configuration
+    with open(config_path, 'r') as f:
+        config = yaml.safe_load(f)
+    
+    # Step 1: Load strategy
+    print(f"\n1. Loading strategy: {strategy_name}")
+    try:
+        strategy = load_strategy(strategy_name)
+        print(f"   SUCCESS: Loaded strategy: {strategy.name}")
+        
+        # Get parameter combinations
+        # Get parameter combinations based on use_defaults flag
+        param_combinations = strategy.get_parameter_combinations(use_defaults_only=use_defaults)
+        print(f"   SUCCESS: Parameter combinations: {len(param_combinations)}")
+        
+    except Exception as e:
+        print(f"   ERROR: Error loading strategy: {e}")
+        return
+    
+    # Step 2: Load data (parquet-only pipeline: ParquetConverter -> ParquetLoader)
+    print(f"\n2. Loading data...")
+    start_time = time.time()
+    
+    data = None
+    
+    # Try optimized Parquet data first (fastest), auto-converting from CSV if needed
+    try:
+        parquet_converter = ParquetConverter()
+        # Get frequency from config, default to 1m
+        frequency = config.get('data', {}).get('data_frequency', '1T')
+        freq_str = frequency.replace('T', 'm')  # Convert 1T to 1m, 5T to 5m
+        
+        # Load or convert data (will use parquet if available, convert CSV if needed)
+        # Always load full dataset first for optimal parquet performance
+        # Default to diffAdjusted for all symbols, especially AD
+        adjustment_type = "diffAdjusted"
+        data = parquet_converter.load_or_convert(symbol, freq_str, adjustment_type)
+        
+        if data:
+            # Apply date filtering if specified - filter after loading full dataset
+            if start_date or end_date:
+                data = parquet_converter.filter_data_by_date(data, start_date, end_date)
+            
+            load_time = time.time() - start_time
+            print(f"   SUCCESS: Loaded {len(data['close'])} bars from Parquet ({freq_str}) in {load_time:.2f} seconds")
+    except Exception as e:
+        print(f"   INFO: Parquet conversion failed: {e}")
+    
+    # Fallback to legacy parquet loader if new parquet system fails
+    if data is None:
+        try:
+            parquet_root = Path(__file__).parent.parent / "parquet_data"
+            if parquet_root.exists():
+                parquet_loader = ParquetLoader(str(parquet_root))
+                data = parquet_loader.load_symbol_data(symbol)
+                if data:
+                    load_time = time.time() - start_time
+                    print(f"   SUCCESS: Loaded {len(data['close'])} bars from Legacy Parquet in {load_time:.2f} seconds")
+        except Exception as e:
+            print(f"   INFO: Legacy Parquet loading failed: {e}")
+    
+    # Require data to be found - no fallbacks
+    if data is None:
+        print(f"   ERROR: No data found for symbol '{symbol}' with frequency '{freq_str}' and adjustment '{adjustment_type}'")
+        print(f"   INFO: Expected parquet file or CSV file for conversion")
+        print(f"   INFO: Check that data files exist in the correct directory structure")
+        return
+    
+    # Step 3: Validate data
+    print(f"\n3. Validating data quality...")
+    validator = ArrayValidator()
+    validation_results = validator.validate_data_quality(data)
+    
+    valid_count = np.sum(~validation_results['total_issues'])
+    print(f"   SUCCESS: Valid bars: {valid_count}/{len(data['close'])} ({valid_count/len(data['close'])*100:.1f}%)")
+    
+    # Step 4: Run strategy backtest
+    print(f"\n4. Running strategy backtest...")
+    start_time = time.time()
+    
+    # Run vectorized backtest using strategy
+    # Pass use_defaults flag to strategy if supported
+    if 'run_vectorized_backtest' in dir(strategy):
+        # Check if strategy's run_vectorized_backtest method accepts use_defaults_only parameter
+        backtest_signature = inspect.signature(strategy.run_vectorized_backtest)
+        if 'use_defaults_only' in backtest_signature.parameters:
+            pf = strategy.run_vectorized_backtest(data, config['backtest'], use_defaults_only=use_defaults)
+        else:
+            pf = strategy.run_vectorized_backtest(data, config['backtest'])
+    else:
+        pf = strategy.run_vectorized_backtest(data, config['backtest'])
+    
+    backtest_time = time.time() - start_time
+    n_combos = len(param_combinations)
+    print(f"   SUCCESS: Backtested {n_combos} parameter combinations in {backtest_time:.2f} seconds")
+    if backtest_time > 0:
+        print(f"   SUCCESS: Speed: {n_combos/backtest_time:.1f} backtests/second")
+    
+    # Step 5: Analyze results
+    print(f"\n5. Analyzing results...")
+    
+    # Initialize VectorBT engine for additional analysis
+    engine = VectorBTEngine(config_path)
+    
+    # Calculate performance metrics for all combinations
+    total_return = pf.total_return
+    
+    # Check if we have multiple parameter combinations vs multiple columns
+    n_combinations = len(param_combinations)
+    
+    if n_combinations > 1:
+        # Multiple parameter combinations - find the best one
+        # Handle gradual entry/exit where each combination has 5 columns
+        returns = pf.total_return.values if hasattr(pf.total_return, 'values') else pf.total_return
+        sharpes = pf.sharpe_ratio.values if hasattr(pf.sharpe_ratio, 'values') else pf.sharpe_ratio
+        
+        # Check if we have gradual entry/exit (more columns than combinations)
+        n_columns = len(returns) if hasattr(returns, '__len__') else 1
+        
+        if n_columns > n_combinations:
+            # Gradual entry/exit: group columns by combination and sum returns
+            n_positions_per_combo = n_columns // n_combinations  # Should be 5
+            
+            # Reshape returns to group by combination
+            combo_returns = []
+            combo_sharpes = []
+            
+            for combo_idx in range(n_combinations):
+                start_col = combo_idx * n_positions_per_combo
+                end_col = start_col + n_positions_per_combo
+                
+                # Sum returns across fractional positions for this combination
+                combo_return = np.sum(returns[start_col:end_col])
+                combo_sharpe = np.mean(sharpes[start_col:end_col])
+                
+                combo_returns.append(combo_return)
+                combo_sharpes.append(combo_sharpe)
+            
+            # Find best combination
+            best_idx = np.argmax(combo_returns)
+            best_params = param_combinations[best_idx]
+            best_return = combo_returns[best_idx]
+            best_sharpe = combo_sharpes[best_idx]
+        else:
+            # Regular single-entry optimization
+            best_idx = np.argmax(returns)
+            best_params = param_combinations[best_idx]
+            best_return = returns[best_idx]
+            best_sharpe = sharpes[best_idx]
+    else:
+        # Single parameter combination (like TimeWindowVectorizedSingle)
+        # Portfolio may have multiple columns (fractional positions) but single strategy
+        best_params = param_combinations[0]
+        
+        # Handle multi-column portfolio (gradual entry/exit with fractional positions)
+        if hasattr(total_return, '__len__') and len(total_return) > 1:
+            # Sum returns across all fractional positions for total strategy performance
+            best_return = np.sum(total_return)
+            sharpe_values = pf.sharpe_ratio.values if hasattr(pf.sharpe_ratio, 'values') else pf.sharpe_ratio
+            best_sharpe = np.mean(sharpe_values) if hasattr(sharpe_values, '__len__') else sharpe_values
+        else:
+            # Single return value
+            best_return = total_return.iloc[0] if hasattr(total_return, 'iloc') else total_return
+            best_sharpe = pf.sharpe_ratio.iloc[0] if hasattr(pf.sharpe_ratio, 'iloc') else pf.sharpe_ratio
+        
+    # Display results for the best (or only) parameter combination
+    print(f"   SUCCESS: Best combination:")
+    for key, value in best_params.items():
+        print(f"     - {key}: {value}")
+    print(f"   SUCCESS: Total Return: {best_return*100:.2f}%")
+    print(f"   SUCCESS: Sharpe Ratio: {best_sharpe:.2f}")
+    
+    # Get equity curve and timestamps for detailed metrics (always needed for UPI)
+    # Handle multi-column portfolio by summing equity curves
+    if hasattr(pf.value, 'values') and len(pf.value.shape) > 1 and pf.value.shape[1] > 1:
+        # Multi-column portfolio - sum across columns for total equity curve
+        equity_curve = np.sum(pf.value.values, axis=1)
+    else:
+        equity_curve = pf.value.values if hasattr(pf.value, 'values') else pf.value
+    
+    timestamps = data['datetime']
+    
+    # Calculate detailed performance metrics
+    # Use daily performance calculations by default for speed (vectorBT Pro feature)
+    if not intraday_performance:
+        print(f"   INFO: Using end-of-day performance calculations (default for speed)")
+        print(f"   INFO: Original data: {len(equity_curve)} bars")
+        
+        # Convert portfolio to daily for performance calculations
+        try:
+            # For equity curve, UPI, compound return, drawdown: use daily resampling
+            daily_pf = pf.resample('1D')  # vectorBT Pro daily resampling
+            
+            # Get daily equity curve
+            if hasattr(daily_pf.value, 'values') and len(daily_pf.value.shape) > 1 and daily_pf.value.shape[1] > 1:
+                daily_equity_curve = np.sum(daily_pf.value.values, axis=1)
+            else:
+                daily_equity_curve = daily_pf.value.values if hasattr(daily_pf.value, 'values') else daily_pf.value
+            
+            # Get daily timestamps  
+            daily_timestamps = daily_pf.wrapper.index.values
+            
+            print(f"   INFO: Daily resampled data: {len(daily_equity_curve)} bars (speed improvement: {len(equity_curve)/len(daily_equity_curve):.1f}x)")
+            
+            # Verify daily data is suitable for UPI calculation  
+            UPI_LIMIT = 500000
+            if len(daily_equity_curve) > UPI_LIMIT:
+                print(f"   WARNING: Even daily data ({len(daily_equity_curve)} bars) exceeds UPI limit ({UPI_LIMIT:,})")
+                print(f"   INFO: UPI calculation will be skipped for this dataset size")
+            else:
+                print(f"   INFO: Daily data ({len(daily_equity_curve)} bars) is under UPI limit - UPI calculation should work")
+            
+            # Calculate metrics using daily data
+            metrics = engine.calculate_performance_metrics(daily_pf, daily_equity_curve, daily_timestamps)
+            
+        except Exception as e:
+            print(f"   ERROR: Daily resampling failed ({e})")
+            print(f"   WARNING: Falling back to intraday data ({len(equity_curve)} bars)")
+            print(f"   WARNING: UPI calculation will likely be skipped due to dataset size")
+            metrics = engine.calculate_performance_metrics(pf, equity_curve, timestamps)
+    else:
+        print(f"   INFO: Using intraday performance calculations (--intraday flag specified)")
+        metrics = engine.calculate_performance_metrics(pf, equity_curve, timestamps)
+    
+    # Extract scalar values from numpy arrays if needed
+    def extract_scalar(value):
+        """Extract scalar value from numpy array or return as-is"""
+        if hasattr(value, '__len__') and not isinstance(value, str):
+            if len(value) == 1:
+                return value[0]
+            elif len(value) > 1:
+                return value.mean() if hasattr(value, 'mean') else np.mean(value)
+        return value
+    
+    max_drawdown = extract_scalar(metrics['max_drawdown'])
+    total_trades = extract_scalar(metrics['total_trades'])
+    
+    print(f"   SUCCESS: Max Drawdown: {max_drawdown*100:.2f}%")
+    print(f"   SUCCESS: Total Trades: {int(total_trades)}")
+    
+    # Print UPI metrics if available
+    if 'UPI_30' in metrics:
+        upi_30 = extract_scalar(metrics['UPI_30'])
+        upi_30_max = extract_scalar(metrics['UPI_30_max'])
+        if not np.isnan(upi_30):
+            print(f"   SUCCESS: UPI_30: {upi_30:.4f}, UPI_30_max: {upi_30_max:.4f}")
+    
+    if 'UPI_50' in metrics:
+        upi_50 = extract_scalar(metrics['UPI_50'])
+        upi_50_max = extract_scalar(metrics['UPI_50_max'])
+        if not np.isnan(upi_50):
+            print(f"   SUCCESS: UPI_50: {upi_50:.4f}, UPI_50_max: {upi_50_max:.4f}")
+    
+    # Step 6: Export results
+    print(f"\n6. Exporting results...")
+    
+    results_dir = Path(config['output']['results_dir'])
+    results_dir.mkdir(exist_ok=True)
+    
+    # Generate trade list - use integer nanosecond timestamps, not datetime objects
+    datetime_array = data['datetime']  # Integer nanoseconds for trades
+    trades_df = engine.generate_trade_list(pf, datetime_array, symbol)
+    
+    # Export results
+    export_data = {
+        'portfolio': pf,
+        'trades': trades_df,
+    }
+    
+    if not (hasattr(total_return, '__len__') and len(total_return) > 1):
+        # Get equity curve and timestamps for UPI calculations
+        # Use the same performance calculation logic as above
+        if not intraday_performance:
+            try:
+                # Use daily resampled data for export as well
+                daily_pf = pf.resample('1D')
+                if hasattr(daily_pf.value, 'values') and len(daily_pf.value.shape) > 1 and daily_pf.value.shape[1] > 1:
+                    export_equity_curve = np.sum(daily_pf.value.values, axis=1)
+                else:
+                    export_equity_curve = daily_pf.value.values if hasattr(daily_pf.value, 'values') else daily_pf.value
+                export_timestamps = daily_pf.wrapper.index.values
+                export_data['metrics'] = engine.calculate_performance_metrics(daily_pf, export_equity_curve, export_timestamps)
+            except Exception as e:
+                print(f"   WARNING: Using intraday data for export metrics due to daily resampling error: {e}")
+                equity_curve = pf.value.values if hasattr(pf.value, 'values') else pf.value  
+                timestamps = data['datetime']
+                export_data['metrics'] = engine.calculate_performance_metrics(pf, equity_curve, timestamps)
+        else:
+            equity_curve = pf.value.values if hasattr(pf.value, 'values') else pf.value  
+            timestamps = data['datetime']
+            export_data['metrics'] = engine.calculate_performance_metrics(pf, equity_curve, timestamps)
+    
+    # Use datetime objects for export (for CSV readability)
+    datetime_objects = data.get('datetime_ns', data['datetime'])
+    engine.export_results(export_data, str(results_dir), datetime_objects)
+    
+    print(f"   SUCCESS: Exported trade list: {results_dir / 'tradelist.csv'}")
+    print(f"   SUCCESS: Exported equity curve: {results_dir / 'equity_curve.csv'}")
+    
+    # Step 7: Launch Dashboard (Plotly or Ultimate Step 6)
+    if launch_viz:
+        # Prepare OHLCV data for dashboard
+        ohlcv_data = {
+            'datetime': data.get('datetime_ns', data['datetime']),
+            'open': np.asarray(data['open'], dtype=np.float32),
+            'high': np.asarray(data['high'], dtype=np.float32),
+            'low': np.asarray(data['low'], dtype=np.float32),
+            'close': np.asarray(data['close'], dtype=np.float32),
+            'volume': np.asarray(data.get('volume', np.ones(len(data['close']))), dtype=np.float32)
+        }
+        
+        trades_csv_path = str(results_dir / 'tradelist.csv')
+        
+        if use_plotly:
+            # Use enhanced Plotly dashboard V2 with full indicator control
+            print(f"\n7. Launching Enhanced Plotly Dashboard V2 - Full Indicator Control...")
+            try:
+                # Try V2 first (new implementation)
+                try:
+                    import plotly_dashboard_enhanced_v2 as dashboard_module
+                    print(f"   INFO: Using V2 dashboard with full VectorBT Pro indicator control")
+                    print(f"   INFO: No automatic indicators - full user control")
+                except ImportError:
+                    # Fallback to V1 if V2 not available
+                    import plotly_dashboard_enhanced as dashboard_module
+                    print(f"   INFO: Using V1 dashboard (V2 not found)")
+                
+                print(f"   INFO: {len(ohlcv_data['close']):,} candlesticks loaded")
+                print(f"   INFO: {len(trades_df)} trades loaded")
+                
+                # Launch dashboard (V2 doesn't need strategy path)
+                if hasattr(dashboard_module, 'launch_enhanced_dashboard_v2'):
+                    # V2 dashboard
+                    dashboard = dashboard_module.launch_enhanced_dashboard_v2(
+                        ohlcv_data=ohlcv_data,
+                        trades_csv_path=trades_csv_path,
+                        portfolio=pf,
+                        symbol=symbol,
+                        strategy_name=strategy.name
+                    )
+                else:
+                    # V1 dashboard (fallback)
+                    strategy_path = Path(__file__).parent / 'strategies' / f'{strategy_name}.py'
+                    dashboard = dashboard_module.launch_enhanced_dashboard(
+                        ohlcv_data=ohlcv_data,
+                        trades_csv_path=trades_csv_path,
+                        portfolio=pf,
+                        symbol=symbol,
+                        strategy_name=strategy.name,
+                        strategy_path=str(strategy_path) if strategy_path.exists() else None
+                    )
+                
+                print(f"   SUCCESS: Enhanced Plotly dashboard launched!")
+                
+            except Exception as e:
+                print(f"   ERROR: Plotly dashboard error: {e}")
+                import traceback
+                traceback.print_exc()
+                print(f"   INFO: Results still available in CSV files")
+        
+        elif ULTIMATE_DASHBOARD_AVAILABLE:
+            try:
+                # Create Qt application if not exists
+                app = QApplication.instance()
+                if app is None:
+                    app = QApplication([])
+                
+                # ohlcv_data already prepared above
+                print(f"   INFO: Using trades CSV: {trades_csv_path}")
+                
+                # Create the Ultimate Professional Dashboard
+                print(f"   INFO: Starting Ultimate Step 6 Professional Dashboard...")
+                print(f"   INFO: ALL 6 STEPS INTEGRATED:")
+                print(f"         [1] GPU-accelerated VisPy candlestick chart")
+                print(f"         [2] Clickable trade list with navigation")  
+                print(f"         [3] Synchronized equity curve with drawdown")
+                print(f"         [4] OHLCV hover info with technical indicators")
+                print(f"         [5] Interactive crosshair with axis data points")
+                print(f"         [6] VBT Pro indicators with parameter selection")
+                print(f"   INFO: {len(ohlcv_data['close']):,} candlesticks loaded")
+                print(f"   INFO: {len(trades_df)} trades loaded")
+                
+                ultimate_dashboard = FinalTradingDashboard()
+                
+                # Load the ultimate dataset
+                success = ultimate_dashboard.load_ultimate_dataset(ohlcv_data, trades_csv_path)
+                if success:
+                    # Show ultimate dashboard
+                    ultimate_dashboard.setWindowTitle(f"Ultimate Professional Trading Dashboard - {symbol} - {strategy.name}")
+                    ultimate_dashboard.resize(1920, 1200)
+                    ultimate_dashboard.show()
+                    
+                    print(f"   SUCCESS: Ultimate Dashboard launched!")
+                    print(f"   INFO: Features: Hover, Crosshair, Zoom, Trade Navigation, Indicators")
+                    print(f"   INFO: Controls: Mouse wheel (zoom), Click (crosshair), H/C/I/L keys")
+                    
+                    # Run the application
+                    app.exec_()
+                    
+                    print(f"   SUCCESS: Ultimate dashboard session completed!")
+                else:
+                    print(f"   WARNING: Ultimate dashboard data loading failed")
+                    
+            except Exception as e:
+                print(f"   ERROR: Ultimate dashboard error: {e}")
+                import traceback
+                traceback.print_exc()
+                print(f"   INFO: Results still available in CSV files")
+        else:
+            print(f"   WARNING: Ultimate dashboard not available")
+            print(f"   INFO: Install dependencies: pip install vispy imageio PyQt5")
+            print(f"   INFO: Results available in CSV files in results/ directory")
+    
+    print(f"\nSUCCESS: Strategy '{strategy.name}' execution completed successfully!")
+    print(f"SUCCESS: All operations used vectorized array processing")
+    
+    if launch_viz:
+        print(f"SUCCESS: Interactive dashboard launched for data visualization")
+        print(f"INFO: Close the dashboard window when finished analyzing results")
+    
+    return results_dir
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Modular AmiBroker Trading System"
+    )
+    parser.add_argument(
+        "symbol",
+        type=str,
+        help="Symbol to backtest"
+    )
+    parser.add_argument(
+        "strategy",
+        type=str,
+        help="Strategy file name (without .py extension)"
+    )
+    parser.add_argument(
+        "--config",
+        type=str,
+        default="config.yaml",
+        help="Path to configuration file"
+    )
+    parser.add_argument(
+        "--start_date",
+        type=str,
+        help="Start date for backtesting (YYYY-MM-DD format)"
+    )
+    parser.add_argument(
+        "--end_date", 
+        type=str,
+        help="End date for backtesting (YYYY-MM-DD format)"
+    )
+    parser.add_argument(
+        "--no-viz",
+        action="store_true",
+        help="Disable interactive dashboard visualization"
+    )
+    parser.add_argument(
+        "--useDefaults",
+        action="store_true",
+        help="Use only default parameters (single backtest) instead of full parameter optimization"
+    )
+    parser.add_argument(
+        "--mplfinance",
+        action="store_true",
+        help="Use mplfinance dashboard (fixes black blob rendering issues)"
+    )
+    parser.add_argument(
+        "--intraday",
+        action="store_true",
+        help="Use intraday data for performance calculations (default: end-of-day for speed)"
+    )
+    parser.add_argument(
+        "--plotly",
+        action="store_true",
+        help="Use new Plotly dashboard with native candlestick rendering (recommended)"
+    )
+    
+    # Add dashboard CLI controls
+    try:
+        from dashboard_cli_controller import add_cli_controls
+        parser = add_cli_controls(parser)
+    except ImportError:
+        pass
+    
+    args = parser.parse_args()
+    
+    try:
+        results_dir = main(
+            args.symbol, 
+            args.strategy, 
+            args.config, 
+            args.start_date, 
+            args.end_date,
+            launch_viz=not args.no_viz,
+            use_defaults=args.useDefaults,
+            intraday_performance=args.intraday,
+            use_plotly=args.plotly
+        )
+        print(f"\nResults saved to: {results_dir}")
+    except Exception as e:
+        print(f"\nError: {e}")
+        import traceback
+        traceback.print_exc()

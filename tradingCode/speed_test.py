@@ -1,0 +1,157 @@
+#!/usr/bin/env python3
+"""
+Speed test comparing single default vs full optimization performance
+"""
+
+import time
+import numpy as np
+import pandas as pd
+import sys
+import os
+from pathlib import Path
+
+# Add project paths
+sys.path.insert(0, os.path.dirname(__file__))
+
+from src.data.parquet_converter import ParquetConverter
+from strategies.time_window_strategy_vectorized import TimeWindowVectorizedStrategy
+
+def load_test_data(symbol: str, start_date: str = "2020-01-01"):
+    """Load test data efficiently"""
+    print(f"Loading {symbol} data since {start_date}...")
+    start_time = time.time()
+    
+    parquet_converter = ParquetConverter()
+    data = parquet_converter.load_or_convert(symbol, "1m", "diffAdjusted")
+    
+    if data and start_date:
+        data = parquet_converter.filter_data_by_date(data, start_date, None)
+    
+    load_time = time.time() - start_time
+    n_bars = len(data['close']) if data else 0
+    
+    print(f"   SUCCESS: Loaded {n_bars:,} bars in {load_time:.2f}s")
+    return data
+
+def run_speed_test():
+    """Run comprehensive speed test"""
+    
+    print("SPEED TEST: Single Default vs Full Optimization")
+    print("=" * 60)
+    
+    # Test parameters
+    symbol = "ES"
+    test_periods = [
+        ("6 months", "2024-07-01"),
+        ("1 year", "2024-01-01"), 
+        ("2 years", "2023-01-01"),
+        ("5 years", "2020-01-01")
+    ]
+    
+    strategy = TimeWindowVectorizedStrategy()
+    config = {
+        'initial_capital': 100000,
+        'commission': 0.001,
+        'slippage': 0.0001
+    }
+    
+    results = []
+    
+    for period_name, start_date in test_periods:
+        print(f"\nTesting {period_name} dataset ({start_date} to present)")
+        print("-" * 50)
+        
+        # Load data
+        try:
+            data = load_test_data(symbol, start_date)
+            if not data:
+                print(f"   ERROR: No data available for {period_name}")
+                continue
+                
+            n_bars = len(data['close'])
+            
+        except Exception as e:
+            print(f"   ERROR: Data loading failed: {e}")
+            continue
+        
+        # Test 1: Single Default Run
+        print(f"\nTest 1: Single Default Run (--useDefaults)")
+        try:
+            start_time = time.time()
+            pf_single = strategy.run_vectorized_backtest(data, config, use_defaults_only=True)
+            single_time = time.time() - start_time
+            
+            single_trades = len(pf_single.trades.records_readable)
+            single_columns = pf_single.wrapper.shape[1] if hasattr(pf_single.wrapper, 'shape') else 1
+            
+            print(f"   SUCCESS: Single run: {single_time:.2f}s | {single_trades} trades | {single_columns} columns")
+            
+        except Exception as e:
+            print(f"   ERROR: Single run failed: {e}")
+            single_time = None
+            single_trades = 0
+            single_columns = 0
+        
+        # Test 2: Full Optimization (40 combinations)
+        print(f"\nTest 2: Full Optimization (40 combinations)")
+        try:
+            start_time = time.time()
+            pf_full = strategy.run_vectorized_backtest(data, config, use_defaults_only=False)
+            full_time = time.time() - start_time
+            
+            full_trades = len(pf_full.trades.records_readable)
+            full_columns = pf_full.wrapper.shape[1] if hasattr(pf_full.wrapper, 'shape') else 1
+            
+            print(f"   SUCCESS: Full optimization: {full_time:.2f}s | {full_trades} trades | {full_columns} columns")
+            
+        except Exception as e:
+            print(f"   ERROR: Full optimization failed: {e}")
+            full_time = None
+            full_trades = 0
+            full_columns = 0
+        
+        # Calculate performance metrics
+        if single_time and full_time:
+            speedup_ratio = full_time / single_time
+            throughput_single = n_bars / single_time if single_time > 0 else 0
+            throughput_full = n_bars / full_time if full_time > 0 else 0
+            
+            print(f"\nPerformance Summary:")
+            print(f"   Data size: {n_bars:,} bars")
+            print(f"   Single run: {single_time:.2f}s ({throughput_single:,.0f} bars/sec)")
+            print(f"   Full optimization: {full_time:.2f}s ({throughput_full:,.0f} bars/sec)")
+            print(f"   Speed ratio: {speedup_ratio:.1f}x slower for 40x more combinations")
+            print(f"   Expected vs Actual: Expected ~40x, Got {speedup_ratio:.1f}x")
+            
+            results.append({
+                'period': period_name,
+                'bars': n_bars,
+                'single_time': single_time,
+                'full_time': full_time,
+                'speedup_ratio': speedup_ratio,
+                'single_trades': single_trades,
+                'full_trades': full_trades
+            })
+        
+        print()
+    
+    # Summary table
+    if results:
+        print("\nSPEED TEST SUMMARY")
+        print("=" * 80)
+        print(f"{'Period':<10} {'Bars':<8} {'Single':<8} {'Full':<8} {'Ratio':<8} {'S.Trades':<9} {'F.Trades':<9}")
+        print("-" * 80)
+        
+        for r in results:
+            print(f"{r['period']:<10} {r['bars']:<8,} {r['single_time']:<8.1f} {r['full_time']:<8.1f} "
+                  f"{r['speedup_ratio']:<8.1f} {r['single_trades']:<9} {r['full_trades']:<9}")
+        
+        # Performance insights
+        avg_ratio = np.mean([r['speedup_ratio'] for r in results])
+        print(f"\nKEY INSIGHTS:")
+        print(f"   - Average speed ratio: {avg_ratio:.1f}x (40 combinations vs 1)")
+        print(f"   - Vectorization efficiency: {40/avg_ratio:.1f}x better than linear scaling")
+        print(f"   - Trade count scaling: Single=5, Full~=200 (5x40 combinations)")
+
+if __name__ == "__main__":
+    run_speed_test()

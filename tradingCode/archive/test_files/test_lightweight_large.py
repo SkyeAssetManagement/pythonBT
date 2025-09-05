@@ -1,0 +1,170 @@
+"""
+Test lightweight-charts-python with progressively larger datasets
+to determine its actual limits and performance characteristics
+"""
+import pandas as pd
+import numpy as np
+import datetime
+import time
+from lightweight_charts import Chart
+
+
+def generate_efficient_data(n_bars=100000):
+    """Generate test data efficiently"""
+    print(f"Generating {n_bars:,} bars...")
+    
+    start_time = time.time()
+    
+    # Create date range
+    start_date = datetime.datetime(2020, 1, 1)
+    dates = pd.date_range(start=start_date, periods=n_bars, freq='1min')
+    
+    # Efficient vectorized price generation
+    np.random.seed(42)
+    base_price = 3750.0
+    returns = np.random.normal(0, 0.001, n_bars)
+    close_prices = base_price * np.exp(np.cumsum(returns))
+    
+    # Generate OHLC efficiently
+    volatility = np.abs(np.random.normal(0, 0.002, n_bars))
+    open_prices = np.roll(close_prices, 1)
+    open_prices[0] = base_price
+    
+    high_prices = np.maximum(open_prices, close_prices) + volatility * close_prices
+    low_prices = np.minimum(open_prices, close_prices) - volatility * close_prices
+    volumes = np.random.randint(100, 10000, n_bars)
+    
+    # Create DataFrame
+    df = pd.DataFrame({
+        'time': dates,
+        'open': np.round(open_prices, 2),
+        'high': np.round(high_prices, 2),
+        'low': np.round(low_prices, 2),
+        'close': np.round(close_prices, 2),
+        'volume': volumes
+    })
+    
+    generation_time = time.time() - start_time
+    print(f"Data generation: {generation_time:.3f}s ({n_bars/generation_time:,.0f} bars/sec)")
+    
+    return df
+
+
+def test_lightweight_limits():
+    """Test lightweight-charts with increasing dataset sizes to find limits"""
+    
+    print("=== LIGHTWEIGHT-CHARTS LARGE DATASET TEST ===")
+    
+    # Test progressively larger datasets
+    test_sizes = [
+        50000,    # 50K bars
+        100000,   # 100K bars  
+        200000,   # 200K bars
+        500000,   # 500K bars
+        1000000,  # 1M bars
+        2000000,  # 2M bars (if it gets this far)
+    ]
+    
+    results = []
+    
+    for size in test_sizes:
+        print(f"\n--- Testing {size:,} bars ---")
+        
+        try:
+            # Generate data
+            df = generate_efficient_data(size)
+            memory_mb = df.memory_usage(deep=True).sum() / 1024 / 1024
+            print(f"Memory usage: {memory_mb:.1f} MB")
+            
+            # Test chart creation
+            print("Creating chart...")
+            start_time = time.time()
+            chart = Chart()
+            chart_time = time.time() - start_time
+            
+            # Test data loading
+            print("Loading data...")
+            start_time = time.time()
+            chart.set(df)
+            load_time = time.time() - start_time
+            
+            # Test display (non-blocking)
+            print("Displaying chart...")
+            start_time = time.time()
+            chart.show(block=False)
+            display_time = time.time() - start_time
+            
+            total_time = chart_time + load_time + display_time
+            performance = size / total_time if total_time > 0 else 0
+            
+            print(f"Chart creation: {chart_time:.3f}s")
+            print(f"Data loading: {load_time:.3f}s") 
+            print(f"Display time: {display_time:.3f}s")
+            print(f"TOTAL TIME: {total_time:.3f}s")
+            print(f"PERFORMANCE: {performance:,.0f} bars/second")
+            print(f"SUCCESS: {size:,} bars rendered")
+            
+            results.append({
+                'size': size,
+                'total_time': total_time,
+                'performance': performance,
+                'memory_mb': memory_mb,
+                'status': 'SUCCESS'
+            })
+            
+            # Wait a moment to let chart render
+            time.sleep(2)
+            
+        except Exception as e:
+            print(f"FAILED: {size:,} bars - {e}")
+            results.append({
+                'size': size,
+                'total_time': None,
+                'performance': None,
+                'memory_mb': None,
+                'status': f'FAILED: {e}'
+            })
+            break  # Stop testing larger sizes if this one failed
+    
+    # Summary
+    print("\n" + "="*60)
+    print("LIGHTWEIGHT-CHARTS PERFORMANCE SUMMARY")
+    print("="*60)
+    
+    for result in results:
+        print(f"{result['size']:,} bars:")
+        if result['status'] == 'SUCCESS':
+            print(f"  Time: {result['total_time']:.3f}s")
+            print(f"  Performance: {result['performance']:,.0f} bars/sec")
+            print(f"  Memory: {result['memory_mb']:.1f} MB")
+            print(f"  Status: SUCCESS")
+        else:
+            print(f"  Status: {result['status']}")
+        print()
+    
+    # Find maximum successful size
+    successful = [r for r in results if r['status'] == 'SUCCESS']
+    if successful:
+        max_successful = max(successful, key=lambda x: x['size'])
+        print(f"MAXIMUM SUCCESSFUL SIZE: {max_successful['size']:,} bars")
+        print(f"BEST PERFORMANCE: {max_successful['performance']:,.0f} bars/second")
+        
+        if max_successful['size'] >= 1000000:
+            print("[OK] LIGHTWEIGHT-CHARTS CAN HANDLE LARGE DATASETS (1M+ bars)")
+        elif max_successful['size'] >= 500000:
+            print("[WARNING]  LIGHTWEIGHT-CHARTS GOOD FOR MEDIUM DATASETS (500K+ bars)")  
+        else:
+            print("[X] LIGHTWEIGHT-CHARTS LIMITED TO SMALL DATASETS")
+    
+    return results
+
+
+if __name__ == "__main__":
+    print("Testing lightweight-charts-python with large datasets...")
+    print("This will determine the actual limits and performance.")
+    print()
+    
+    results = test_lightweight_limits()
+    
+    print("\nTest completed!")
+    print("Charts may still be open - close them manually.")
