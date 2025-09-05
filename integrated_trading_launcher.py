@@ -394,7 +394,12 @@ class IntegratedTradingLauncher(tk.Tk):
         
         def run():
             try:
-                subprocess.Popen([sys.executable, 'tradingCode/main.py'])
+                # Try to use the dashboard launcher for better control
+                if os.path.exists('tradingCode/dashboard_launcher.py'):
+                    subprocess.Popen([sys.executable, 'tradingCode/dashboard_launcher.py'])
+                else:
+                    # Fallback: Launch with default parameters for ES symbol and simpleSMA strategy
+                    subprocess.Popen([sys.executable, 'tradingCode/main.py', 'ES', 'simpleSMA', '--useDefaults'])
                 self.update_status("Trading Dashboard launched successfully", '#00ff00')
             except Exception as e:
                 self.update_status(f"Error: {str(e)}", '#ff0000')
