@@ -394,8 +394,8 @@ class IntegratedTradingLauncher(tk.Tk):
         
         def run():
             try:
-                # Use the PyQtGraph range bars visualization
-                subprocess.Popen([sys.executable, 'launch_pyqtgraph_chart.py'])
+                # Use the simplified PyQtGraph range bars visualization
+                subprocess.Popen([sys.executable, 'launch_pyqtgraph_chart_simple.py'])
                 self.update_status("PyQtGraph Chart launched successfully", '#00ff00')
             except Exception as e:
                 self.update_status(f"Error: {str(e)}", '#ff0000')

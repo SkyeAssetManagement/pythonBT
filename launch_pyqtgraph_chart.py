@@ -175,15 +175,26 @@ def main():
     # Create and show the chart
     chart = RangeBarChartFinal()
     
-    # Load data into chart
-    if hasattr(chart, 'load_data'):
-        chart.load_data(data)
-    else:
-        # If load_data doesn't exist, set data directly
-        chart.full_data = data
-        chart.total_bars = len(data)
-        if hasattr(chart, 'init_chart'):
-            chart.init_chart()
+    # The chart loads its own data in load_data() method
+    # But we need to override it with our data
+    # Set the data directly
+    chart.full_data = {
+        'timestamp': pd.to_datetime(data['DateTime']),
+        'open': data['Open'].values.astype(np.float32),
+        'high': data['High'].values.astype(np.float32),
+        'low': data['Low'].values.astype(np.float32),
+        'close': data['Close'].values.astype(np.float32),
+        'volume': data['Volume'].values.astype(np.float32),
+        'aux1': data['AUX1'].values.astype(np.float32),  # ATR
+        'aux2': data['AUX2'].values.astype(np.float32)   # Range
+    }
+    chart.total_bars = len(data)
+    
+    # Initialize the chart if it has this method
+    if hasattr(chart, 'init_chart'):
+        chart.init_chart()
+    elif hasattr(chart, 'init_ui'):
+        chart.init_ui()
     
     # Add trades if the chart supports it
     if hasattr(chart, 'set_trades'):
