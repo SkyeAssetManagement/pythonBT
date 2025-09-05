@@ -166,12 +166,12 @@ class IntegratedTradingLauncher(tk.Tk):
             {
                 'title': 'Data Visualization',
                 'icon': '📉',
-                'description': 'Simple Chart Viewer',
+                'description': 'Trading Dashboard',
                 'details': [
-                    '• Direct data visualization',
-                    '• Candlestick & OHLC charts',
-                    '• No backtesting required',
-                    '• Fast and lightweight'
+                    '• Candlestick charts',
+                    '• Trade markers (X scatter)',
+                    '• Crosshair & hover info',
+                    '• Equity curve display'
                 ],
                 'action': self.launch_visualization
             },
@@ -389,18 +389,18 @@ class IntegratedTradingLauncher(tk.Tk):
         threading.Thread(target=run, daemon=True).start()
     
     def launch_visualization(self):
-        """Launch simple chart viewer"""
-        self.update_status("Launching Chart Viewer...", '#00ff00')
+        """Launch trading dashboard with candlesticks and trade markers"""
+        self.update_status("Launching Trading Dashboard...", '#00ff00')
         
         def run():
             try:
-                # Use the simple chart viewer for direct data visualization
-                subprocess.Popen([sys.executable, 'simple_chart_viewer.py'])
-                self.update_status("Chart Viewer launched successfully", '#00ff00')
+                # Use the trading dashboard with candlesticks and trade visualization
+                subprocess.Popen([sys.executable, 'launch_trading_dashboard.py'])
+                self.update_status("Trading Dashboard launched successfully", '#00ff00')
             except Exception as e:
                 self.update_status(f"Error: {str(e)}", '#ff0000')
                 messagebox.showerror("Launch Error", 
-                                   f"Could not launch Chart Viewer:\n{str(e)}")
+                                   f"Could not launch Trading Dashboard:\n{str(e)}")
         
         threading.Thread(target=run, daemon=True).start()
     
