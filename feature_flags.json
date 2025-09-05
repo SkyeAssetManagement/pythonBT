@@ -1,40 +1,43 @@
 {
   "flags": {
-    "use_new_trade_data": false,
-    "enable_vbt_integration": false,
-    "use_pyqtgraph_charts": false,
-    "unified_data_pipeline": false,
+    "use_new_trade_data": true,
+    "enable_vbt_integration": true,
+    "use_pyqtgraph_charts": true,
+    "unified_data_pipeline": true,
     "new_csv_loader": false,
-    "show_trade_visualization_tab": false,
+    "show_trade_visualization_tab": true,
     "enable_range_bar_charts": false,
     "show_trade_panel": false,
     "use_parallel_processing": false,
     "enable_caching": false,
     "verbose_logging": true,
-    "debug_mode": false
+    "debug_mode": false,
+    "show_pyqtgraph_charts": true,
+    "show_vectorbt_import": true,
+    "use_unified_gui": true
   },
   "metadata": {
     "use_new_trade_data": {
       "created": "2025-01-05T00:00:00",
-      "enabled_at": null,
+      "enabled_at": "2025-09-05T16:19:04.571217",
       "description": "Use new TradeData and TradeCollection classes",
       "risk_level": "low"
     },
     "enable_vbt_integration": {
       "created": "2025-01-05T00:00:00",
-      "enabled_at": null,
+      "enabled_at": "2025-09-05T16:16:21.163236",
       "description": "Enable VectorBT portfolio integration",
       "risk_level": "medium"
     },
     "use_pyqtgraph_charts": {
       "created": "2025-01-05T00:00:00",
-      "enabled_at": null,
+      "enabled_at": "2025-09-05T16:16:21.162741",
       "description": "Use PyQtGraph for high-performance charts",
       "risk_level": "medium"
     },
     "unified_data_pipeline": {
       "created": "2025-01-05T00:00:00",
-      "enabled_at": null,
+      "enabled_at": "2025-09-05T16:19:04.831373",
       "description": "Use unified data loading pipeline",
       "risk_level": "high"
     },
@@ -46,7 +49,7 @@
     },
     "show_trade_visualization_tab": {
       "created": "2025-01-05T00:00:00",
-      "enabled_at": null,
+      "enabled_at": "2025-09-05T16:19:04.217463",
       "description": "Show trade visualization tab in GUI",
       "risk_level": "low"
     },
@@ -85,6 +88,24 @@
       "enabled_at": null,
       "description": "Debug mode with extra checks",
       "risk_level": "low"
+    },
+    "show_pyqtgraph_charts": {
+      "created": "2025-09-05T16:16:21.173631",
+      "enabled_at": "2025-09-05T16:19:04.217995",
+      "description": "Show PyQtGraph charts tab",
+      "risk_level": "medium"
+    },
+    "show_vectorbt_import": {
+      "created": "2025-09-05T16:16:21.173639",
+      "enabled_at": "2025-09-05T16:19:04.218553",
+      "description": "Show VectorBT import tab",
+      "risk_level": "medium"
+    },
+    "use_unified_gui": {
+      "created": "2025-09-05T16:16:21.173643",
+      "enabled_at": "2025-09-05T16:19:04.216671",
+      "description": "Use unified GUI with all features",
+      "risk_level": "medium"
     }
   }
 }

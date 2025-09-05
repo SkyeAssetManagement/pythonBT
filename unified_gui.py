@@ -284,6 +284,74 @@ class UnifiedTradingGUI(tk.Tk):
                                  command=self.trade_tree.yview)
         scrollbar.pack(side='right', fill='y')
         self.trade_tree.configure(yscrollcommand=scrollbar.set)
+    
+    @feature_flag('show_pyqtgraph_charts')
+    def create_advanced_charts_tab(self):
+        """Create advanced charts tab with PyQtGraph integration"""
+        self.charts_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.charts_frame, text="Advanced Charts")
+        
+        # Control panel
+        control_frame = ttk.LabelFrame(self.charts_frame, text="Chart Controls")
+        control_frame.pack(fill='x', padx=10, pady=5)
+        
+        ttk.Label(control_frame, text="Chart Type:").grid(row=0, column=0, padx=5, pady=5)
+        self.chart_type_var = tk.StringVar(value="candlestick")
+        chart_types = ttk.Combobox(control_frame, textvariable=self.chart_type_var,
+                                   values=["candlestick", "line", "volume", "range_bars"])
+        chart_types.grid(row=0, column=1, padx=5, pady=5)
+        
+        ttk.Button(control_frame, text="Launch PyQtGraph", 
+                  command=self.launch_pyqtgraph_window).grid(row=0, column=2, padx=5, pady=5)
+        
+        # Chart preview area
+        preview_frame = ttk.LabelFrame(self.charts_frame, text="Chart Preview")
+        preview_frame.pack(fill='both', expand=True, padx=10, pady=5)
+        
+        # Info text
+        info_text = "PyQtGraph provides high-performance real-time plotting\n"
+        info_text += "Click 'Launch PyQtGraph' to open advanced charting window"
+        ttk.Label(preview_frame, text=info_text).pack(pady=20)
+        
+        print("Advanced Charts tab created")
+    
+    @feature_flag('show_vectorbt_import')
+    def create_vectorbt_import_tab(self):
+        """Create VectorBT import tab for backtesting data"""
+        self.vbt_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.vbt_frame, text="VectorBT Import")
+        
+        # Import controls
+        import_frame = ttk.LabelFrame(self.vbt_frame, text="VectorBT Data Import")
+        import_frame.pack(fill='x', padx=10, pady=5)
+        
+        ttk.Label(import_frame, text="Import Type:").grid(row=0, column=0, padx=5, pady=5)
+        self.import_type_var = tk.StringVar(value="trades")
+        import_types = ttk.Combobox(import_frame, textvariable=self.import_type_var,
+                                    values=["trades", "portfolio", "signals", "metrics"])
+        import_types.grid(row=0, column=1, padx=5, pady=5)
+        
+        ttk.Button(import_frame, text="Import from VectorBT",
+                  command=self.import_from_vectorbt).grid(row=0, column=2, padx=5, pady=5)
+        
+        ttk.Button(import_frame, text="Import from CSV",
+                  command=self.import_vbt_csv).grid(row=0, column=3, padx=5, pady=5)
+        
+        # Status area
+        status_frame = ttk.LabelFrame(self.vbt_frame, text="Import Status")
+        status_frame.pack(fill='both', expand=True, padx=10, pady=5)
+        
+        self.vbt_status_text = scrolledtext.ScrolledText(status_frame, height=20)
+        self.vbt_status_text.pack(fill='both', expand=True, padx=5, pady=5)
+        
+        self.vbt_status_text.insert('1.0', "VectorBT Integration Ready\n")
+        self.vbt_status_text.insert('end', "Supports importing:\n")
+        self.vbt_status_text.insert('end', "- Trade records\n")
+        self.vbt_status_text.insert('end', "- Portfolio metrics\n")
+        self.vbt_status_text.insert('end', "- Signal data\n")
+        self.vbt_status_text.insert('end', "- Performance statistics\n")
+        
+        print("VectorBT Import tab created")
         
     def create_status_bar(self):
         """Create status bar"""
@@ -499,6 +567,122 @@ Following safety-first refactoring principles
         """Update status bar"""
         self.status_label.config(text=message)
         self.update_idletasks()
+    
+    def launch_pyqtgraph_window(self):
+        """Launch PyQtGraph in separate window"""
+        if not self.flags.is_enabled('show_pyqtgraph_charts'):
+            messagebox.showinfo("Feature Disabled", "PyQtGraph charts feature is currently disabled")
+            return
+        
+        try:
+            # Import PyQtGraph components
+            from src.trading.visualization.charts import PyQtGraphWindow
+            
+            # Launch in separate thread to avoid blocking
+            def run_pyqtgraph():
+                import sys
+                from PyQt5.QtWidgets import QApplication
+                
+                app = QApplication.instance()
+                if app is None:
+                    app = QApplication(sys.argv)
+                
+                window = PyQtGraphWindow(self.trade_collection)
+                window.show()
+                app.exec_()
+            
+            thread = threading.Thread(target=run_pyqtgraph)
+            thread.daemon = True
+            thread.start()
+            
+            if hasattr(self, 'vbt_status_text'):
+                self.vbt_status_text.insert('end', f"\n[{datetime.now().strftime('%H:%M:%S')}] PyQtGraph window launched\n")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to launch PyQtGraph: {str(e)}")
+    
+    def import_from_vectorbt(self):
+        """Import data from VectorBT"""
+        if not self.flags.is_enabled('show_vectorbt_import'):
+            messagebox.showinfo("Feature Disabled", "VectorBT import feature is currently disabled")
+            return
+        
+        try:
+            from src.trading.integration.vbt_loader import VectorBTLoader
+            from src.trading.data.unified_pipeline import get_data_adapter, ABtoPythonAdapter
+            
+            # Create loader
+            loader = VectorBTLoader()
+            import_type = self.import_type_var.get()
+            
+            self.vbt_status_text.insert('end', f"\n[{datetime.now().strftime('%H:%M:%S')}] Starting {import_type} import...\n")
+            
+            # Perform import based on type
+            if import_type == "trades":
+                # Load trades from VectorBT
+                trades = loader.load_trades()
+                
+                # Convert using unified pipeline
+                adapter = get_data_adapter()
+                ab_adapter = ABtoPythonAdapter(adapter)
+                
+                self.trade_collection = trades
+                
+                self.vbt_status_text.insert('end', f"Imported {len(trades)} trades\n")
+                
+                # Update other tabs
+                if hasattr(self, 'update_trade_display'):
+                    self.update_trade_display()
+            
+            elif import_type == "portfolio":
+                portfolio = loader.load_portfolio()
+                self.vbt_status_text.insert('end', f"Portfolio data imported\n")
+            
+            elif import_type == "signals":
+                signals = loader.load_signals()
+                self.vbt_status_text.insert('end', f"Signal data imported\n")
+            
+            elif import_type == "metrics":
+                metrics = loader.load_metrics()
+                self.vbt_status_text.insert('end', f"Performance metrics imported\n")
+                self.vbt_status_text.insert('end', json.dumps(metrics, indent=2) + "\n")
+            
+            self.vbt_status_text.insert('end', f"[{datetime.now().strftime('%H:%M:%S')}] Import completed successfully\n")
+            
+        except Exception as e:
+            self.vbt_status_text.insert('end', f"\n[ERROR] Import failed: {str(e)}\n")
+            messagebox.showerror("Import Error", f"Failed to import from VectorBT: {str(e)}")
+    
+    def import_vbt_csv(self):
+        """Import VectorBT data from CSV file"""
+        if not self.flags.is_enabled('show_vectorbt_import'):
+            messagebox.showinfo("Feature Disabled", "VectorBT import feature is currently disabled")
+            return
+        
+        filename = filedialog.askopenfilename(
+            title="Select VectorBT CSV file",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
+        )
+        
+        if filename:
+            try:
+                # Load CSV
+                df = pd.read_csv(filename)
+                self.vbt_status_text.insert('end', f"\n[{datetime.now().strftime('%H:%M:%S')}] Loaded CSV: {filename}\n")
+                self.vbt_status_text.insert('end', f"Shape: {df.shape}\n")
+                self.vbt_status_text.insert('end', f"Columns: {', '.join(df.columns)}\n")
+                
+                # Convert to trade collection if appropriate
+                if 'trade_type' in df.columns or 'type' in df.columns:
+                    from src.trading.data.loaders import CSVTradeLoader
+                    loader = CSVTradeLoader()
+                    self.trade_collection = loader.load_from_dataframe(df)
+                    self.vbt_status_text.insert('end', f"Converted to {len(self.trade_collection)} trades\n")
+                
+                self.vbt_status_text.insert('end', f"[{datetime.now().strftime('%H:%M:%S')}] CSV import completed\n")
+                
+            except Exception as e:
+                self.vbt_status_text.insert('end', f"\n[ERROR] CSV import failed: {str(e)}\n")
+                messagebox.showerror("Import Error", f"Failed to import CSV: {str(e)}")
 
 
 def main():

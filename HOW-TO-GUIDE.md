@@ -1,4 +1,5 @@
-# OMtree Trading System - How-To Guide
+# Unified Trading System - How-To Guide
+## OMtree ML Decision Trees + ABtoPython Trade Visualization
 
 ## Table of Contents
 1. [Installation](#installation)
@@ -35,17 +36,44 @@ python sample_data_generator.py
 
 ## Quick Start
 
-### Option 1: Using the GUI (Recommended for Beginners)
+### Option 1: Using the Unified GUI (Recommended)
+```bash
+python unified_gui.py
+```
+
+### Option 2: Using the Original OMtree GUI
 ```bash
 python OMtree_gui.py
 ```
 
-### Option 2: Command-Line Walk-Forward Validation
+### Option 3: Command-Line Walk-Forward Validation
 ```bash
 python OMtree_walkforward.py
 ```
 
 ---
+
+## Using the Unified GUI
+
+### New Features
+The unified GUI combines OMtree's ML capabilities with ABtoPython's advanced visualization:
+
+1. **Trade Visualization Tab**: View and analyze individual trades
+2. **Advanced Charts Tab**: High-performance PyQtGraph charts
+3. **VectorBT Import Tab**: Import backtesting data from VectorBT
+4. **Unified Data Pipeline**: Seamless data conversion between systems
+
+### Enabling Features
+Features are controlled via `feature_flags.json`. To enable a feature:
+```json
+{
+  "flags": {
+    "show_trade_visualization_tab": true,
+    "show_pyqtgraph_charts": true,
+    "show_vectorbt_import": true
+  }
+}
+```
 
 ## Using the GUI
 
