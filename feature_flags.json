@@ -1,0 +1,90 @@
+{
+  "flags": {
+    "use_new_trade_data": false,
+    "enable_vbt_integration": false,
+    "use_pyqtgraph_charts": false,
+    "unified_data_pipeline": false,
+    "new_csv_loader": false,
+    "show_trade_visualization_tab": false,
+    "enable_range_bar_charts": false,
+    "show_trade_panel": false,
+    "use_parallel_processing": false,
+    "enable_caching": false,
+    "verbose_logging": true,
+    "debug_mode": false
+  },
+  "metadata": {
+    "use_new_trade_data": {
+      "created": "2025-01-05T00:00:00",
+      "enabled_at": null,
+      "description": "Use new TradeData and TradeCollection classes",
+      "risk_level": "low"
+    },
+    "enable_vbt_integration": {
+      "created": "2025-01-05T00:00:00",
+      "enabled_at": null,
+      "description": "Enable VectorBT portfolio integration",
+      "risk_level": "medium"
+    },
+    "use_pyqtgraph_charts": {
+      "created": "2025-01-05T00:00:00",
+      "enabled_at": null,
+      "description": "Use PyQtGraph for high-performance charts",
+      "risk_level": "medium"
+    },
+    "unified_data_pipeline": {
+      "created": "2025-01-05T00:00:00",
+      "enabled_at": null,
+      "description": "Use unified data loading pipeline",
+      "risk_level": "high"
+    },
+    "new_csv_loader": {
+      "created": "2025-01-05T00:00:00",
+      "enabled_at": null,
+      "description": "Use new CSV trade loader",
+      "risk_level": "low"
+    },
+    "show_trade_visualization_tab": {
+      "created": "2025-01-05T00:00:00",
+      "enabled_at": null,
+      "description": "Show trade visualization tab in GUI",
+      "risk_level": "low"
+    },
+    "enable_range_bar_charts": {
+      "created": "2025-01-05T00:00:00",
+      "enabled_at": null,
+      "description": "Enable range bar chart visualization",
+      "risk_level": "medium"
+    },
+    "show_trade_panel": {
+      "created": "2025-01-05T00:00:00",
+      "enabled_at": null,
+      "description": "Show trade panel in visualization",
+      "risk_level": "low"
+    },
+    "use_parallel_processing": {
+      "created": "2025-01-05T00:00:00",
+      "enabled_at": null,
+      "description": "Enable parallel processing for performance",
+      "risk_level": "high"
+    },
+    "enable_caching": {
+      "created": "2025-01-05T00:00:00",
+      "enabled_at": null,
+      "description": "Enable result caching",
+      "risk_level": "medium"
+    },
+    "verbose_logging": {
+      "created": "2025-01-05T00:00:00",
+      "enabled_at": "2025-01-05T00:00:00",
+      "description": "Verbose logging for debugging",
+      "risk_level": "low"
+    },
+    "debug_mode": {
+      "created": "2025-01-05T00:00:00",
+      "enabled_at": null,
+      "description": "Debug mode with extra checks",
+      "risk_level": "low"
+    }
+  }
+}

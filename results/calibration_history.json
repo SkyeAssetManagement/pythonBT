@@ -2,167 +2,387 @@
   "calibration_history": [
     {
       "test_end_idx": 2350,
-      "threshold": 0.06855498743186161,
+      "threshold": 1.0610331260117956,
       "type": "trade"
     },
     {
       "test_end_idx": 2450,
-      "threshold": 0.1135360401614501,
+      "threshold": 0.7962710412787253,
       "type": "trade"
     },
     {
       "test_end_idx": 2550,
-      "threshold": 0.09362135460259767,
+      "threshold": 0.7378348369439188,
       "type": "trade"
     },
     {
       "test_end_idx": 2650,
-      "threshold": 0.04437186217625261,
+      "threshold": 1.0742678891521005,
       "type": "trade"
     },
     {
       "test_end_idx": 2750,
-      "threshold": 0.07325540415499518,
+      "threshold": 0.8745613737630803,
       "type": "trade"
     },
     {
       "test_end_idx": 2850,
-      "threshold": 0.03196371625754335,
+      "threshold": 1.185210444036707,
       "type": "trade"
     },
     {
       "test_end_idx": 2950,
-      "threshold": 0.043843721495604226,
+      "threshold": 0.9867104896161579,
       "type": "trade"
     },
     {
       "test_end_idx": 3050,
-      "threshold": 0.07151129594915306,
+      "threshold": 0.8735345043326146,
       "type": "trade"
     },
     {
       "test_end_idx": 3150,
-      "threshold": 0.07129513771419052,
+      "threshold": 0.6457444663873063,
       "type": "trade"
     },
     {
       "test_end_idx": 3250,
-      "threshold": 0.09585058389146668,
+      "threshold": 0.8361544118101711,
       "type": "trade"
     },
     {
       "test_end_idx": 3350,
-      "threshold": 0.07462304165003888,
+      "threshold": 1.171592196013803,
       "type": "trade"
     },
     {
       "test_end_idx": 3450,
-      "threshold": 0.042503876036630625,
+      "threshold": 1.1795025582058252,
       "type": "trade"
     },
     {
       "test_end_idx": 3550,
-      "threshold": 0.06128883702164332,
+      "threshold": 1.1791245416160856,
       "type": "trade"
     },
     {
       "test_end_idx": 3650,
-      "threshold": 0.10893126400811272,
+      "threshold": 1.1980438987923787,
       "type": "trade"
     },
     {
       "test_end_idx": 3750,
-      "threshold": 0.1290505237773608,
+      "threshold": 0.7992505645376334,
       "type": "trade"
     },
     {
       "test_end_idx": 3850,
-      "threshold": 0.10888326415272401,
+      "threshold": 0.8414478370951143,
       "type": "trade"
     },
     {
       "test_end_idx": 3950,
-      "threshold": 0.09961180201686108,
+      "threshold": 0.6402689179542115,
       "type": "trade"
     },
     {
       "test_end_idx": 4050,
-      "threshold": 0.11900728555187504,
+      "threshold": 0.8995115587485802,
       "type": "trade"
     },
     {
       "test_end_idx": 4150,
-      "threshold": 0.12002876157500333,
+      "threshold": 1.1051924864650027,
       "type": "trade"
     },
     {
       "test_end_idx": 4250,
-      "threshold": 0.16574243480619927,
+      "threshold": 1.0563201034546712,
       "type": "trade"
     },
     {
       "test_end_idx": 4350,
-      "threshold": 0.1013512974803476,
+      "threshold": 0.965751971015047,
       "type": "trade"
     },
     {
       "test_end_idx": 4450,
-      "threshold": 0.06318110987782768,
+      "threshold": 0.8373863578224644,
       "type": "trade"
     },
     {
       "test_end_idx": 4550,
-      "threshold": 0.07335731473835375,
+      "threshold": 0.8473627619049293,
       "type": "trade"
     },
     {
       "test_end_idx": 4650,
-      "threshold": 0.09491036563761399,
+      "threshold": 0.9793081350355146,
       "type": "trade"
     },
     {
       "test_end_idx": 4750,
-      "threshold": 0.08651423359996956,
+      "threshold": 1.0933017016633912,
       "type": "trade"
     },
     {
       "test_end_idx": 4850,
-      "threshold": 0.09014245472830684,
+      "threshold": 0.9114355295220603,
       "type": "trade"
     },
     {
       "test_end_idx": 4950,
-      "threshold": 0.033933912927276294,
+      "threshold": 0.44120371200024233,
       "type": "trade"
     },
     {
       "test_end_idx": 5050,
-      "threshold": 0.06610055746482545,
+      "threshold": 1.0311449931869452,
       "type": "trade"
     },
     {
       "test_end_idx": 5150,
-      "threshold": 0.048980546110037625,
+      "threshold": 1.0176796107299888,
       "type": "trade"
     },
     {
       "test_end_idx": 5250,
-      "threshold": 0.05473087586251527,
+      "threshold": 0.9086550592972161,
       "type": "trade"
     },
     {
       "test_end_idx": 5350,
-      "threshold": 0.04227700304504096,
+      "threshold": 0.8276515238406247,
       "type": "trade"
     },
     {
       "test_end_idx": 5450,
-      "threshold": 0.031405958656149764,
+      "threshold": 0.904429475895106,
       "type": "trade"
     },
     {
       "test_end_idx": 5550,
-      "threshold": 0.07273079328266982,
+      "threshold": 0.7101058743260119,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 5650,
+      "threshold": 0.9506529348612164,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 5750,
+      "threshold": 0.9143287923522315,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 5850,
+      "threshold": 0.8081923329642383,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 5950,
+      "threshold": 0.9045349873679263,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 6050,
+      "threshold": 0.8991294792760769,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 6150,
+      "threshold": 0.9870762078188523,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 6250,
+      "threshold": 0.8574383053648209,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 6350,
+      "threshold": 1.0595174899532789,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 6450,
+      "threshold": 0.9183733120542991,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 6550,
+      "threshold": 0.9310229272238933,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 6650,
+      "threshold": 0.7662306409562748,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 6750,
+      "threshold": 0.9947768001721491,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 6850,
+      "threshold": 0.7234652606732919,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 6950,
+      "threshold": 1.083696214159346,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 7050,
+      "threshold": 0.7546465454112046,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 7150,
+      "threshold": 1.1193603777858105,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 7250,
+      "threshold": 1.1066855102001656,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 7350,
+      "threshold": 1.043220661204361,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 7450,
+      "threshold": 1.1909941093552907,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 7550,
+      "threshold": 0.9964399576915116,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 7650,
+      "threshold": 1.1647225117718605,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 7750,
+      "threshold": 0.835608135288348,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 7850,
+      "threshold": 1.2046512831063962,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 7950,
+      "threshold": 0.6872878910116813,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 8050,
+      "threshold": 0.9218055378503542,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 8150,
+      "threshold": 1.1416904154705643,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 8250,
+      "threshold": 0.7638550320549957,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 8350,
+      "threshold": 0.9185063972842816,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 8450,
+      "threshold": 1.0519978160876802,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 8550,
+      "threshold": 0.6327397255356488,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 8650,
+      "threshold": 1.028888781098943,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 8750,
+      "threshold": 0.7169528115336379,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 8850,
+      "threshold": 0.9650954526394537,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 8950,
+      "threshold": 0.6180039165370088,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 9050,
+      "threshold": 0.571240437229643,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 9150,
+      "threshold": 0.9463525091880891,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 9250,
+      "threshold": 1.0356881814863061,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 9350,
+      "threshold": 0.5963126559754385,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 9450,
+      "threshold": 0.7300458864883574,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 9550,
+      "threshold": 0.8546521339351096,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 9650,
+      "threshold": 0.9419914352660593,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 9750,
+      "threshold": 0.8510171041893149,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 9850,
+      "threshold": 0.593030296046912,
+      "type": "trade"
+    },
+    {
+      "test_end_idx": 9950,
+      "threshold": 0.5597862932240399,
       "type": "trade"
     }
   ],
@@ -174,9 +394,9 @@
     "threshold_type": "trade"
   },
   "statistics": {
-    "avg_threshold": 0.07869974599522724,
-    "min_threshold": 0.031405958656149764,
-    "max_threshold": 0.16574243480619927,
-    "std_threshold": 0.03130509999998869
+    "avg_threshold": 0.9085545381766464,
+    "min_threshold": 0.44120371200024233,
+    "max_threshold": 1.2046512831063962,
+    "std_threshold": 0.17656908575894426
   }
 }
