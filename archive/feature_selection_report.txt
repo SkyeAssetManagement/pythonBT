@@ -1,0 +1,54 @@
+================================================================================
+FEATURE SELECTION REPORT - Random Forest MDI
+================================================================================
+Min/Max features: 1/4
+Selection lookback: 2000 samples
+Importance threshold: 0.15
+
+RF Configuration (from model settings):
+  Trees: 150 (per_feature mode)
+  Max depth: 3
+  Min samples leaf: 240
+  Bootstrap fraction: 0.6
+
+FEATURE USAGE FREQUENCY
+----------------------------------------
+Ret_4-8hr                        33/33 (100.0%) | Avg Score: 0.3869
+Ret_0-1hr                        33/33 (100.0%) | Avg Score: 0.3461
+Ret_2-4hr                        31/33 ( 93.9%) | Avg Score: 0.2751
+
+FEATURE SELECTION OVER TIME
+----------------------------------------
+Step 0: Ret_4-8hr, Ret_0-1hr, Ret_2-4hr
+Step 1: Ret_0-1hr, Ret_4-8hr, Ret_2-4hr
+Step 2: Ret_4-8hr, Ret_0-1hr, Ret_2-4hr
+Step 3: Ret_4-8hr, Ret_0-1hr, Ret_2-4hr
+Step 4: Ret_0-1hr, Ret_4-8hr, Ret_2-4hr
+Step 5: Ret_0-1hr, Ret_4-8hr, Ret_2-4hr
+Step 6: Ret_4-8hr, Ret_0-1hr
+Step 7: Ret_4-8hr, Ret_0-1hr
+Step 8: Ret_4-8hr, Ret_0-1hr, Ret_2-4hr
+Step 9: Ret_0-1hr, Ret_4-8hr, Ret_2-4hr
+Step 10: Ret_4-8hr, Ret_2-4hr, Ret_0-1hr
+Step 11: Ret_4-8hr, Ret_0-1hr, Ret_2-4hr
+Step 12: Ret_4-8hr, Ret_0-1hr, Ret_2-4hr
+Step 13: Ret_0-1hr, Ret_4-8hr, Ret_2-4hr
+Step 14: Ret_4-8hr, Ret_0-1hr, Ret_2-4hr
+Step 15: Ret_4-8hr, Ret_0-1hr, Ret_2-4hr
+Step 16: Ret_0-1hr, Ret_4-8hr, Ret_2-4hr
+Step 17: Ret_0-1hr, Ret_4-8hr, Ret_2-4hr
+Step 18: Ret_4-8hr, Ret_0-1hr, Ret_2-4hr
+Step 19: Ret_4-8hr, Ret_0-1hr, Ret_2-4hr
+Step 20: Ret_0-1hr, Ret_4-8hr, Ret_2-4hr
+Step 21: Ret_4-8hr, Ret_2-4hr, Ret_0-1hr
+Step 22: Ret_4-8hr, Ret_0-1hr, Ret_2-4hr
+Step 23: Ret_0-1hr, Ret_2-4hr, Ret_4-8hr
+Step 24: Ret_0-1hr, Ret_4-8hr, Ret_2-4hr
+Step 25: Ret_4-8hr, Ret_0-1hr, Ret_2-4hr
+Step 26: Ret_4-8hr, Ret_2-4hr, Ret_0-1hr
+Step 27: Ret_4-8hr, Ret_0-1hr, Ret_2-4hr
+Step 28: Ret_2-4hr, Ret_0-1hr, Ret_4-8hr
+Step 29: Ret_4-8hr, Ret_2-4hr, Ret_0-1hr
+Step 30: Ret_4-8hr, Ret_0-1hr, Ret_2-4hr
+Step 31: Ret_4-8hr, Ret_0-1hr, Ret_2-4hr
+Step 32: Ret_4-8hr, Ret_2-4hr, Ret_0-1hr

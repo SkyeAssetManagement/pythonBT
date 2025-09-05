@@ -1,0 +1,41 @@
+================================================================================
+FEATURE SELECTION REPORT - Random Forest MDI
+================================================================================
+Min/Max features: 1/4
+Selection lookback: 2000 samples
+Importance threshold: 0.125
+
+RF Configuration (from model settings):
+  Trees: 50 (per_feature mode)
+  Max depth: 3
+  Min samples leaf: 180
+  Bootstrap fraction: 0.6
+
+FEATURE USAGE FREQUENCY
+----------------------------------------
+Ret_8-16hr                       66/66 (100.0%) | Avg Score: 1.0000
+
+FEATURE SELECTION OVER TIME
+----------------------------------------
+Step 0: Ret_8-16hr
+Step 3: Ret_8-16hr
+Step 6: Ret_8-16hr
+Step 9: Ret_8-16hr
+Step 12: Ret_8-16hr
+Step 15: Ret_8-16hr
+Step 18: Ret_8-16hr
+Step 21: Ret_8-16hr
+Step 24: Ret_8-16hr
+Step 27: Ret_8-16hr
+Step 30: Ret_8-16hr
+Step 33: Ret_8-16hr
+Step 36: Ret_8-16hr
+Step 39: Ret_8-16hr
+Step 42: Ret_8-16hr
+Step 45: Ret_8-16hr
+Step 48: Ret_8-16hr
+Step 51: Ret_8-16hr
+Step 54: Ret_8-16hr
+Step 57: Ret_8-16hr
+Step 60: Ret_8-16hr
+Step 63: Ret_8-16hr

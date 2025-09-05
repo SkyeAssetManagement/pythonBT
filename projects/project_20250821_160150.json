@@ -1,0 +1,20 @@
+{
+  "name": "project_20250821_160150",
+  "data_config_id": "e22c5479-7593-4a73-a03f-36721d71ff3c",
+  "model_config_id": "2207e44c-a09f-4646-bf4a-a1b1b760bf58",
+  "additional_settings": {
+    "source_file": "DTSmlDATA7x7.csv",
+    "validation_start": "2010-01-01",
+    "validation_end": "2015-12-31",
+    "selected_features": [
+      "Ret_0-1hr",
+      "Ret_3-6hr"
+    ],
+    "selected_target": "Ret_fwd6hr",
+    "train_size": "1000",
+    "test_size": "100",
+    "step_size": "50",
+    "bootstrap_fraction": "0.8"
+  },
+  "saved_at": "2025-08-21T16:01:50.605079"
+}

@@ -1,0 +1,26 @@
+{
+  "name": "project_20250828_172527",
+  "data_config_id": "de29c47a-8cf0-487f-a51a-267578c601cd",
+  "model_config_id": "e8e625bb-6b32-4d82-a2ee-07706c9f8aca",
+  "additional_settings": {
+    "source_file": "C:/Users/jd/OM3/DTSmlDATA_AllTickers_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "selected_features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "selected_target": "Ret_fwd6hr",
+    "train_size": "2000",
+    "test_size": "100",
+    "step_size": "100",
+    "bootstrap_fraction": "0.6"
+  },
+  "saved_at": "2025-08-28T17:25:27.611914"
+}

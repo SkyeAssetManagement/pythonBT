@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(mkdir:*)",
+      "Bash(copy config_longonly.ini LongOnlyOverNightDTClass )",
+      "Bash(copy model_longonly.py LongOnlyOverNightDTClass )",
+      "Bash(copy validation_longonly.py LongOnlyOverNightDTClass )",
+      "Bash(copy main_longonly.py LongOnlyOverNightDTClass )",
+      "Bash(copy preprocessing.py LongOnlyOverNightDTClass)",
+      "Bash(cp:*)",
+      "Bash(rm:*)",
+      "Bash(copy model_directional.py OMtree_model.py)",
+      "Bash(copy validation_directional.py OMtree_validation.py)",
+      "Bash(copy preprocessing.py OMtree_preprocessing.py)",
+      "Bash(copy config_longonly.ini OMtree_config.ini)",
+      "Bash(copy walkforward_directional.py OMtree_walkforward.py)",
+      "Bash(mv:*)",
+      "Bash(true)",
+      "Bash(dir:*)",
+      "Bash(pip install:*)",
+      "Bash(copy:*)",
+      "Bash(cmd /c:*)",
+      "Bash(del:*)",
+      "Bash(findstr:*)",
+      "Bash(git --version)",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ],
+    "defaultMode": "acceptEdits"
+  }
+}

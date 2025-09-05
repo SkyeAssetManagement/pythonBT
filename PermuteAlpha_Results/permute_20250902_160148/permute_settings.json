@@ -1,0 +1,93 @@
+{
+  "output_path": "PermuteAlpha_Results",
+  "selected_tickers": [
+    "NQ"
+  ],
+  "all_tickers": [
+    "CD",
+    "CL",
+    "ES",
+    "FV",
+    "GC",
+    "JY",
+    "NG",
+    "NQ",
+    "US",
+    "YM"
+  ],
+  "selected_targets": [
+    "Ret_fwd6hr"
+  ],
+  "all_targets": [
+    "Ret_fwd1hr",
+    "Ret_fwd3hr",
+    "Ret_fwd6hr",
+    "Ret_fwd12hr",
+    "Ret_fwd1d"
+  ],
+  "selected_hours": [
+    "0",
+    "2",
+    "4",
+    "6",
+    "8",
+    "10",
+    "12",
+    "14",
+    "16",
+    "17",
+    "19",
+    "21",
+    "23"
+  ],
+  "all_hours": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+    "11",
+    "12",
+    "13",
+    "14",
+    "15",
+    "16",
+    "17",
+    "18",
+    "19",
+    "20",
+    "21",
+    "22",
+    "23"
+  ],
+  "selected_features": [
+    "Ret_0-1hr",
+    "Ret_1-2hr",
+    "Ret_2-4hr",
+    "Ret_4-8hr",
+    "Ret_8-16hr",
+    "Ret_16-32hr",
+    "Ret_32-64hr",
+    "Ret_64-128hr"
+  ],
+  "all_features": [
+    "NoneTradePrice",
+    "Ret_0-1hr",
+    "Ret_1-2hr",
+    "Ret_2-4hr",
+    "Ret_4-8hr",
+    "Ret_8-16hr",
+    "Ret_16-32hr",
+    "Ret_32-64hr",
+    "Ret_64-128hr"
+  ],
+  "direction": "both",
+  "use_parallel": true,
+  "num_workers": 31
+}

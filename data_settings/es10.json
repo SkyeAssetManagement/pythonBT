@@ -1,0 +1,26 @@
+{
+    "data_file": "C:/Users/jd/OM3/data/DTSmlDATA_AllTickers_Hourly_TradePrice.csv",
+    "selected_features": [
+        "Ret_0-1hr",
+        "Ret_1-2hr",
+        "Ret_2-4hr",
+        "Ret_4-8hr",
+        "Ret_8-16hr",
+        "Ret_16-32hr",
+        "Ret_32-64hr",
+        "Ret_64-128hr"
+    ],
+    "all_features": [
+        "Ret_0-1hr",
+        "Ret_1-2hr",
+        "Ret_2-4hr",
+        "Ret_4-8hr",
+        "Ret_8-16hr",
+        "Ret_16-32hr",
+        "Ret_32-64hr",
+        "Ret_64-128hr"
+    ],
+    "selected_target": "Ret_fwd6hr",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31"
+}

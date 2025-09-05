@@ -1,0 +1,1304 @@
+[
+  {
+    "id": "bd090016-b7d1-4ef0-8275-9ac1a02ca6f1",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_AllTickers_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T18:18:59.539227"
+  },
+  {
+    "id": "b35081a1-19e9-4073-bee7-10b1f4eb40a8",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_AllTickers_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T18:18:04.548439"
+  },
+  {
+    "id": "fb0e1e90-0bb5-46f4-8628-e5f9eb6ef92f",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_AllTickers_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T17:36:36.442939"
+  },
+  {
+    "id": "5d70e267-f05e-4785-aa26-76e7c5c8bb5c",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_AllTickers_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T17:35:17.031731"
+  },
+  {
+    "id": "c223632b-efed-425b-aa6d-3d2a21c30a65",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_AllTickers_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T17:34:50.157381"
+  },
+  {
+    "id": "9e146356-f5ad-46b0-90b9-913b1975fb0d",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_AllTickers_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T17:29:43.845694"
+  },
+  {
+    "id": "1a35b937-3885-45c0-aeb6-b88ccdbe8178",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_AllTickers_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T17:25:52.070871"
+  },
+  {
+    "id": "de29c47a-8cf0-487f-a51a-267578c601cd",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_AllTickers_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T17:25:27.587405"
+  },
+  {
+    "id": "3e4c42fc-792a-4412-a5d9-7ebc885c0246",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_AllTickers_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T17:24:17.891966"
+  },
+  {
+    "id": "20d26582-a0e8-4bc3-a98e-13da07e4d675",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_AllTickers_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T17:23:11.550655"
+  },
+  {
+    "id": "6f344cea-88d0-49a7-90c8-056e2721cbd3",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_AllTickers_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T17:22:20.882745"
+  },
+  {
+    "id": "a8b5254c-9ffe-4a95-932a-fca4c4400e6d",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_AllTickers_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T17:20:25.972390"
+  },
+  {
+    "id": "214da89a-90e0-455c-a664-2a228d6e1187",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_AllTickers_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T17:15:11.920732"
+  },
+  {
+    "id": "610d4a60-7143-4d15-ad1b-b9b0ba11e302",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_AllTickers_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T17:11:12.577085"
+  },
+  {
+    "id": "633c7a8c-2e38-449f-9749-f5bf09037d9e",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "DiffClose@Obs",
+      "NoneClose@Obs",
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T17:09:49.620977"
+  },
+  {
+    "id": "3ac72079-d228-47c6-b073-a9dbfa93a7f9",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_AllTickers_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T17:08:13.018281"
+  },
+  {
+    "id": "6fa52c3c-adca-4272-a0fe-a4dc30948fe8",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T15:58:59.978511"
+  },
+  {
+    "id": "767dda40-d427-47c2-8069-781b3a905b8e",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T15:57:52.670884"
+  },
+  {
+    "id": "dea4a0eb-79ec-4a38-8759-e9f3aa17b9fd",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T14:30:49.996335"
+  },
+  {
+    "id": "c0c169bf-f477-4467-8d55-522b15f6f606",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T14:29:13.603005"
+  },
+  {
+    "id": "3caea230-ba5e-4f3c-a854-dbde4a5f62cd",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T14:23:27.558891"
+  },
+  {
+    "id": "7c943641-26c0-4a6c-a898-a33d691b1ffa",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T14:21:26.363837"
+  },
+  {
+    "id": "bcdac915-ddea-47c7-84b3-e79a7cfed918",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T14:19:15.197832"
+  },
+  {
+    "id": "be9c3a77-7cf2-4480-b5bf-3061508b2d8d",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T14:18:03.154899"
+  },
+  {
+    "id": "44972fa1-916f-445a-95a4-a38ca3257d37",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T14:15:13.189604"
+  },
+  {
+    "id": "5c1af773-29c0-4e52-ac6b-b7e60d33633f",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA7x7.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T14:13:44.375512"
+  },
+  {
+    "id": "07c0f1e9-b72a-413c-b587-9578ea896781",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T14:09:49.619202"
+  },
+  {
+    "id": "a6854bc6-203e-47ed-88ab-2df3d81444ae",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA_Hourly.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T14:09:29.547219"
+  },
+  {
+    "id": "e437e11b-3f57-42c4-a57d-8ecec860e351",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA7x7.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T13:45:53.614154"
+  },
+  {
+    "id": "f0f5f4f4-30c8-48c1-9633-6c1576c6ce6e",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA7x7.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T13:41:41.218931"
+  },
+  {
+    "id": "fd9147ab-b7b4-448a-ab59-9e67d440d3cc",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA7x7.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T13:39:42.015914"
+  },
+  {
+    "id": "76d0d4d2-2a94-436c-bd9e-eee28c32ff32",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA7x7.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T13:38:31.313713"
+  },
+  {
+    "id": "2d809d61-68e1-4cc1-8b48-00e40c6a46f2",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA7x7.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T13:36:59.953345"
+  },
+  {
+    "id": "1b8d1373-9b03-413a-8c0e-8de72364f943",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA7x7.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T13:36:04.281921"
+  },
+  {
+    "id": "ba416471-f6dc-41d1-b8da-c44a93f1a5b7",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA7x7.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T13:35:29.323905"
+  },
+  {
+    "id": "ac9dbeef-1f53-490c-b5a3-211910561de9",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA7x7.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T13:34:16.297130"
+  },
+  {
+    "id": "d6c5e593-2530-47c2-9bb7-554cfcf227c3",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA7x7.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T13:32:36.718339"
+  },
+  {
+    "id": "ada31bcb-c49f-4c91-84e6-cbfd368f4fe3",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA7x7.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T13:31:40.437681"
+  },
+  {
+    "id": "bc43a5da-e38b-4bbd-859a-4c819f1b0af8",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA7x7.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T13:30:43.589642"
+  },
+  {
+    "id": "fe44f22d-41ff-4106-97ac-9ddd532f7594",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA7x7.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T13:30:01.927618"
+  },
+  {
+    "id": "f699d688-d21a-4421-9c46-9dcfa428cc4f",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA7x7.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T13:29:10.072462"
+  },
+  {
+    "id": "f3fdb2b6-afe3-4e54-a889-3f910ffe3167",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA7x7.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T13:27:50.591245"
+  },
+  {
+    "id": "25c26031-7c1e-4905-8d8a-62e2d93a5408",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA7x7.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T13:26:50.973683"
+  },
+  {
+    "id": "879b211f-b215-4eea-9783-eaa57d0eb024",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA7x7.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T13:15:06.628666"
+  },
+  {
+    "id": "1e0f598b-3343-4ed6-ae87-6cd8de036b7b",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA7x7.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T13:09:54.510260"
+  },
+  {
+    "id": "617d0ae4-e0b0-4ca4-b414-d3aeb6fc38f1",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA7x7.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T12:42:43.939497"
+  },
+  {
+    "id": "be93c611-ffa5-466c-8bb7-ab4dd37a9972",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA7x7.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T12:41:27.905826"
+  },
+  {
+    "id": "035b2334-8419-4f65-b2af-89c401fe8c6e",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA7x7.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T12:37:21.419700"
+  },
+  {
+    "id": "6b3f2d92-cdb0-4af5-ace1-318665f599b8",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA7x7.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T12:35:49.941437"
+  },
+  {
+    "id": "320dd5cc-801a-4c7d-9c33-aa4656281ecc",
+    "csv_file": "C:/Users/jd/OM3/DTSmlDATA7x7.csv",
+    "validation_start": "2013-01-01",
+    "validation_end": "2025-12-31",
+    "date_column": "Date",
+    "time_column": "Time",
+    "features": [
+      "Ret_0-1hr",
+      "Ret_1-2hr",
+      "Ret_2-4hr",
+      "Ret_4-8hr",
+      "Ret_8-16hr",
+      "Ret_16-32hr",
+      "Ret_32-64hr",
+      "Ret_64-128hr"
+    ],
+    "targets": [
+      "Ret_fwd1hr",
+      "Ret_fwd3hr",
+      "Ret_fwd6hr",
+      "Ret_fwd12hr",
+      "Ret_fwd1d"
+    ],
+    "saved_at": "2025-08-28T12:34:03.115734"
+  }
+]
