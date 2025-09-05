@@ -166,12 +166,12 @@ class IntegratedTradingLauncher(tk.Tk):
             {
                 'title': 'Data Visualization',
                 'icon': '📉',
-                'description': 'Advanced Charting Dashboard',
+                'description': 'Simple Chart Viewer',
                 'details': [
-                    '• Interactive charts',
-                    '• Trade visualization',
-                    '• Technical indicators',
-                    '• Real-time updates'
+                    '• Direct data visualization',
+                    '• Candlestick & OHLC charts',
+                    '• No backtesting required',
+                    '• Fast and lightweight'
                 ],
                 'action': self.launch_visualization
             },
@@ -389,22 +389,18 @@ class IntegratedTradingLauncher(tk.Tk):
         threading.Thread(target=run, daemon=True).start()
     
     def launch_visualization(self):
-        """Launch advanced visualization dashboard"""
-        self.update_status("Launching Trading Dashboard...", '#00ff00')
+        """Launch simple chart viewer"""
+        self.update_status("Launching Chart Viewer...", '#00ff00')
         
         def run():
             try:
-                # Try to use the dashboard launcher for better control
-                if os.path.exists('tradingCode/dashboard_launcher.py'):
-                    subprocess.Popen([sys.executable, 'tradingCode/dashboard_launcher.py'])
-                else:
-                    # Fallback: Launch with default parameters for ES symbol and simpleSMA strategy
-                    subprocess.Popen([sys.executable, 'tradingCode/main.py', 'ES', 'simpleSMA', '--useDefaults'])
-                self.update_status("Trading Dashboard launched successfully", '#00ff00')
+                # Use the simple chart viewer for direct data visualization
+                subprocess.Popen([sys.executable, 'simple_chart_viewer.py'])
+                self.update_status("Chart Viewer launched successfully", '#00ff00')
             except Exception as e:
                 self.update_status(f"Error: {str(e)}", '#ff0000')
                 messagebox.showerror("Launch Error", 
-                                   f"Could not launch Dashboard:\n{str(e)}")
+                                   f"Could not launch Chart Viewer:\n{str(e)}")
         
         threading.Thread(target=run, daemon=True).start()
     
