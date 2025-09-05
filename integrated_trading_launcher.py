@@ -166,12 +166,12 @@ class IntegratedTradingLauncher(tk.Tk):
             {
                 'title': 'Data Visualization',
                 'icon': '📉',
-                'description': 'Trading Dashboard',
+                'description': 'PyQtGraph Range Bars',
                 'details': [
                     '• Candlestick charts',
-                    '• Trade markers (X scatter)',
-                    '• Crosshair & hover info',
-                    '• Equity curve display'
+                    '• White X trade markers',
+                    '• High-performance rendering',
+                    '• ATR & Range display'
                 ],
                 'action': self.launch_visualization
             },
@@ -389,18 +389,18 @@ class IntegratedTradingLauncher(tk.Tk):
         threading.Thread(target=run, daemon=True).start()
     
     def launch_visualization(self):
-        """Launch trading dashboard with candlesticks and trade markers"""
-        self.update_status("Launching Trading Dashboard...", '#00ff00')
+        """Launch PyQtGraph chart with candlesticks and trade X markers"""
+        self.update_status("Launching PyQtGraph Chart...", '#00ff00')
         
         def run():
             try:
-                # Use the trading dashboard with candlesticks and trade visualization
-                subprocess.Popen([sys.executable, 'launch_trading_dashboard.py'])
-                self.update_status("Trading Dashboard launched successfully", '#00ff00')
+                # Use the PyQtGraph range bars visualization
+                subprocess.Popen([sys.executable, 'launch_pyqtgraph_chart.py'])
+                self.update_status("PyQtGraph Chart launched successfully", '#00ff00')
             except Exception as e:
                 self.update_status(f"Error: {str(e)}", '#ff0000')
                 messagebox.showerror("Launch Error", 
-                                   f"Could not launch Trading Dashboard:\n{str(e)}")
+                                   f"Could not launch PyQtGraph Chart:\n{str(e)}")
         
         threading.Thread(target=run, daemon=True).start()
     
