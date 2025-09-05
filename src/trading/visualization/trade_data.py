@@ -45,6 +45,27 @@ class TradeCollection:
     def __getitem__(self, index):
         return self.trades[index]
     
+    def get_statistics(self) -> Dict[str, Any]:
+        """Get trade statistics"""
+        stats = {
+            'total_trades': len(self.trades),
+            'trade_types': {}
+        }
+        
+        # Count trade types
+        for trade in self.trades:
+            trade_type = trade.trade_type.upper()
+            if trade_type not in stats['trade_types']:
+                stats['trade_types'][trade_type] = 0
+            stats['trade_types'][trade_type] += 1
+        
+        # Ensure all expected types exist
+        for trade_type in ['BUY', 'SELL', 'SHORT', 'COVER']:
+            if trade_type not in stats['trade_types']:
+                stats['trade_types'][trade_type] = 0
+        
+        return stats
+    
     @classmethod
     def from_dataframe(cls, df: pd.DataFrame, bar_index_col: str = 'bar_index',
                       price_col: str = 'price', type_col: str = 'type'):
@@ -77,3 +98,51 @@ class TradeCollection:
             ))
         
         return cls(trades)
+
+# Standalone function for compatibility with trade_panel imports
+def create_sample_trades(num_trades: int = 100, start_bar: int = 0, end_bar: int = 1000, 
+                        timestamps: Optional[List] = None, bar_data: Optional[Dict] = None):
+    """Create sample trades with optional timestamp and price coordination"""
+    import numpy as np
+    
+    if end_bar <= start_bar:
+        end_bar = start_bar + 100
+    
+    # Generate random bar indices
+    num_trades = min(num_trades, (end_bar - start_bar) // 2)
+    trade_bars = np.random.choice(range(start_bar, end_bar), num_trades, replace=False)
+    trade_bars.sort()
+    
+    trades = []
+    for i, bar_idx in enumerate(trade_bars):
+        # Determine price based on bar data if available
+        if bar_data and 'close' in bar_data and bar_idx < len(bar_data['close']):
+            base_price = bar_data['close'][bar_idx]
+            price = base_price + np.random.randn() * 2
+        else:
+            price = 4000 + np.random.randn() * 10
+        
+        # Get timestamp if available
+        timestamp = None
+        if timestamps and bar_idx < len(timestamps):
+            timestamp = timestamps[bar_idx]
+        
+        trade = TradeData(
+            bar_index=bar_idx,
+            price=price,
+            trade_type='Buy' if i % 2 == 0 else 'Sell',
+            timestamp=timestamp
+        )
+        trades.append(trade)
+    
+    collection = TradeCollection(trades)
+    
+    # Add date_range attribute for compatibility
+    if timestamps and len(timestamps) > 0:
+        collection.date_range = (timestamps[0], timestamps[-1])
+    else:
+        from datetime import datetime, timedelta
+        now = datetime.now()
+        collection.date_range = (now - timedelta(days=30), now)
+    
+    return collection
