@@ -402,154 +402,145 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
         
     def render_range(self, start_idx, end_idx, update_x_range=True):
         """Render range with enhanced features"""
-        # Debug logging
-        print(f"[RENDER_RANGE] Called with start={start_idx}, end={end_idx}, update_x={update_x_range}")
-
         if self.is_rendering:
-            print(f"[RENDER_RANGE] Skipping - already rendering")
             return
 
         self.is_rendering = True
         render_start = time.time()
 
-        # Bounds checking
-        start_idx = max(0, int(start_idx))
-        end_idx = min(self.total_bars, int(end_idx))
+        try:
+            # Bounds checking
+            start_idx = max(0, int(start_idx))
+            end_idx = min(self.total_bars, int(end_idx))
 
-        print(f"[RENDER_RANGE] After bounds: start={start_idx}, end={end_idx}, total_bars={self.total_bars}")
+            if start_idx >= end_idx:
+                return
 
-        if start_idx >= end_idx:
-            print(f"[RENDER_RANGE] Invalid range - start >= end")
+            num_bars = end_idx - start_idx
+
+            # Clear previous (but preserve indicators)
+            # Remove only candle item and trades, not indicators
+            if hasattr(self, 'candle_item') and self.candle_item:
+                self.plot_widget.removeItem(self.candle_item)
+                self.candle_item = None
+
+            # Note: Trade items are handled separately in load_trades()
+            # Crosshairs stay persistent (no need to re-add)
+
+            # Get data slice
+            x = np.arange(start_idx, end_idx)
+            opens = self.full_data['open'][start_idx:end_idx]
+            highs = self.full_data['high'][start_idx:end_idx]
+            lows = self.full_data['low'][start_idx:end_idx]
+            closes = self.full_data['close'][start_idx:end_idx]
+
+            # Verify we have data
+            if len(opens) == 0:
+                return
+
+            # Store original num_bars for axis formatting
+            original_num_bars = num_bars
+
+            # Downsample if needed
+            if num_bars > 2000:
+                step = num_bars // 1000
+                x = x[::step]
+                opens = opens[::step]
+                highs = highs[::step]
+                lows = lows[::step]
+                closes = closes[::step]
+                num_bars = len(x)
+
+            # Create candlesticks with view range info for adaptive spacing
+            view_range = (start_idx, end_idx, original_num_bars)
+            self.candle_item = EnhancedCandlestickItem(x, opens, highs, lows, closes, view_range)
+            self.plot_widget.addItem(self.candle_item)
+
+            # Format time axis
+            self.format_time_axis(start_idx, end_idx, original_num_bars)
+
+            # Calculate Y range with padding
+            y_min = lows.min()
+            y_max = highs.max()
+
+            # Also consider indicator values in Y range if they exist
+            if hasattr(self, 'indicator_data') and self.indicator_data:
+                for name, values in self.indicator_data.items():
+                    if len(values) > start_idx:
+                        visible_end = min(end_idx, len(values))
+                        visible_values = values[start_idx:visible_end]
+                        if len(visible_values) > 0:
+                            ind_min = np.nanmin(visible_values)
+                            ind_max = np.nanmax(visible_values)
+                            if not np.isnan(ind_min):
+                                y_min = min(y_min, ind_min)
+                            if not np.isnan(ind_max):
+                                y_max = max(y_max, ind_max)
+
+            y_range = y_max - y_min
+            y_padding = y_range * 0.05
+
+            # Set ranges
+            if update_x_range:
+                self.plot_widget.setXRange(start_idx, end_idx, padding=0)
+
+            self.plot_widget.setYRange(y_min - y_padding, y_max + y_padding, padding=0)
+
+            # Store current range
+            self.current_x_range = (start_idx, end_idx)
+
+            # Re-add trade visualization if it exists
+            if hasattr(self, 'trade_arrows_scatter') and self.trade_arrows_scatter:
+                if self.trade_arrows_scatter not in self.plot_widget.items():
+                    self.plot_widget.addItem(self.trade_arrows_scatter)
+            if hasattr(self, 'trade_dots_scatter') and self.trade_dots_scatter:
+                if self.trade_dots_scatter not in self.plot_widget.items():
+                    self.plot_widget.addItem(self.trade_dots_scatter)
+
+            # Render visible portion of indicators
+            self.render_visible_indicators()
+
+            # Update status
+            render_time = time.time() - render_start
+            current_screen = QtWidgets.QApplication.screenAt(self.geometry().center())
+            if current_screen:
+                dpi = current_screen.logicalDotsPerInch()
+                self.status_label.setText(
+                    f"Bars: {start_idx:,}-{end_idx:,} of {self.total_bars:,} | "
+                    f"Rendered: {num_bars} in {render_time*1000:.1f}ms | "
+                    f"Price Range: ${y_min:.2f}-${y_max:.2f} | "
+                    f"Screen: {current_screen.name()} ({dpi} DPI)"
+                )
+        
+        finally:
+            # Always reset rendering flag
             self.is_rendering = False
-            return
-
-        num_bars = end_idx - start_idx
-        print(f"[RENDER_RANGE] Rendering {num_bars} bars")
-
-        # Clear previous (but preserve indicators)
-        # Remove only candle item and trades, not indicators
-        if hasattr(self, 'candle_item') and self.candle_item:
-            self.plot_widget.removeItem(self.candle_item)
-            self.candle_item = None
-
-        # Note: Trade items are handled separately in load_trades()
-        # Crosshairs stay persistent (no need to re-add)
-
-        # Get data slice
-        x = np.arange(start_idx, end_idx)
-        opens = self.full_data['open'][start_idx:end_idx]
-        highs = self.full_data['high'][start_idx:end_idx]
-        lows = self.full_data['low'][start_idx:end_idx]
-        closes = self.full_data['close'][start_idx:end_idx]
-
-        print(f"[RENDER_RANGE] Data sliced: x.len={len(x)}, opens.len={len(opens)}, highs.len={len(highs)}")
-        print(f"[RENDER_RANGE] Data range: opens[0]={opens[0] if len(opens) > 0 else 'EMPTY'}, closes[-1]={closes[-1] if len(closes) > 0 else 'EMPTY'}")
-
-        # Store original num_bars for axis formatting
-        original_num_bars = num_bars
-
-        # Downsample if needed
-        if num_bars > 2000:
-            step = num_bars // 1000
-            x = x[::step]
-            opens = opens[::step]
-            highs = highs[::step]
-            lows = lows[::step]
-            closes = closes[::step]
-            num_bars = len(x)
-
-        # Create candlesticks with view range info for adaptive spacing
-        view_range = (start_idx, end_idx, original_num_bars)
-        self.candle_item = EnhancedCandlestickItem(x, opens, highs, lows, closes, view_range)
-        self.plot_widget.addItem(self.candle_item)
-
-        # Format time axis
-        self.format_time_axis(start_idx, end_idx, original_num_bars)
-        
-        # Calculate Y range with padding
-        y_min = lows.min()
-        y_max = highs.max()
-
-        # Also consider indicator values in Y range if they exist
-        if hasattr(self, 'indicator_data') and self.indicator_data:
-            for name, values in self.indicator_data.items():
-                if len(values) > start_idx:
-                    visible_end = min(end_idx, len(values))
-                    visible_values = values[start_idx:visible_end]
-                    if len(visible_values) > 0:
-                        ind_min = np.nanmin(visible_values)
-                        ind_max = np.nanmax(visible_values)
-                        if not np.isnan(ind_min):
-                            y_min = min(y_min, ind_min)
-                        if not np.isnan(ind_max):
-                            y_max = max(y_max, ind_max)
-
-        y_range = y_max - y_min
-        y_padding = y_range * 0.05
-
-        # Set ranges
-        if update_x_range:
-            self.plot_widget.setXRange(start_idx, end_idx, padding=0)
-
-        self.plot_widget.setYRange(y_min - y_padding, y_max + y_padding, padding=0)
-        
-        # Store current range
-        self.current_x_range = (start_idx, end_idx)
-        
-        # Re-add trade visualization if it exists
-        if hasattr(self, 'trade_arrows_scatter') and self.trade_arrows_scatter:
-            if self.trade_arrows_scatter not in self.plot_widget.items():
-                self.plot_widget.addItem(self.trade_arrows_scatter)
-        if hasattr(self, 'trade_dots_scatter') and self.trade_dots_scatter:
-            if self.trade_dots_scatter not in self.plot_widget.items():
-                self.plot_widget.addItem(self.trade_dots_scatter)
-
-        # Render visible portion of indicators
-        self.render_visible_indicators()
-        
-        # Update status
-        render_time = time.time() - render_start
-        current_screen = QtWidgets.QApplication.screenAt(self.geometry().center())
-        if current_screen:
-            dpi = current_screen.logicalDotsPerInch()
-            self.status_label.setText(
-                f"Bars: {start_idx:,}-{end_idx:,} of {self.total_bars:,} | "
-                f"Rendered: {num_bars} in {render_time*1000:.1f}ms | "
-                f"Price Range: ${y_min:.2f}-${y_max:.2f} | "
-                f"Screen: {current_screen.name()} ({dpi} DPI)"
-            )
-        
-        # Reset rendering flag
-        self.is_rendering = False
         
     def on_x_range_changed(self, viewbox, range):
         """Handle X-axis range changes for dynamic loading"""
-        # print(f"[PHASE1-DEBUG] on_x_range_changed: range={range}, total_bars={self.total_bars}")
+        if self.full_data is None:
+            return
 
-        if self.full_data is None or self.is_rendering:
-            print(f"[ON_X_RANGE_CHANGED] Skipping - data={self.full_data is not None}, rendering={self.is_rendering}")
+        # Skip if we're already rendering to prevent recursion
+        if self.is_rendering:
             return
 
         new_start = max(0, int(range[0]))
         new_end = min(self.total_bars, int(range[1]))
 
-        print(f"[ON_X_RANGE_CHANGED] X range changed: {range} -> rendering {new_start} to {new_end}")
+        # Only render if the range actually changed significantly
+        if hasattr(self, 'current_x_range'):
+            old_start, old_end = self.current_x_range
+            # Check if change is significant (more than 1 bar)
+            if abs(new_start - old_start) < 1 and abs(new_end - old_end) < 1:
+                return
 
         # Always re-render for the new range to ensure continuous data loading
         self.render_range(new_start, new_end, update_x_range=False)
 
-        # Force update to ensure changes are visible
-        self.plot_widget.update()
-
     def on_range_changed(self, widget, ranges):
         """Handle any range changes - both X and Y axis"""
-        print(f"[ON_RANGE_CHANGED] Called with ranges={ranges}")
-
-        if self.full_data is None:
-            print(f"[ON_RANGE_CHANGED] No data loaded - skipping")
-            return
-        if self.is_rendering:
-            print(f"[ON_RANGE_CHANGED] Already rendering - skipping")
+        if self.full_data is None or self.is_rendering:
             return
 
         # Get X range from the ranges tuple
@@ -557,15 +548,10 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
         new_start = max(0, int(x_range[0]))
         new_end = min(self.total_bars, int(x_range[1]))
 
-        print(f"[ON_RANGE_CHANGED] New range: start={new_start}, end={new_end}, current={getattr(self, 'current_x_range', 'NONE')}")
-
         # Check if X range actually changed
-        if self.current_x_range != (new_start, new_end):
+        if not hasattr(self, 'current_x_range') or self.current_x_range != (new_start, new_end):
             # Always re-render to ensure Y-axis auto-scales based on visible data
-            print(f"[ON_RANGE_CHANGED] Range changed - triggering render")
             self.render_range(new_start, new_end, update_x_range=False)
-        else:
-            print(f"[ON_RANGE_CHANGED] Range unchanged - skipping")
             
     def on_mouse_moved(self, evt):
         """Handle mouse hover with enhanced data display"""
