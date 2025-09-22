@@ -605,8 +605,23 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
                         strategy = getattr(nearby_trade, 'strategy', None)
                         pnl_value = getattr(nearby_trade, 'pnl', None)
                         id_text = f" #{trade_id}" if trade_id is not None else ""
+
+                        # Get trade DateTime if available
+                        trade_bar_idx = nearby_trade.bar_index
+                        if 0 <= trade_bar_idx < len(self.full_data['timestamp']):
+                            trade_timestamp = self.full_data['timestamp'][trade_bar_idx]
+                            if hasattr(trade_timestamp, 'astype'):
+                                trade_dt = pd.to_datetime(trade_timestamp).to_pydatetime()
+                                trade_time_str = trade_dt.strftime('%Y-%m-%d %H:%M:%S')
+                            else:
+                                trade_time_str = str(trade_timestamp)
+                        else:
+                            trade_time_str = 'N/A'
+
                         hover_text += (
-                            f"\n\n🎯 TRADE: {nearby_trade.trade_type}{id_text}\n"
+                            f"\n\nTRADE: {nearby_trade.trade_type}{id_text}\n"
+                            f"DateTime: {trade_time_str}\n"
+                            f"Bar #: {trade_bar_idx}\n"
                             f"Price: ${nearby_trade.price:.2f} | Size: {size}\n"
                             f"Strategy: {strategy or 'N/A'}"
                         )
@@ -752,30 +767,37 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
 
     def jump_to_trade(self, trade):
         """Jump to specific trade with 250 bars on each side"""
-        print(f"[JUMP_TO_TRADE] Called for trade: {trade.trade_type}, bar_index={trade.bar_index}")
-        print(f"[JUMP_TO_TRADE] Current total_bars: {self.total_bars}")
-
         target_bar = trade.bar_index
+
+        # Validate target bar
+        if target_bar < 0 or target_bar >= self.total_bars:
+            print(f"Invalid trade bar index: {target_bar} (total bars: {self.total_bars})")
+            return
 
         # Calculate viewport range (250 bars on each side)
         start_bar = max(0, target_bar - 250)
-        end_bar = min(self.total_bars - 1, target_bar + 250)
+        end_bar = min(self.total_bars, target_bar + 250)
 
-        print(f"[JUMP_TO_TRADE] Calculated range: start={start_bar}, end={end_bar}, target={target_bar}")
+        # Ensure we have at least some bars to show
+        if end_bar - start_bar < 10:
+            start_bar = max(0, target_bar - 5)
+            end_bar = min(self.total_bars, target_bar + 5)
 
-        # First render the range to ensure data is loaded and X marks are visible
-        print(f"[JUMP_TO_TRADE] Calling render_range({start_bar}, {end_bar})")
-        self.render_range(start_bar, end_bar)
+        # Temporarily disable range change handlers to prevent jumping back
+        self.is_rendering = True
 
-        # Then set the viewport (render_range already sets X range, but ensure it's exact)
-        print(f"[JUMP_TO_TRADE] Setting X range to ({start_bar}, {end_bar})")
-        self.plot_widget.setXRange(start_bar, end_bar, padding=0)
+        try:
+            # First render the range to ensure data is loaded
+            self.render_range(start_bar, end_bar, update_x_range=True)
 
-        # Verify the range was set
-        view_range = self.plot_widget.viewRange()
-        print(f"[JUMP_TO_TRADE] After setXRange, actual view range: X={view_range[0]}, Y={view_range[1]}")
+            # Update current range to prevent handlers from reverting
+            self.current_x_range = (start_bar, end_bar)
 
-        print(f"[JUMP_TO_TRADE] Completed jump to trade: {trade.trade_type} at bar {target_bar}")
+            # Force the viewport to the exact range
+            self.plot_widget.setXRange(start_bar, end_bar, padding=0)
+        finally:
+            # Re-enable handlers after a short delay to let the view settle
+            QtCore.QTimer.singleShot(100, lambda: setattr(self, 'is_rendering', False))
     
     def on_viewport_changed(self, view_box, range_obj):
         """Handle viewport changes for trade panel auto-sync"""
