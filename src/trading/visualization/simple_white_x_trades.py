@@ -68,19 +68,20 @@ class SimpleWhiteXTrades:
         """Create white X marks instead of arrows - this replaces the arrow visualization"""
         if len(self.x_positions) == 0:
             return pg.ScatterPlotItem([])
-        
-        # Create simple white X marks - size 14
+
+        # Create simple white X marks - size increased by 25% (14 -> 17.5 -> 18)
         scatter = pg.ScatterPlotItem(
             pos=list(zip(self.x_positions, self.y_positions)),
             symbol='x',           # Simple X symbol
-            size=14,             # Size 14 as requested
+            size=18,             # Size increased by 25% from 14
             brush=pg.mkBrush(color='white'),
-            pen=pg.mkPen(color='black', width=2),  # Black outline for visibility
+            pen=pg.mkPen(color='white', width=3),  # Bold white pen (width 3)
             pxMode=True,         # Size in pixels
-            hoverable=True       # Enable hover
+            hoverable=True,      # Enable hover
+            zValue=1000         # High z-value to render on top of candles
         )
-        
-        print(f"Created white X scatter (arrows replacement): {len(self.x_positions)} marks, size=14")
+
+        print(f"Created white X scatter (arrows replacement): {len(self.x_positions)} marks, size=18")
         return scatter
     
     def create_dots_scatter(self) -> pg.ScatterPlotItem:

@@ -667,10 +667,14 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
         self.trade_visualization = TradeVisualization(trades, bar_data)
         self.trade_arrows_scatter = self.trade_visualization.create_arrow_scatter()
         self.trade_dots_scatter = self.trade_visualization.create_dots_scatter()
-        
-        # Add to chart
-        self.plot_widget.addItem(self.trade_arrows_scatter)
-        self.plot_widget.addItem(self.trade_dots_scatter)
+
+        # Add to chart with proper z-ordering (trades on top)
+        if self.trade_arrows_scatter:
+            self.trade_arrows_scatter.setZValue(1000)  # Ensure trades render on top
+            self.plot_widget.addItem(self.trade_arrows_scatter)
+        if self.trade_dots_scatter:
+            self.trade_dots_scatter.setZValue(1001)  # Dots even higher if they exist
+            self.plot_widget.addItem(self.trade_dots_scatter)
         
         print(f"Loaded {len(trades)} trades to chart using optimized ScatterPlotItem")
         
@@ -711,31 +715,40 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
 
         # Clear previous indicator lines
         for name, line in self.indicator_lines.items():
-            if line in self.plot_widget.items:
+            if line in self.plot_widget.items():
                 self.plot_widget.removeItem(line)
         self.indicator_lines.clear()
 
         # Render visible portion of each indicator
         for name, values in self.indicator_data.items():
-            if len(values) > start_idx:
-                # Get visible portion
+            # Ensure we have enough data up to the visible range
+            if len(values) > 0:
+                # Get visible portion - ensure we show data even if it starts before start_idx
+                visible_start = max(0, start_idx)
                 visible_end = min(end_idx, len(values))
-                visible_values = values[start_idx:visible_end]
-                visible_x = np.arange(start_idx, visible_end)
 
-                # Downsample if needed for performance
-                if len(visible_values) > 2000:
-                    step = len(visible_values) // 1000
-                    visible_values = visible_values[::step]
-                    visible_x = visible_x[::step]
+                if visible_end > visible_start:
+                    visible_values = values[visible_start:visible_end]
+                    visible_x = np.arange(visible_start, visible_end)
 
-                # Create line plot for visible portion only
-                pen = pg.mkPen(colors[color_idx % len(colors)], width=1)  # Thinner lines for performance
-                line = self.plot_widget.plot(visible_x, visible_values, pen=pen, name=name)
+                    # Skip if no valid data
+                    if len(visible_values) == 0 or np.all(np.isnan(visible_values)):
+                        continue
 
-                # Store reference
-                self.indicator_lines[name] = line
-                color_idx += 1
+                    # Downsample if needed for performance
+                    if len(visible_values) > 2000:
+                        step = len(visible_values) // 1000
+                        visible_values = visible_values[::step]
+                        visible_x = visible_x[::step]
+
+                    # Create line plot for visible portion only
+                    pen = pg.mkPen(colors[color_idx % len(colors)], width=2)  # Width 2 for better visibility
+                    line = self.plot_widget.plot(visible_x, visible_values, pen=pen, name=name)
+                    line.setZValue(500)  # Set z-value above candles but below trades
+
+                    # Store reference
+                    self.indicator_lines[name] = line
+                    color_idx += 1
 
     def jump_to_trade(self, trade):
         """Jump to specific trade with 250 bars on each side"""
