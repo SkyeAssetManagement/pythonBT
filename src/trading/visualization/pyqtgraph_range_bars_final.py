@@ -30,9 +30,9 @@ from simple_white_x_trades import TradeVisualization  # Simple white X marks
 from trade_data import TradeCollection
 
 # Performance settings
-pg.setConfigOptions(antialias=False)
-pg.setConfigOptions(useOpenGL=True)
-pg.setConfigOptions(enableExperimental=True)
+pg.setConfigOptions(antialias=True)
+pg.setConfigOptions(useOpenGL=False)  # Disabled to avoid overflow warnings
+pg.setConfigOptions(enableExperimental=False)
 
 # Enable high DPI scaling for multi-monitor support
 QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
@@ -102,7 +102,11 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
         self.trade_arrows_scatter = None
         self.trade_dots_scatter = None
         self.current_trades = TradeCollection([])  # Empty initially
-        
+
+        # Indicator overlays
+        self.indicator_lines = {}  # Store indicator line plot items
+        self.indicator_data = {}  # Store full indicator data arrays
+
         # Setup
         self.setup_ui()
         self.load_data()
@@ -167,9 +171,22 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
         # Store date boundary positions for special formatting
         self.date_boundary_positions = []
         
-        # Use OpenGL
-        self.plot_widget.useOpenGL(True)
-        self.plot_widget.setAntialiasing(False)
+        # Set ViewBox limits to prevent overflow
+        viewBox = self.plot_widget.getViewBox()
+        viewBox.setLimits(
+            xMin=-100,  # Allow some padding
+            xMax=200000,  # Increased to handle 122,609 bars with padding
+            yMin=0,  # Price shouldn't be negative
+            yMax=100000,  # Large but finite limit
+            minXRange=10,  # Minimum 10 bars visible
+            maxXRange=150000,  # Increased to allow viewing all bars at once
+            minYRange=1,  # Minimum price range
+            maxYRange=50000  # Maximum price range
+        )
+
+        # Disable OpenGL to avoid driver issues
+        self.plot_widget.useOpenGL(False)
+        self.plot_widget.setAntialiasing(True)
         
         layout.addWidget(self.plot_widget)
         
@@ -210,9 +227,16 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
         # Connect trade panel signals
         self.trade_panel.trade_selected.connect(self.jump_to_trade)
         self.trade_panel.source_selector.trades_loaded.connect(self.load_trades)
+
+        # Connect strategy runner for indicators
+        if hasattr(self.trade_panel, 'strategy_runner'):
+            self.trade_panel.strategy_runner.trades_generated.connect(self.load_trades)
+            self.trade_panel.strategy_runner.indicators_calculated.connect(self.add_indicator_overlays)
         
         # Connect signals - use sigRangeChanged to catch ALL changes
         self.plot_widget.sigRangeChanged.connect(self.on_range_changed)
+        # Add specific handler for X-axis changes to ensure dynamic loading
+        self.plot_widget.sigXRangeChanged.connect(self.on_x_range_changed)
         # Also connect for trade panel auto-sync
         self.plot_widget.sigXRangeChanged.connect(self.on_viewport_changed)
         self.proxy = pg.SignalProxy(
@@ -266,10 +290,11 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
         if self.trade_panel and self.full_data['timestamp'] is not None:
             self.trade_panel.set_chart_timestamps(self.full_data['timestamp'])
             
-            # Also pass bar data for realistic trade pricing
+            # Also pass bar data for realistic trade pricing (including timestamps)
             bar_data = {
+                'timestamp': self.full_data['timestamp'],  # Include timestamps!
                 'open': self.full_data['open'],
-                'high': self.full_data['high'], 
+                'high': self.full_data['high'],
                 'low': self.full_data['low'],
                 'close': self.full_data['close']
             }
@@ -283,11 +308,18 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
         """Create custom time axis with HH:MM:SS and date boundaries"""
         if num_bars == 0:
             return
-            
+
+        # Debug logging
+        print(f"[FORMAT_TIME_AXIS] start={start_idx}, end={end_idx}, num_bars={num_bars}")
+        print(f"[FORMAT_TIME_AXIS] Timestamps type: {type(self.full_data['timestamp'])}")
+
         try:
             # Get timestamps for visible range - convert to list for safer indexing
             timestamps = self.full_data['timestamp'][start_idx:end_idx]
             timestamps_array = timestamps.values if hasattr(timestamps, 'values') else timestamps
+
+            print(f"[FORMAT_TIME_AXIS] First timestamp: {timestamps_array[0] if len(timestamps_array) > 0 else 'EMPTY'}")
+            print(f"[FORMAT_TIME_AXIS] Timestamp slice length: {len(timestamps_array)}")
             
             # Downsample if needed
             if num_bars > 2000:
@@ -305,14 +337,18 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
                 date_labels = {}  # Track which labels are date boundaries
                 
                 prev_date = None
-                for idx in label_indices:
+                for i, idx in enumerate(label_indices):
                     ts = timestamps_array[idx]
-                    # Calculate actual x position
-                    if num_bars <= 2000:
-                        x_pos = start_idx + idx
-                    else:
+                    # Calculate actual x position - must match what we use in render_range
+                    # In render_range we use: x = np.arange(start_idx, end_idx)
+                    # So x_pos should be the actual bar index
+                    actual_bar_idx = start_idx + idx
+                    if num_bars > 2000:
+                        # When downsampled, we need to account for the step
                         step = num_bars // 1000
-                        x_pos = start_idx + idx * step
+                        actual_bar_idx = start_idx + idx * step
+
+                    x_pos = actual_bar_idx
                     
                     # Check for date boundary
                     current_date = pd.Timestamp(ts).date() if not isinstance(ts, pd.Timestamp) else ts.date()
@@ -337,12 +373,16 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
                     
                     x_ticks.append(x_pos)
                     prev_date = current_date
-                
+
+                    # Debug output
+                    print(f"[FORMAT_TIME_AXIS] Label {i}: x_pos={x_pos}, timestamp={ts}, label={x_labels[-1]}")
+
                 # Update custom axis with date labels
                 if hasattr(self, 'custom_axis'):
                     self.custom_axis.setDateLabels(date_labels)
-                
+
                 # Set custom ticks
+                print(f"[FORMAT_TIME_AXIS] Setting {len(x_ticks)} ticks")
                 self.plot_widget.getAxis('bottom').setTicks([list(zip(x_ticks, x_labels))])
         except Exception as e:
             # If time axis formatting fails, don't crash the whole render
@@ -351,39 +391,52 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
         
     def render_range(self, start_idx, end_idx, update_x_range=True):
         """Render range with enhanced features"""
+        # Debug logging
+        print(f"[RENDER_RANGE] Called with start={start_idx}, end={end_idx}, update_x={update_x_range}")
+
         if self.is_rendering:
+            print(f"[RENDER_RANGE] Skipping - already rendering")
             return
-            
+
         self.is_rendering = True
         render_start = time.time()
-        
+
         # Bounds checking
         start_idx = max(0, int(start_idx))
         end_idx = min(self.total_bars, int(end_idx))
-        
+
+        print(f"[RENDER_RANGE] After bounds: start={start_idx}, end={end_idx}, total_bars={self.total_bars}")
+
         if start_idx >= end_idx:
+            print(f"[RENDER_RANGE] Invalid range - start >= end")
             self.is_rendering = False
             return
-        
+
         num_bars = end_idx - start_idx
-        
-        # Clear previous
-        self.plot_widget.clear()
-        
-        # Re-add crosshair
-        self.plot_widget.addItem(self.crosshair_v, ignoreBounds=True)
-        self.plot_widget.addItem(self.crosshair_h, ignoreBounds=True)
-        
+        print(f"[RENDER_RANGE] Rendering {num_bars} bars")
+
+        # Clear previous (but preserve indicators)
+        # Remove only candle item and trades, not indicators
+        if hasattr(self, 'candle_item') and self.candle_item:
+            self.plot_widget.removeItem(self.candle_item)
+            self.candle_item = None
+
+        # Note: Trade items are handled separately in load_trades()
+        # Crosshairs stay persistent (no need to re-add)
+
         # Get data slice
         x = np.arange(start_idx, end_idx)
         opens = self.full_data['open'][start_idx:end_idx]
         highs = self.full_data['high'][start_idx:end_idx]
         lows = self.full_data['low'][start_idx:end_idx]
         closes = self.full_data['close'][start_idx:end_idx]
-        
+
+        print(f"[RENDER_RANGE] Data sliced: x.len={len(x)}, opens.len={len(opens)}, highs.len={len(highs)}")
+        print(f"[RENDER_RANGE] Data range: opens[0]={opens[0] if len(opens) > 0 else 'EMPTY'}, closes[-1]={closes[-1] if len(closes) > 0 else 'EMPTY'}")
+
         # Store original num_bars for axis formatting
         original_num_bars = num_bars
-        
+
         # Downsample if needed
         if num_bars > 2000:
             step = num_bars // 1000
@@ -393,35 +446,55 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
             lows = lows[::step]
             closes = closes[::step]
             num_bars = len(x)
-        
+
         # Create candlesticks with view range info for adaptive spacing
         view_range = (start_idx, end_idx, original_num_bars)
         self.candle_item = EnhancedCandlestickItem(x, opens, highs, lows, closes, view_range)
         self.plot_widget.addItem(self.candle_item)
-        
+
         # Format time axis
         self.format_time_axis(start_idx, end_idx, original_num_bars)
         
         # Calculate Y range with padding
         y_min = lows.min()
         y_max = highs.max()
+
+        # Also consider indicator values in Y range if they exist
+        if hasattr(self, 'indicator_data') and self.indicator_data:
+            for name, values in self.indicator_data.items():
+                if len(values) > start_idx:
+                    visible_end = min(end_idx, len(values))
+                    visible_values = values[start_idx:visible_end]
+                    if len(visible_values) > 0:
+                        ind_min = np.nanmin(visible_values)
+                        ind_max = np.nanmax(visible_values)
+                        if not np.isnan(ind_min):
+                            y_min = min(y_min, ind_min)
+                        if not np.isnan(ind_max):
+                            y_max = max(y_max, ind_max)
+
         y_range = y_max - y_min
         y_padding = y_range * 0.05
-        
+
         # Set ranges
         if update_x_range:
             self.plot_widget.setXRange(start_idx, end_idx, padding=0)
-        
+
         self.plot_widget.setYRange(y_min - y_padding, y_max + y_padding, padding=0)
         
         # Store current range
         self.current_x_range = (start_idx, end_idx)
         
-        # Re-add trade visualization if it exists (after clear())
+        # Re-add trade visualization if it exists
         if hasattr(self, 'trade_arrows_scatter') and self.trade_arrows_scatter:
-            self.plot_widget.addItem(self.trade_arrows_scatter)
+            if self.trade_arrows_scatter not in self.plot_widget.items():
+                self.plot_widget.addItem(self.trade_arrows_scatter)
         if hasattr(self, 'trade_dots_scatter') and self.trade_dots_scatter:
-            self.plot_widget.addItem(self.trade_dots_scatter)
+            if self.trade_dots_scatter not in self.plot_widget.items():
+                self.plot_widget.addItem(self.trade_dots_scatter)
+
+        # Render visible portion of indicators
+        self.render_visible_indicators()
         
         # Update status
         render_time = time.time() - render_start
@@ -438,20 +511,50 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
         # Reset rendering flag
         self.is_rendering = False
         
+    def on_x_range_changed(self, viewbox, range):
+        """Handle X-axis range changes for dynamic loading"""
+        print(f"[ON_X_RANGE_CHANGED] Called with range={range}")
+
+        if self.full_data is None or self.is_rendering:
+            print(f"[ON_X_RANGE_CHANGED] Skipping - data={self.full_data is not None}, rendering={self.is_rendering}")
+            return
+
+        new_start = max(0, int(range[0]))
+        new_end = min(self.total_bars, int(range[1]))
+
+        print(f"[ON_X_RANGE_CHANGED] X range changed: {range} -> rendering {new_start} to {new_end}")
+
+        # Always re-render for the new range to ensure continuous data loading
+        self.render_range(new_start, new_end, update_x_range=False)
+
+        # Force update to ensure changes are visible
+        self.plot_widget.update()
+
     def on_range_changed(self, widget, ranges):
         """Handle any range changes - both X and Y axis"""
-        if self.full_data is None or self.is_rendering:
+        print(f"[ON_RANGE_CHANGED] Called with ranges={ranges}")
+
+        if self.full_data is None:
+            print(f"[ON_RANGE_CHANGED] No data loaded - skipping")
             return
-        
+        if self.is_rendering:
+            print(f"[ON_RANGE_CHANGED] Already rendering - skipping")
+            return
+
         # Get X range from the ranges tuple
         x_range = ranges[0]
         new_start = max(0, int(x_range[0]))
         new_end = min(self.total_bars, int(x_range[1]))
-        
+
+        print(f"[ON_RANGE_CHANGED] New range: start={new_start}, end={new_end}, current={getattr(self, 'current_x_range', 'NONE')}")
+
         # Check if X range actually changed
         if self.current_x_range != (new_start, new_end):
             # Always re-render to ensure Y-axis auto-scales based on visible data
+            print(f"[ON_RANGE_CHANGED] Range changed - triggering render")
             self.render_range(new_start, new_end, update_x_range=False)
+        else:
+            print(f"[ON_RANGE_CHANGED] Range unchanged - skipping")
             
     def on_mouse_moved(self, evt):
         """Handle mouse hover with enhanced data display"""
@@ -477,8 +580,14 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
                 atr = self.full_data['aux1'][bar_idx] if self.full_data['aux1'] is not None else 0
                 range_mult = self.full_data['aux2'][bar_idx] if self.full_data['aux2'] is not None else 0
                 
-                # Format timestamp with seconds
-                time_str = timestamp.strftime('%Y-%m-%d %H:%M:%S')
+                # Format timestamp with seconds - convert numpy.datetime64 to datetime
+                if hasattr(timestamp, 'astype'):
+                    # Convert numpy.datetime64 to datetime
+                    timestamp_dt = pd.to_datetime(timestamp).to_pydatetime()
+                    time_str = timestamp_dt.strftime('%Y-%m-%d %H:%M:%S')
+                else:
+                    # Already a datetime object
+                    time_str = timestamp.strftime('%Y-%m-%d %H:%M:%S')
                 
                 # Calculate range value
                 range_value = atr * range_mult if atr > 0 and range_mult > 0 else 0
@@ -494,11 +603,18 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
                         mouse_point.x(), mouse_point.y(), tolerance=15.0
                     )
                     if nearby_trade:
-                        hover_text += f"\n\n🎯 TRADE: {nearby_trade.trade_type} #{nearby_trade.trade_id}\n" \
-                                    f"Price: ${nearby_trade.price:.2f} | Size: {nearby_trade.size}\n" \
-                                    f"Strategy: {nearby_trade.strategy or 'N/A'}"
-                        if nearby_trade.pnl is not None:
-                            hover_text += f" | P&L: ${nearby_trade.pnl:.2f}"
+                        trade_id = getattr(nearby_trade, 'trade_id', None)
+                        size = getattr(nearby_trade, 'size', 1)
+                        strategy = getattr(nearby_trade, 'strategy', None)
+                        pnl_value = getattr(nearby_trade, 'pnl', None)
+                        id_text = f" #{trade_id}" if trade_id is not None else ""
+                        hover_text += (
+                            f"\n\n🎯 TRADE: {nearby_trade.trade_type}{id_text}\n"
+                            f"Price: ${nearby_trade.price:.2f} | Size: {size}\n"
+                            f"Strategy: {strategy or 'N/A'}"
+                        )
+                        if isinstance(pnl_value, (int, float)):
+                            hover_text += f" | P&L: ${pnl_value:.2f}"
                 
                 # Update hover label with all information
                 self.hover_label.setText(hover_text)
@@ -560,22 +676,96 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
         self.plot_widget.addItem(self.trade_dots_scatter)
         
         print(f"Loaded {len(trades)} trades to chart using optimized ScatterPlotItem")
-    
+        
+        # Also populate the trade list panel if available
+        if self.trade_panel is not None:
+            try:
+                self.trade_panel.load_trades(trades)
+            except Exception as e:
+                print(f"Warning: could not load trades into panel: {e}")
+
+    def add_indicator_overlays(self, indicators: dict):
+        """Add indicator lines to the chart - store full data but render incrementally"""
+        # Store full indicator data
+        self.indicator_data = indicators
+
+        # Clear existing indicator line items
+        for name, line in self.indicator_lines.items():
+            self.plot_widget.removeItem(line)
+        self.indicator_lines.clear()
+
+        print(f"Stored {len(indicators)} indicators for incremental rendering")
+
+        # Render visible portion if we have a current range
+        if hasattr(self, 'current_x_range'):
+            self.render_visible_indicators()
+
+    def render_visible_indicators(self):
+        """Render only the visible portion of indicators for performance"""
+        if not hasattr(self, 'indicator_data') or not self.indicator_data:
+            return
+
+        if not hasattr(self, 'current_x_range'):
+            return
+
+        start_idx, end_idx = self.current_x_range
+        colors = ['#00ff00', '#ff00ff', '#00ffff', '#ffff00', '#ff8800']
+        color_idx = 0
+
+        # Clear previous indicator lines
+        for name, line in self.indicator_lines.items():
+            if line in self.plot_widget.items:
+                self.plot_widget.removeItem(line)
+        self.indicator_lines.clear()
+
+        # Render visible portion of each indicator
+        for name, values in self.indicator_data.items():
+            if len(values) > start_idx:
+                # Get visible portion
+                visible_end = min(end_idx, len(values))
+                visible_values = values[start_idx:visible_end]
+                visible_x = np.arange(start_idx, visible_end)
+
+                # Downsample if needed for performance
+                if len(visible_values) > 2000:
+                    step = len(visible_values) // 1000
+                    visible_values = visible_values[::step]
+                    visible_x = visible_x[::step]
+
+                # Create line plot for visible portion only
+                pen = pg.mkPen(colors[color_idx % len(colors)], width=1)  # Thinner lines for performance
+                line = self.plot_widget.plot(visible_x, visible_values, pen=pen, name=name)
+
+                # Store reference
+                self.indicator_lines[name] = line
+                color_idx += 1
+
     def jump_to_trade(self, trade):
         """Jump to specific trade with 250 bars on each side"""
+        print(f"[JUMP_TO_TRADE] Called for trade: {trade.trade_type}, bar_index={trade.bar_index}")
+        print(f"[JUMP_TO_TRADE] Current total_bars: {self.total_bars}")
+
         target_bar = trade.bar_index
-        
+
         # Calculate viewport range (250 bars on each side)
         start_bar = max(0, target_bar - 250)
         end_bar = min(self.total_bars - 1, target_bar + 250)
-        
+
+        print(f"[JUMP_TO_TRADE] Calculated range: start={start_bar}, end={end_bar}, target={target_bar}")
+
         # First render the range to ensure data is loaded and X marks are visible
+        print(f"[JUMP_TO_TRADE] Calling render_range({start_bar}, {end_bar})")
         self.render_range(start_bar, end_bar)
-        
+
         # Then set the viewport (render_range already sets X range, but ensure it's exact)
+        print(f"[JUMP_TO_TRADE] Setting X range to ({start_bar}, {end_bar})")
         self.plot_widget.setXRange(start_bar, end_bar, padding=0)
-        
-        print(f"Jumped to trade: {trade.trade_type} at bar {target_bar}, range {start_bar}-{end_bar}")
+
+        # Verify the range was set
+        view_range = self.plot_widget.viewRange()
+        print(f"[JUMP_TO_TRADE] After setXRange, actual view range: X={view_range[0]}, Y={view_range[1]}")
+
+        print(f"[JUMP_TO_TRADE] Completed jump to trade: {trade.trade_type} at bar {target_bar}")
     
     def on_viewport_changed(self, view_box, range_obj):
         """Handle viewport changes for trade panel auto-sync"""

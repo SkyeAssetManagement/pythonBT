@@ -17,25 +17,28 @@ import bisect
 @dataclass
 class TradeData:
     """Standard trade data format compatible with VectorBT output"""
-    trade_id: int
-    timestamp: pd.Timestamp
+    # Required fields
     bar_index: int
     trade_type: str  # 'BUY', 'SELL', 'SHORT', 'COVER'
     price: float
-    size: float
+
+    # Optional fields with defaults
+    trade_id: Optional[int] = None
+    timestamp: Optional[pd.Timestamp] = None
+    size: float = 1.0
     pnl: Optional[float] = None
     strategy: Optional[str] = None
     symbol: Optional[str] = None
-    
+
     def __post_init__(self):
         """Validate trade data after initialization"""
         valid_types = {'BUY', 'SELL', 'SHORT', 'COVER'}
         if self.trade_type not in valid_types:
             raise ValueError(f"Invalid trade_type: {self.trade_type}. Must be one of {valid_types}")
-        
+
         if self.price <= 0:
             raise ValueError(f"Price must be positive, got: {self.price}")
-            
+
         if self.size <= 0:
             raise ValueError(f"Size must be positive, got: {self.size}")
     
@@ -73,10 +76,15 @@ class TradeCollection:
     def __init__(self, trades: List[TradeData]):
         """
         Initialize trade collection with efficient indexes
-        
+
         Args:
             trades: List of TradeData objects
         """
+        # Auto-generate trade_ids if missing
+        for i, trade in enumerate(trades):
+            if trade.trade_id is None:
+                trade.trade_id = i
+
         self.trades = sorted(trades, key=lambda t: t.bar_index)
         
         # Create efficient lookup structures
@@ -104,10 +112,11 @@ class TradeCollection:
                 self.bar_indexes.append(trade.bar_index)
             self.by_bar[trade.bar_index].append(trade)
             
-            # Time-based lookup
-            if trade.timestamp not in self.by_time:
-                self.by_time[trade.timestamp] = []
-            self.by_time[trade.timestamp].append(trade)
+            # Time-based lookup (only if timestamp exists)
+            if trade.timestamp is not None:
+                if trade.timestamp not in self.by_time:
+                    self.by_time[trade.timestamp] = []
+                self.by_time[trade.timestamp].append(trade)
         
         # Sort bar indexes for binary search
         self.bar_indexes.sort()
@@ -116,7 +125,10 @@ class TradeCollection:
         """Calculate min/max dates in collection"""
         if not self.trades:
             return None, None
-        return min(t.timestamp for t in self.trades), max(t.timestamp for t in self.trades)
+        timestamps = [t.timestamp for t in self.trades if t.timestamp is not None]
+        if not timestamps:
+            return None, None
+        return min(timestamps), max(timestamps)
     
     def _calculate_price_range(self) -> Tuple[float, float]:
         """Calculate min/max prices in collection"""
@@ -295,11 +307,11 @@ def create_sample_trades(n_trades: int = 1000,
         pnl = random.uniform(-500, 500) if trade_type in ['SELL', 'COVER'] else None
         
         trade = TradeData(
-            trade_id=i,
-            timestamp=timestamp,
             bar_index=bar_idx,
             trade_type=trade_type,
             price=price,
+            trade_id=i,
+            timestamp=timestamp,
             size=size,
             pnl=pnl,
             strategy='Test',

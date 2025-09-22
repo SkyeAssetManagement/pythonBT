@@ -389,14 +389,14 @@ class IntegratedTradingLauncher(tk.Tk):
         threading.Thread(target=run, daemon=True).start()
     
     def launch_visualization(self):
-        """Launch PyQtGraph chart with candlesticks and trade X markers"""
-        self.update_status("Launching PyQtGraph Chart...", '#00ff00')
+        """Launch PyQtGraph chart with data selector"""
+        self.update_status("Launching PyQtGraph Chart with Data Selector...", '#00ff00')
         
         def run():
             try:
-                # Use the simplified PyQtGraph range bars visualization
-                subprocess.Popen([sys.executable, 'launch_pyqtgraph_chart_simple.py'])
-                self.update_status("PyQtGraph Chart launched successfully", '#00ff00')
+                # Use the new launcher with data selector dialog
+                subprocess.Popen([sys.executable, 'launch_pyqtgraph_with_selector.py'])
+                self.update_status("PyQtGraph Chart with selector launched", '#00ff00')
             except Exception as e:
                 self.update_status(f"Error: {str(e)}", '#ff0000')
                 messagebox.showerror("Launch Error", 

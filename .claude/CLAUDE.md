@@ -43,6 +43,14 @@ Before completing any task, verify:
 
 ## Technical Standards
 
+### Library Documentation & Research
+- **ALWAYS use Context7 MCP FIRST** for library documentation and code examples
+- **MANDATORY workflow for any library questions:**
+  1. Use `resolve-library-id` to find the correct library ID
+  2. Use `get-library-docs` with specific topic/tokens for focused results
+  3. Only use web search if Context7 doesn't have the library
+- **Fallback only:** Use WebSearch/WebFetch only when Context7 lacks the library
+
 ### Array Processing & Performance
 - Use vectorized operations (NumPy, Pandas, native array methods)
 - Avoid nested loops for data processing

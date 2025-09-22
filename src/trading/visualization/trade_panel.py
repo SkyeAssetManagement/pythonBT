@@ -16,6 +16,7 @@ import logging
 
 from trade_data import TradeData, TradeCollection
 from csv_trade_loader import CSVTradeLoader
+from strategy_runner import StrategyRunner
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +57,9 @@ class TradeSourceSelector(QtWidgets.QWidget):
         # Radio buttons for source selection
         self.backtester_radio = QtWidgets.QRadioButton("Load from Backtester")
         self.csv_radio = QtWidgets.QRadioButton("Load from CSV File")
-        self.backtester_radio.setChecked(True)  # Default selection
+        # Default to CSV to enforce real trades
+        self.backtester_radio.setChecked(False)
+        self.csv_radio.setChecked(True)
         
         layout.addWidget(self.backtester_radio)
         layout.addWidget(self.csv_radio)
@@ -170,28 +173,10 @@ class TradeSourceSelector(QtWidgets.QWidget):
     
     def load_backtester_trades(self):
         """Load trades from backtester (placeholder for now)"""
-        self.status_label.setText("Backtester integration not yet implemented")
-        
-        # For now, create sample trades for testing
-        from trade_data import create_sample_trades
-        
-        # Use chart timestamps if available to coordinate dates
-        if self.chart_timestamps is not None:
-            # Create trades in a reasonable range within the chart data
-            max_bar = len(self.chart_timestamps) - 1
-            start_bar = max(0, max_bar // 4)  # Start at 25% through the data
-            end_bar = min(max_bar, max_bar * 3 // 4)  # End at 75% through the data
-            
-            # Get bar data from parent if available
-            bar_data = getattr(self, 'bar_data', None)
-            trades = create_sample_trades(100, start_bar, end_bar, self.chart_timestamps, bar_data)
-            self.status_label.setText(f"Loaded {len(trades)} sample trades with realistic prices")
-        else:
-            # Fallback to original behavior
-            trades = create_sample_trades(100, 0, 1000)
-            self.status_label.setText(f"Loaded {len(trades)} sample trades (using default timestamps)")
-        
-        self.trades_loaded.emit(trades)
+        # Explicitly disable sample/backtester auto-generation
+        self.status_label.setText("Backtester integration not yet implemented (CSV only)")
+        logger.info("Backtester trade loading is disabled; use CSV")
+        return
 
 class TradeTableModel(QtCore.QAbstractTableModel):
     """Table model for trade list with efficient updates"""
@@ -248,15 +233,22 @@ class TradeTableModel(QtCore.QAbstractTableModel):
             
             # Format specific columns
             if column_attr == "timestamp":
-                return value.strftime('%y-%m-%d %H:%M:%S')
+                if value is not None:
+                    return value.strftime('%y-%m-%d %H:%M:%S')
+                else:
+                    return "-"
+            elif column_attr == "trade_id":
+                return str(value) if value is not None else "-"
             elif column_attr == "price":
                 return f"${value:.2f}"
+            elif column_attr == "size":
+                return str(value) if value is not None else "1"
             elif column_attr == "pnl" and value is not None:
                 return f"${value:.2f}"
             elif column_attr == "pnl" and value is None:
                 return "-"
             else:
-                return str(value)
+                return str(value) if value is not None else ""
         
         elif role == QtCore.Qt.TextColorRole:
             # Color code by trade type and P&L
@@ -325,10 +317,14 @@ class TradeListPanel(QtWidgets.QWidget):
     def set_bar_data(self, bar_data):
         """Set bar data for realistic trade pricing"""
         self.bar_data = bar_data
-        
+
         # Also pass bar data to the source selector
         if hasattr(self, 'source_selector') and self.source_selector:
             self.source_selector.set_bar_data(bar_data)
+
+        # Pass to strategy runner
+        if hasattr(self, 'strategy_runner') and self.strategy_runner:
+            self.strategy_runner.set_chart_data(bar_data)
         
     def setup_ui(self):
         """Setup the panel UI"""
@@ -336,10 +332,19 @@ class TradeListPanel(QtWidgets.QWidget):
         layout.setContentsMargins(5, 5, 5, 5)
         layout.setSpacing(10)
         
-        # Trade source selector
+        # Tab widget for Source Selector and Strategy Runner
+        self.tab_widget = QtWidgets.QTabWidget()
+
+        # Trade source selector tab
         self.source_selector = TradeSourceSelector()
-        layout.addWidget(self.source_selector)
-        
+        self.tab_widget.addTab(self.source_selector, "Load Trades")
+
+        # Strategy runner tab
+        self.strategy_runner = StrategyRunner()
+        self.tab_widget.addTab(self.strategy_runner, "Run Strategy")
+
+        layout.addWidget(self.tab_widget)
+
         # Separator
         line = QtWidgets.QFrame()
         line.setFrameShape(QtWidgets.QFrame.HLine)
@@ -468,7 +473,10 @@ class TradeListPanel(QtWidgets.QWidget):
         """Setup signal connections"""
         # Source selector
         self.source_selector.trades_loaded.connect(self.load_trades)
-        
+
+        # Strategy runner
+        self.strategy_runner.trades_generated.connect(self.load_trades)
+
         # Table selection
         self.table_view.doubleClicked.connect(self.on_trade_double_clicked)
         
@@ -499,13 +507,19 @@ class TradeListPanel(QtWidgets.QWidget):
     
     def on_trade_double_clicked(self, index: QtCore.QModelIndex):
         """Handle double-click on trade row"""
+        print(f"[TRADE_PANEL] Double-click detected on row {index.row()}")
         if not index.isValid():
+            print(f"[TRADE_PANEL] Invalid index")
             return
-        
+
         trade = self.table_model.get_trade_at_row(index.row())
         if trade:
+            print(f"[TRADE_PANEL] Trade found: {trade.trade_type} at bar {trade.bar_index}")
+            print(f"[TRADE_PANEL] Emitting trade_selected signal")
             self.trade_selected.emit(trade)
             logger.debug(f"Trade selected: {trade.trade_type} at bar {trade.bar_index}")
+        else:
+            print(f"[TRADE_PANEL] No trade found at row {index.row()}")
     
     def scroll_to_trade(self, trade: TradeData):
         """Scroll to specific trade in the list (for auto-sync)"""

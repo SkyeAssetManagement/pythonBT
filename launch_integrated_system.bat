@@ -19,6 +19,9 @@ if errorlevel 1 (
 echo Starting SAM - Integrated Backtesting System...
 echo.
 
+REM Change to the script directory
+cd /d "%~dp0"
+
 REM Launch the integrated GUI
 python integrated_trading_launcher.py
 
