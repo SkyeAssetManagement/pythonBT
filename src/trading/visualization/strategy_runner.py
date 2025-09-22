@@ -165,6 +165,10 @@ class StrategyRunner(QtWidgets.QWidget):
         """Set chart data for strategy execution"""
         # Convert to DataFrame
         if 'timestamp' in data_dict:
+            print(f"[STRATEGY_RUNNER] set_chart_data: Found timestamp in data_dict")
+            print(f"[STRATEGY_RUNNER] First timestamp: {data_dict['timestamp'][0] if len(data_dict['timestamp']) > 0 else 'EMPTY'}")
+            print(f"[STRATEGY_RUNNER] Timestamp type: {type(data_dict['timestamp'])}")
+
             df = pd.DataFrame({
                 'DateTime': data_dict['timestamp'],
                 'Open': data_dict['open'],
@@ -173,7 +177,11 @@ class StrategyRunner(QtWidgets.QWidget):
                 'Close': data_dict['close'],
                 'Volume': data_dict.get('volume', np.zeros(len(data_dict['close'])))
             })
+            print(f"[STRATEGY_RUNNER] Created DataFrame with columns: {df.columns.tolist()}")
+            print(f"[STRATEGY_RUNNER] DataFrame DateTime column type: {df['DateTime'].dtype}")
+            print(f"[STRATEGY_RUNNER] First DateTime value: {df['DateTime'].iloc[0] if len(df) > 0 else 'EMPTY'}")
         else:
+            print(f"[STRATEGY_RUNNER] set_chart_data: No timestamp found in data_dict")
             df = pd.DataFrame({
                 'Open': data_dict['open'],
                 'High': data_dict['high'],
@@ -181,6 +189,7 @@ class StrategyRunner(QtWidgets.QWidget):
                 'Close': data_dict['close'],
                 'Volume': data_dict.get('volume', np.zeros(len(data_dict['close'])))
             })
+            print(f"[STRATEGY_RUNNER] Created DataFrame without DateTime, columns: {df.columns.tolist()}")
 
         self.chart_data = df
         self.status_label.setText(f"Chart data loaded: {len(df)} bars")

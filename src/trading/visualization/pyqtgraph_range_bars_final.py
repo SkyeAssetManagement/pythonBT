@@ -109,7 +109,9 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
 
         # Setup
         self.setup_ui()
-        self.load_data()
+        # Only load data if not overridden by subclass
+        if not hasattr(self, 'config'):
+            self.load_data()
         
         # Screen change monitoring
         self.screen_check_timer = QtCore.QTimer()
@@ -318,6 +320,13 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
             timestamps = self.full_data['timestamp'][start_idx:end_idx]
             timestamps_array = timestamps.values if hasattr(timestamps, 'values') else timestamps
 
+            # Debug: Check what timestamps we're working with (commented out)
+            # print(f"[FORMAT_TIME_AXIS] Timestamp check:")
+            # for i in range(min(3, len(timestamps_array))):
+            #     ts = pd.Timestamp(timestamps_array[i])
+            #     print(f"  [{i}] {timestamps_array[i]} -> hour={ts.hour}, minute={ts.minute}, second={ts.second}")
+
+            # print(f"[PHASE1-DEBUG] Timestamp slice: first={timestamps_array[0] if len(timestamps_array) > 0 else 'EMPTY'}, last={timestamps_array[-1] if len(timestamps_array) > 0 else 'EMPTY'}")
             print(f"[FORMAT_TIME_AXIS] First timestamp: {timestamps_array[0] if len(timestamps_array) > 0 else 'EMPTY'}")
             print(f"[FORMAT_TIME_AXIS] Timestamp slice length: {len(timestamps_array)}")
             
@@ -374,8 +383,10 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
                     x_ticks.append(x_pos)
                     prev_date = current_date
 
-                    # Debug output
-                    print(f"[FORMAT_TIME_AXIS] Label {i}: x_pos={x_pos}, timestamp={ts}, label={x_labels[-1]}")
+                    # Debug output - show actual time components
+                    if i < 3:  # Only first few to avoid spam
+                        ts_obj = pd.Timestamp(ts)
+                        print(f"[FORMAT_TIME_AXIS] Label {i}: x_pos={x_pos}, timestamp={ts}, hour={ts_obj.hour}, min={ts_obj.minute}, sec={ts_obj.second}, label={x_labels[-1]}")
 
                 # Update custom axis with date labels
                 if hasattr(self, 'custom_axis'):
@@ -513,7 +524,7 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
         
     def on_x_range_changed(self, viewbox, range):
         """Handle X-axis range changes for dynamic loading"""
-        print(f"[ON_X_RANGE_CHANGED] Called with range={range}")
+        # print(f"[PHASE1-DEBUG] on_x_range_changed: range={range}, total_bars={self.total_bars}")
 
         if self.full_data is None or self.is_rendering:
             print(f"[ON_X_RANGE_CHANGED] Skipping - data={self.full_data is not None}, rendering={self.is_rendering}")

@@ -224,17 +224,32 @@ class TradeTableModel(QtCore.QAbstractTableModel):
         """Return data for table cells"""
         if not index.isValid() or index.row() >= len(self.trades):
             return None
-        
+
         trade = self.trades[index.row()]
         column_attr = self.COLUMNS[index.column()][1]
-        
+
         if role == QtCore.Qt.DisplayRole:
             value = getattr(trade, column_attr)
-            
+
             # Format specific columns
             if column_attr == "timestamp":
+                # Debug logging for first trade
+                if index.row() == 0:
+                    print(f"[TRADE_PANEL] First trade timestamp value: {value}")
+                    print(f"[TRADE_PANEL] First trade timestamp type: {type(value)}")
+
                 if value is not None:
-                    return value.strftime('%y-%m-%d %H:%M:%S')
+                    try:
+                        # Handle different timestamp types
+                        if hasattr(value, 'strftime'):
+                            return value.strftime('%y-%m-%d %H:%M:%S')
+                        else:
+                            # Convert to datetime if needed
+                            dt = pd.to_datetime(value)
+                            return dt.strftime('%y-%m-%d %H:%M:%S')
+                    except Exception as e:
+                        print(f"[TRADE_PANEL] Error formatting timestamp: {e}")
+                        return "-"
                 else:
                     return "-"
             elif column_attr == "trade_id":
@@ -254,14 +269,14 @@ class TradeTableModel(QtCore.QAbstractTableModel):
             # Color code by trade type and P&L
             if column_attr == "trade_type":
                 if trade.trade_type in ['BUY', 'COVER']:
-                    return QtGui.QColor(0, 150, 0)  # Green
+                    return QtGui.QColor(0, 200, 0)  # Brighter green
                 else:
-                    return QtGui.QColor(150, 0, 0)  # Red
+                    return QtGui.QColor(255, 120, 120)  # Light red for better contrast
             elif column_attr == "pnl" and trade.pnl is not None:
                 if trade.pnl > 0:
-                    return QtGui.QColor(0, 150, 0)  # Green profit
+                    return QtGui.QColor(0, 200, 0)  # Brighter green profit
                 elif trade.pnl < 0:
-                    return QtGui.QColor(150, 0, 0)  # Red loss
+                    return QtGui.QColor(255, 120, 120)  # Light red loss for better contrast
         
         elif role == QtCore.Qt.TextAlignmentRole:
             if column_attr in ["price", "size", "pnl", "trade_id"]:
@@ -291,7 +306,7 @@ class TradeListPanel(QtWidgets.QWidget):
     """
     
     # Signals
-    trade_selected = QtCore.pyqtSignal(TradeData)  # Emitted when trade clicked
+    trade_selected = QtCore.pyqtSignal(object)  # Emitted when trade clicked (TradeData object)
     
     def __init__(self):
         super().__init__()
@@ -482,9 +497,15 @@ class TradeListPanel(QtWidgets.QWidget):
         
     def load_trades(self, trades: TradeCollection):
         """Load trades into the panel"""
+        print(f"[TRADE_PANEL] load_trades called with {len(trades)} trades")
+
+        # Debug: Check first few trades for timestamp
+        for i, trade in enumerate(trades[:3]):
+            print(f"[TRADE_PANEL] Trade {i}: timestamp={trade.timestamp}, type={type(trade.timestamp)}")
+
         self.trades = trades
         self.table_model.set_trades(trades)
-        
+
         # Update status
         stats = trades.get_statistics()
         self.status_bar.setText(

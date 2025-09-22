@@ -69,6 +69,8 @@ class TradingStrategy(ABC):
                 if 'DateTime' in df.columns:
                     timestamp = pd.Timestamp(df['DateTime'].iloc[i])
                     if i == 0:  # Log first timestamp
+                        # ts = pd.Timestamp(timestamp)
+                        # print(f"[PHASE4-DEBUG] First trade timestamp: {timestamp}, hour={ts.hour}, minute={ts.minute}, second={ts.second}")
                         print(f"[STRATEGY] First timestamp from DateTime: {timestamp}")
                 elif 'timestamp' in df.columns:
                     timestamp = pd.Timestamp(df['timestamp'].iloc[i])

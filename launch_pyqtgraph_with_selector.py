@@ -124,10 +124,14 @@ def calculate_rsi(prices, period=14):
 
 class ConfiguredChart(RangeBarChartFinal):
     """Modified chart that uses configuration from selector"""
-    
+
     def __init__(self, config=None):
+        # IMPORTANT: Set config BEFORE calling parent __init__
+        # Parent will skip load_data() because we have config attribute
         self.config = config or {}
         super().__init__()
+        # Now load our configured data
+        self.load_data()
     
     def load_data(self):
         """Override to load configured data (real data only)."""
@@ -153,9 +157,12 @@ class ConfiguredChart(RangeBarChartFinal):
         # Store dataframe for trade generation
         self.dataframe = df
         
+
         # Standardize column names
+        # CRITICAL: Don't map 'Date' to 'DateTime' - we need to combine Date+Time first!
         column_mapping = {
-            'datetime': 'DateTime', 'date': 'DateTime', 'Date': 'DateTime',
+            'datetime': 'DateTime', 'date': 'DateTime',  # lowercase date is ok
+            # 'Date': 'DateTime',  # REMOVED - uppercase Date needs to be combined with Time first
             'timestamp': 'DateTime', 'Timestamp': 'DateTime',
             'open': 'Open', 'high': 'High', 'low': 'Low', 'close': 'Close',
             'volume': 'Volume', 'vol': 'Volume'
@@ -165,9 +172,13 @@ class ConfiguredChart(RangeBarChartFinal):
             if old in df.columns and new not in df.columns:
                 df[new] = df[old]
         
-        # Ensure DateTime column
+        # Ensure DateTime column - handle separate Date and Time columns
         if 'DateTime' not in df.columns:
-            if 'Time' in df.columns:
+            if 'Date' in df.columns and 'Time' in df.columns:
+                # Combine Date and Time columns properly
+                # Combine Date and Time columns properly
+                df['DateTime'] = pd.to_datetime(df['Date'] + ' ' + df['Time'])
+            elif 'Time' in df.columns:
                 df['DateTime'] = pd.to_datetime(df['Time'])
             elif df.index.name and 'date' in df.index.name.lower():
                 df['DateTime'] = df.index
@@ -205,7 +216,8 @@ class ConfiguredChart(RangeBarChartFinal):
         timestamps = pd.to_datetime(df['DateTime'])
         if isinstance(timestamps, pd.Series):
             timestamps = timestamps.values
-        
+
+
         self.full_data = {
             'timestamp': timestamps,
             'open': df['Open'].values.astype(np.float32),
@@ -217,7 +229,8 @@ class ConfiguredChart(RangeBarChartFinal):
             'aux2': df['AUX2'].values.astype(np.float32) if 'AUX2' in df else None
         }
         self.total_bars = len(self.full_data['open'])
-        
+
+
         print(f"Data loaded: {self.total_bars:,} bars in {time.time()-start_time:.2f}s")
         
         # Load trades based on configuration
@@ -228,6 +241,7 @@ class ConfiguredChart(RangeBarChartFinal):
             self.trade_panel.set_chart_timestamps(self.full_data['timestamp'])
             
             bar_data = {
+                'timestamp': self.full_data['timestamp'],  # CRITICAL: Include timestamp!
                 'open': self.full_data['open'],
                 'high': self.full_data['high'],
                 'low': self.full_data['low'],
