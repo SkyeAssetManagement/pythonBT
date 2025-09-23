@@ -1,196 +1,133 @@
 # CODE DOCUMENTATION - PythonBT Trading System
 
-## Overview
-Advanced trading system with two main components: PyQtGraph visualization for range bar charting and OMTree machine learning for trade signal generation.
+## CRITICAL REVERSION NOTICE (2025-09-23)
 
-## Architecture
+### Why We Reverted to Commit d22acf6
 
-```
-PythonBT Trading System
-├── PyQtGraph Visualization (377k+ bars support)
-│   ├── Real-time charting with trade overlays
-│   ├── Strategy execution & backtesting
-│   └── Technical indicators (SMA, RSI)
-└── OMTree ML Pipeline
-    ├── Decision tree classification
-    ├── Walk-forward validation
-    └── Feature engineering
-```
+We have reverted from commit `48830fb` back to commit `d22acf6` ("Implement execution price formulas and signal lag tracking") because the subsequent attempts to unify the trading system resulted in severe degradation of chart rendering quality.
 
-## Directory Structure
+**Working Version (d22acf6)**: As shown in Screenshot 2025-09-22 164318.png
+- Clean, crisp candlestick rendering with proper green/red colors
+- Clear time axis labels (19:17:30, 20:46:06, etc.)
+- Proper data hover window showing Bar, DateTime, OHLC, ATR, Range
+- White X trade markers clearly visible
+- Trade list panel with DateTime, Type, Price, Size columns
+- Auto Y-axis scaling working perfectly
+- Smooth panning and zooming across 377,690 bars
 
+**Failed Attempts (commits after d22acf6)**:
+- `bbbf2e9`: Modular backtesting architecture - broke chart rendering
+- `6a6d072`: PyQtGraph integration - data not displaying
+- `d0d19cb`: PyQtGraph launcher - rendering issues
+- `52a5561`: P&L calculation fix - still had rendering problems
+- `5df8579`: Unified trading system - chart completely broken
+- `8dbb5ce`: EnhancedCandlestickItem fix attempt - didn't resolve issues
+- `48830fb`: Complete implementation - chart still not working properly
+
+### What We Were Trying to Achieve
+
+The goal of the failed commits was to create a unified system that would:
+
+1. **Unified Configuration**: Single config.yaml controlling all components
+   - Execution lag settings
+   - Price formulas (OHLC expressions)
+   - Position sizing
+   - Strategy parameters
+
+2. **Modular Architecture**: Self-contained strategies with metadata
+   - Base strategy class with indicator definitions
+   - Auto-plotting of indicators
+   - Consistent execution across visualization and backtesting
+
+3. **Unified Execution Engine**: Single engine for both visualization and backtesting
+   - Consistent trade execution logic
+   - Proper lag implementation (signal bar + N)
+   - Price formula evaluation
+
+4. **Clean P&L Display**: Show P&L as percentage not dollars
+   - With $1 position size, P&L = percentage gain
+   - Display as "1.25%" not "$0.0125"
+
+### What Went Wrong
+
+The modular refactoring introduced too many changes at once:
+- Lost the sequential rendering approach (`render_range()` method)
+- Broke the coordinate system between components
+- Changed how candlesticks were instantiated
+- Lost proper time axis formatting
+- Data hover window stopped working
+- Chart wouldn't display data at all in some versions
+
+## Current Working Architecture (Commit d22acf6)
+
+### Directory Structure
 ```
 C:\code\PythonBT\
-├── .claude\                              # Project documentation
-│   ├── CLAUDE.md                        # Development standards
-│   ├── CODE_DOCUMENTATION.md           # This file
-│   └── projecttodos.md                 # Task tracking
-│
-├── src\trading\                         # PyQtGraph components
+├── src\trading\
 │   ├── visualization\
-│   │   ├── pyqtgraph_range_bars_final.py   # Main chart (377k bars)
-│   │   ├── trade_panel.py                  # Trade list display
-│   │   ├── simple_white_x_trades.py        # Trade markers
+│   │   ├── pyqtgraph_range_bars_final.py   # WORKING chart with 377k bars
+│   │   ├── trade_panel.py                  # Trade list with DateTime
+│   │   ├── simple_white_x_trades.py        # White X markers
 │   │   ├── strategy_runner.py              # Strategy execution
-│   │   └── csv_trade_loader.py            # Trade import
+│   │   └── csv_trade_loader.py            # CSV import
 │   └── strategies\
-│       ├── base.py                         # Base strategy (lag=0)
-│       ├── sma_crossover.py               # SMA strategy
+│       ├── base.py                         # Base strategy with lag
+│       ├── sma_crossover.py               # SMA crossover
 │       └── rsi_momentum.py                # RSI strategy
-│
-├── OMTree ML Components\
-│   ├── OMtree_gui.py                      # ML model GUI
-│   ├── OMtree_walkforward.py              # Walk-forward validation
-│   ├── OMtree_model.py                    # Decision tree model
-│   ├── OMtree_preprocessing.py            # Feature engineering
-│   ├── OMtree_validation.py               # Model validation
-│   └── OMtree_config.ini                  # Configuration
-│
-├── Launch Scripts\
-│   ├── launch_pyqtgraph_with_selector.py  # Main PyQtGraph launcher
-│   ├── launch_trading_dashboard.py        # Trading dashboard
-│   ├── launch_pyqtgraph_chart.py         # Direct chart launch
-│   └── pyqtgraph_data_selector.py        # Data selection dialog
-│
-└── dataRaw\                              # Market data
-    └── range-ATR30x0.05\ES\               # 377,690 range bars
+├── config.yaml                             # Execution configuration
+├── launch_pyqtgraph_with_selector.py      # Main launcher
+└── parquetData\                           # Range bar data
 ```
 
-## Component Details
+### Key Working Components
 
-### PyQtGraph Visualization System
+#### pyqtgraph_range_bars_final.py
+- `RangeBarChartFinal` class with proper `render_range()` method
+- `EnhancedCandlestickItem` with 5 arguments: x, opens, highs, lows, closes
+- Sequential rendering that handles 377,690 bars efficiently
+- Proper time axis formatting with `format_time_axis()`
+- Working hover data display with crosshairs
 
-#### Core Features
-- **Data Capacity**: Handles 377,690+ bars (2021-2025)
-- **Dynamic Loading**: Efficient rendering with downsampling
-- **Real-time Updates**: Live chart updates with trade execution
-- **Multi-monitor Support**: DPI-aware rendering
+#### Trade Visualization
+- `SimpleWhiteXTrades` class creating size 18 white X markers
+- Trade panel showing DateTime, Type, Price, Size
+- Proper trade jumping and highlighting
 
-#### Key Fixes (2025-09-22)
-1. **Timestamp Display**: Fixed DateTime column mapping
-2. **ViewBox Limits**: Removed 200k hardcoded limit
-3. **Navigation**: Fixed jump_to_trade position retention
-4. **Trade Markers**: Enhanced visibility (18px, bold white)
-5. **Indicator Rendering**: Fixed rendering across all ranges
-6. **Initial View**: Opens with last 500 bars
-
-#### Main Classes
-- `RangeBarChart`: Core chart widget with candle rendering
-- `TradePanel`: Trade list with DateTime display
-- `DataSelector`: File browser for data/trade selection
-- `StrategyRunner`: Executes trading strategies
-
-### OMTree Machine Learning Pipeline
-
-#### Core Components
-- **Decision Tree Model**: Custom implementation with bootstrapping
-- **Walk-forward Validation**: Time-series aware validation
-- **Feature Engineering**: 100+ technical indicators
-- **GUI Interface**: Real-time model training/testing
-
-#### Key Parameters
-- Bootstrap fraction: 0.5-0.67
-- Min leaf fraction: 0.5-1.0%
-- Vote threshold: 70-80%
-- Target threshold: 0.4-0.6%
-
-#### Processing Pipeline
-```
-Raw Data → Feature Engineering →
-Normalization → Tree Training →
-Signal Generation → Validation
+#### Strategy Execution (config.yaml driven)
+```yaml
+execution:
+  bar_lag: 1  # Signal at bar N, execute at bar N+1
+  buy_execution_price: "(H + L + C) / 3"
+  sell_execution_price: "(H + L + C) / 3"
+  exit_execution_price: "C"
+  short_execution_price: "O"
+  cover_execution_price: "C"
 ```
 
-## Data Flow
+## Path Forward
 
-### PyQtGraph Visualization
-```
-CSV/Parquet Data → DataFrame →
-NumPy Arrays → Chart Rendering →
-Trade Overlay → Interactive Display
-```
+See projecttodos.md for detailed stepwise plan to achieve unification without breaking the working chart.
 
-### OMTree ML Pipeline
-```
-Market Data → Feature Extraction →
-Model Training → Signal Generation →
-Walk-forward Validation → Performance Metrics
-```
+## Commit Reference Timeline
 
-## Configuration Files
+### Working Baseline
+- `d22acf6` (2025-09-23): Implement execution price formulas and signal lag tracking - CURRENT
+- `1bd562d`: Implement config.yaml-driven execution with bar lag and price formulas
+- `c4bf923`: Update documentation with all critical fixes completed
 
-### OMtree_config.ini
-- Feature selection
-- Model parameters
-- Data paths
-- Processing options
+### Failed Attempts (DO NOT MERGE)
+- `bbbf2e9`: Implement comprehensive modular backtesting architecture
+- `6a6d072`: Complete PyQtGraph integration with modular architecture
+- `d0d19cb`: Add PyQtGraph launcher with correct P&L calculation
+- `52a5561`: Fix P&L calculation for $1 position = percentage gains
+- `5df8579`: Create unified trading system combining all functionality
+- `8dbb5ce`: Fix EnhancedCandlestickItem initialization error
+- `48830fb`: Complete implementation of execution lag and price formulas
 
-### Strategy Parameters
-- Signal lag: 0 (execute on signal bar)
-- SMA periods: Configurable
-- RSI thresholds: 30/70 default
-
-## Performance Optimizations
-
-### Chart Rendering
-- Downsampling for >2000 visible bars
-- Float32 arrays for memory efficiency
-- Incremental indicator updates
-- Z-ordering for proper layering
-
-### ML Processing
-- Vectorized NumPy operations
-- Parallel tree training
-- Cached feature calculations
-- Memory-mapped data access
-
-## Testing & Validation
-
-### Chart System Tests
-- All 377,690 bars accessible
-- Timestamp display accuracy
-- Trade navigation reliability
-- Indicator rendering consistency
-
-### ML Model Tests
-- Walk-forward validation results
-- Feature importance analysis
-- Performance metrics tracking
-- Parameter sensitivity testing
-
-## Usage Examples
-
-### Launch PyQtGraph Chart
-```bash
-python launch_pyqtgraph_with_selector.py
-```
-
-### Run OMTree GUI
-```bash
-python OMtree_gui.py
-```
-
-### Walk-forward Validation
-```bash
-python OMtree_walkforward.py
-```
-
-## Key Achievements
-
-### PyQtGraph System
-- Full 377k+ bar support without limits
-- Accurate timestamp display throughout
-- Smooth navigation and trade jumping
-- Clear indicator and trade visualization
-
-### OMTree System
-- Robust decision tree implementation
-- Comprehensive feature engineering
-- Time-series aware validation
-- GUI for interactive model development
+### Branch Structure
+- `feature/modular-backtesting-refactor`: Current branch at d22acf6
+- `FAILED-attempt`: Contains failed unification attempts for reference
 
 ---
-
-*Version: 3.0.0*
 *Last Updated: 2025-09-23*
-*Status: Production Ready*
+*Status: Reverted to stable baseline, planning careful incremental changes*
