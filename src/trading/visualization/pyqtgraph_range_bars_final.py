@@ -25,7 +25,7 @@ import time
 from datetime import datetime
 
 # Trade visualization imports
-from trade_panel import TradeListPanel
+from enhanced_trade_panel import EnhancedTradeListPanel  # Use enhanced version with P&L %
 from simple_white_x_trades import TradeVisualization  # Simple white X marks
 from trade_data import TradeCollection
 
@@ -210,8 +210,8 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
         # Add chart area to main layout
         main_layout.addWidget(chart_widget, 4)  # 80% width
         
-        # Create trade panel (right side) - takes 20% of width
-        self.trade_panel = TradeListPanel()
+        # Create enhanced trade panel (right side) - takes 20% of width
+        self.trade_panel = EnhancedTradeListPanel()  # Use enhanced panel with P&L %
         self.trade_panel.setMinimumWidth(400)  # Minimum readable width, increased from 350
         self.trade_panel.setMaximumWidth(500)  # Maximum width to prevent it from getting too wide
         main_layout.addWidget(self.trade_panel, 1)  # 20% width (layout stretch factor)
@@ -533,7 +533,7 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
         new_end = min(self.total_bars, int(range[1]))
 
         # Only render if the range actually changed significantly
-        if hasattr(self, 'current_x_range'):
+        if hasattr(self, 'current_x_range') and self.current_x_range is not None:
             old_start, old_end = self.current_x_range
             # Check if change is significant (more than 1 bar)
             if abs(new_start - old_start) < 1 and abs(new_end - old_end) < 1:
@@ -562,12 +562,17 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
         pos = evt[0]
         if self.plot_widget.sceneBoundingRect().contains(pos):
             mouse_point = self.plot_widget.plotItem.vb.mapSceneToView(pos)
-            
+
             self.crosshair_v.setPos(mouse_point.x())
             self.crosshair_h.setPos(mouse_point.y())
-            
+
+            # Check if data is available
+            if self.full_data is None:
+                self.hover_label.setText("No chart data available")
+                return
+
             bar_idx = int(mouse_point.x())
-            
+
             if 0 <= bar_idx < self.total_bars:
                 # Get all data for this bar
                 timestamp = self.full_data['timestamp'][bar_idx]
@@ -575,11 +580,11 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
                 h = self.full_data['high'][bar_idx]
                 l = self.full_data['low'][bar_idx]
                 c = self.full_data['close'][bar_idx]
-                v = self.full_data['volume'][bar_idx] if self.full_data['volume'] is not None else 0
-                
-                # Get AUX fields
-                atr = self.full_data['aux1'][bar_idx] if self.full_data['aux1'] is not None else 0
-                range_mult = self.full_data['aux2'][bar_idx] if self.full_data['aux2'] is not None else 0
+                v = self.full_data['volume'][bar_idx] if 'volume' in self.full_data and self.full_data['volume'] is not None else 0
+
+                # Get AUX fields - check if keys exist first
+                atr = self.full_data['aux1'][bar_idx] if 'aux1' in self.full_data and self.full_data['aux1'] is not None else 0
+                range_mult = self.full_data['aux2'][bar_idx] if 'aux2' in self.full_data and self.full_data['aux2'] is not None else 0
                 
                 # Format timestamp with seconds - convert numpy.datetime64 to datetime
                 if hasattr(timestamp, 'astype'):

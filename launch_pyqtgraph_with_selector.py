@@ -282,6 +282,8 @@ class ConfiguredChart(RangeBarChartFinal):
             else:
                 start_idx = 0
                 end_idx = self.total_bars
+            # Initialize current_x_range before render
+            self.current_x_range = (start_idx, end_idx)
             self.render_range(start_idx, end_idx)
     
     def create_sample_data(self):
@@ -291,11 +293,11 @@ class ConfiguredChart(RangeBarChartFinal):
     def load_configured_trades(self):
         """Load trades based on configuration (no sample mode)."""
         trade_source = self.config.get('trade_source', 'none')
-        
+
         if trade_source == 'none':
             print("No trades loaded")
             return
-        
+
         if trade_source == 'csv' and self.config.get('trade_file'):
             loader = CSVTradeLoader()
             trades = loader.load_csv_trades(self.config['trade_file'])
@@ -304,14 +306,18 @@ class ConfiguredChart(RangeBarChartFinal):
                 print(f"Loaded {len(trades)} trades from CSV")
             else:
                 raise RuntimeError("Failed to load trades from CSV")
-        
+
         elif trade_source == 'system' and self.config.get('system'):
             if hasattr(self, 'dataframe'):
+                print(f"Generating system trades for {self.config['system']}")
+                print(f"DataFrame columns available: {self.dataframe.columns.tolist()}")
                 trades = generate_system_trades(self.config['system'], self.dataframe)
                 if hasattr(self, 'load_trades'):
                     self.load_trades(trades)
-                print(f"Generated {len(trades)} trades from {self.config['system']}")
-        
+                    print(f"Generated {len(trades)} trades from {self.config['system']}")
+            else:
+                print("Warning: dataframe not available for system trade generation")
+
         elif trade_source == 'sample':
             print("Sample trade source is disabled; no trades loaded")
 

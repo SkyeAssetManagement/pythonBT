@@ -218,6 +218,23 @@ class UnifiedConfiguredChart(RangeBarChartFinal):
                 self.current_x_range = (0, min(1000, self.total_bars))  # Initialize x range
                 self.is_rendering = False
 
+                # CRITICAL: Pass data to trade panel and strategy runner
+                if self.trade_panel and self.full_data['timestamp'] is not None:
+                    print("[UNIFIED CHART] Passing data to trade panel and strategy runner...")
+                    self.trade_panel.set_chart_timestamps(self.full_data['timestamp'])
+
+                    # Pass bar data for strategy runner
+                    bar_data = {
+                        'timestamp': self.full_data['timestamp'],
+                        'open': self.full_data['open'],
+                        'high': self.full_data['high'],
+                        'low': self.full_data['low'],
+                        'close': self.full_data['close'],
+                        'volume': self.full_data.get('volume', np.zeros(len(self.full_data['close'])))
+                    }
+                    self.trade_panel.set_bar_data(bar_data)
+                    print("[UNIFIED CHART] Data passed to strategy runner successfully")
+
                 # Trigger initial render
                 self.render_range(0, min(1000, self.total_bars))
 
@@ -228,6 +245,7 @@ class UnifiedConfiguredChart(RangeBarChartFinal):
                 self.total_bars = len(self.full_data['timestamp'])
                 self.current_x_range = (0, min(1000, self.total_bars))
                 self.is_rendering = False
+                self.pass_data_to_trade_panel()
                 self.render_range(0, min(1000, self.total_bars))
         else:
             print("[UNIFIED CHART] No data file configured, using sample data")
@@ -236,7 +254,26 @@ class UnifiedConfiguredChart(RangeBarChartFinal):
             self.total_bars = len(self.full_data['timestamp'])
             self.current_x_range = (0, min(1000, self.total_bars))
             self.is_rendering = False
+            self.pass_data_to_trade_panel()
             self.render_range(0, min(1000, self.total_bars))
+
+    def pass_data_to_trade_panel(self):
+        """Helper method to pass data to trade panel and strategy runner"""
+        if self.trade_panel and self.full_data and self.full_data.get('timestamp') is not None:
+            print("[UNIFIED CHART] Passing data to trade panel and strategy runner...")
+            self.trade_panel.set_chart_timestamps(self.full_data['timestamp'])
+
+            # Pass bar data for strategy runner
+            bar_data = {
+                'timestamp': self.full_data['timestamp'],
+                'open': self.full_data['open'],
+                'high': self.full_data['high'],
+                'low': self.full_data['low'],
+                'close': self.full_data['close'],
+                'volume': self.full_data.get('volume', np.zeros(len(self.full_data['close'])))
+            }
+            self.trade_panel.set_bar_data(bar_data)
+            print("[UNIFIED CHART] Data passed to strategy runner successfully")
 
     def generate_sample_data(self):
         """Generate sample data as fallback"""

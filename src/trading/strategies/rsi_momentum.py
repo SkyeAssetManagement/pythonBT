@@ -78,7 +78,7 @@ class RSIMomentumStrategy(TradingStrategy):
                 signals.iloc[i] = 1
 
         # Forward fill signals (maintain position)
-        signals = signals.replace(0, np.nan).fillna(method='ffill').fillna(0)
+        signals = signals.replace(0, np.nan).ffill().fillna(0)
 
         return signals
 

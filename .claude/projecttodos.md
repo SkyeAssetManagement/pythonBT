@@ -1,71 +1,75 @@
 # Project TODOs - PythonBT Trading System
 
-## CRITICAL - Fix Unified Launcher Issues
-### Hover Data Not Working
-- [ ] Fix data structure mismatch - hover expects specific keys
-- [ ] Ensure proxy widget connects to chart properly
-- [ ] Debug why "no chart data available" appears despite rendering
+## Current Focus: System Integration & Enhancement
 
-### Trade Loading Not Working
-- [ ] Fix trade generation when "System" selected
-- [ ] Ensure trades appear on chart with proper markers
-- [ ] Verify trade panel displays trades with P&L %
+### Strategy System Improvements
+- [ ] Add minimum bars between trades parameter to reduce noise
+- [ ] Implement stop-loss and take-profit functionality
+- [ ] Create strategy performance metrics dashboard
+- [ ] Add strategy parameter optimization framework
 
-### Chart Integration
-- [ ] Ensure `self.current_x_range` properly initialized
-- [ ] Fix timing of `load_configured_trades()` call
-- [ ] Verify data conversion for strategy execution
+### Unified Execution Engine Migration
+- [ ] Complete integration of unified engine with all strategies
+- [ ] Add UI toggle for switching between legacy/unified modes
+- [ ] Create validation tests comparing legacy vs unified results
+- [ ] Document migration guide for users
 
-## Next Phase - Complete Integration
-### Trade Panel Enhancement
-- [ ] Replace standard panel with enhanced_trade_panel.py
-- [ ] Display P&L as percentages not dollars
-- [ ] Add cumulative P&L summary row
+### User Interface Enhancements
+- [ ] Add configuration UI for editing config.yaml settings
+- [ ] Create indicator overlay panel for technical indicators
+- [ ] Implement trade statistics summary panel
+- [ ] Add export functionality for trades and performance metrics
 
-### Strategy Runner Integration
-- [ ] Hook up strategy_runner_adapter to UI
-- [ ] Allow switching between legacy and unified engines
-- [ ] Test all strategies with proper lag
+### Data & Performance
+- [ ] Profile and optimize for 10M+ bar datasets
+- [ ] Implement data caching for faster repeated loads
+- [ ] Add support for multiple timeframes
+- [ ] Create data validation and cleaning utilities
 
-### Configuration Management
-- [ ] Create UI for editing config.yaml settings
-- [ ] Add validation for execution formulas
-- [ ] Allow per-strategy configuration overrides
+### Documentation & Testing
+- [ ] Create comprehensive user guide
+- [ ] Add integration tests for full workflow
+- [ ] Document all execution price formulas
+- [ ] Create video tutorials for common workflows
 
-## Testing & Validation
-### Comprehensive Testing
-- [ ] Test with full 377,690 bar dataset
-- [ ] Verify performance with unified engine
-- [ ] Compare trade results old vs new
-- [ ] Ensure no regression in chart performance
+## Completed (2025-09-23)
 
-### Bug Fixes
-- [ ] Fix FutureWarning in rsi_momentum.py (fillna method)
-- [ ] Clean up import warnings
-- [ ] Remove debug print statements
+### Critical Fixes ✅
+- Fixed hover data KeyErrors with proper dictionary checks
+- Fixed strategy runner "no chart data" in unified system
+- Added trade panel scrolling fix with get_first_visible_trade()
+- Improved strategy execution feedback with color coding
 
-## Documentation
-### User Documentation
-- [ ] Create user guide for unified system
-- [ ] Document config.yaml options
-- [ ] Add examples of execution formulas
+### System Improvements ✅
+- Verified performance with 6.6M bar datasets
+- Added pass_data_to_trade_panel() for data connection
+- Implemented excessive trade warnings (>1000 trades)
+- Enhanced trade panel with P&L percentage display
 
-### Developer Documentation
-- [ ] Document API for execution engine
-- [ ] Create integration guide
-- [ ] Add architecture diagrams
+## Known Issues to Address
 
-## Future Enhancements
-### Performance Optimization
-- [ ] Profile unified engine performance
-- [ ] Optimize trade generation for large datasets
-- [ ] Implement caching for indicator calculations
+### High Priority
+- SMA strategy generates excessive trades with short periods
+- Need better default parameters for strategies
+- Unified engine not enabled by default
 
-### Feature Additions
-- [ ] Add more execution price formulas
-- [ ] Implement stop-loss and take-profit
-- [ ] Add multi-timeframe support
-- [ ] Create backtesting report generator
+### Medium Priority
+- Trade timestamp display sometimes shows None
+- Large datasets (>10M bars) may cause memory issues
+- Strategy runner UI could be more intuitive
 
----
-*Last Updated: 2025-09-23*
+### Low Priority
+- Add more built-in strategies
+- Improve error messages for data loading failures
+- Add keyboard shortcuts for common operations
+
+## Future Roadmap
+
+### Phase 1: Stabilization (Current)
+Focus on fixing critical bugs and improving user experience
+
+### Phase 2: Enhancement
+Add advanced features like optimization and real-time data
+
+### Phase 3: Production
+Polish for production use with comprehensive documentation

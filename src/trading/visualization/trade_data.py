@@ -65,7 +65,14 @@ class TradeCollection:
                 stats['trade_types'][trade_type] = 0
         
         return stats
-    
+
+    def get_first_visible_trade(self, start_bar: int, end_bar: int) -> Optional['TradeData']:
+        """Get the first trade within the specified bar range"""
+        for trade in self.trades:
+            if start_bar <= trade.bar_index <= end_bar:
+                return trade
+        return None
+
     @classmethod
     def from_dataframe(cls, df: pd.DataFrame, bar_index_col: str = 'bar_index',
                       price_col: str = 'price', type_col: str = 'type'):

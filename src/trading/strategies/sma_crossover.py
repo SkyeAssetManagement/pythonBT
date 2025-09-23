@@ -30,9 +30,9 @@ class SMACrossoverStrategy(TradingStrategy):
         # Get close prices
         close = df['Close'] if 'Close' in df.columns else df['close']
 
-        # Calculate SMAs
-        sma_fast = close.rolling(window=self.fast_period, min_periods=1).mean()
-        sma_slow = close.rolling(window=self.slow_period, min_periods=1).mean()
+        # Calculate SMAs with proper minimum periods
+        sma_fast = close.rolling(window=self.fast_period, min_periods=self.fast_period).mean()
+        sma_slow = close.rolling(window=self.slow_period, min_periods=self.slow_period).mean()
 
         # Generate signals
         signals = pd.Series(index=df.index, dtype=float)
@@ -48,8 +48,20 @@ class SMACrossoverStrategy(TradingStrategy):
             short_signal = (sma_fast < sma_slow).astype(float) * -1
             signals = long_signal + short_signal
 
-        # Fill NaN with 0 (no position)
+        # Fill NaN with 0 (no position) - important for early bars
         signals = signals.fillna(0)
+
+        # Optional: Add minimum time between trades to reduce noise
+        # This helps avoid excessive trading in choppy markets
+        if hasattr(self, 'min_bars_between_trades'):
+            min_bars = self.min_bars_between_trades
+            last_trade_bar = -min_bars
+            for i in range(len(signals)):
+                if i > 0 and signals.iloc[i] != signals.iloc[i-1]:
+                    if i - last_trade_bar < min_bars:
+                        signals.iloc[i] = signals.iloc[i-1]  # Cancel this trade
+                    else:
+                        last_trade_bar = i
 
         return signals
 
