@@ -11,6 +11,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from strategies.sma_crossover import SMACrossoverStrategy
 from strategies.rsi_momentum import RSIMomentumStrategy
+from strategies.enhanced_sma_crossover import EnhancedSMACrossoverStrategy
 from data.trade_data import TradeCollection
 
 
@@ -43,7 +44,8 @@ class StrategyRunner(QtWidgets.QWidget):
         self.strategy_combo = QtWidgets.QComboBox()
         self.strategy_combo.addItems([
             "SMA Crossover",
-            "RSI Momentum"
+            "RSI Momentum",
+            "Enhanced SMA (with Lag)"
         ])
         self.strategy_combo.currentTextChanged.connect(self.on_strategy_changed)
         strategy_layout.addWidget(strategy_label)
@@ -154,7 +156,7 @@ class StrategyRunner(QtWidgets.QWidget):
 
     def on_strategy_changed(self, strategy_name):
         """Handle strategy selection change"""
-        if strategy_name == "SMA Crossover":
+        if strategy_name == "SMA Crossover" or strategy_name == "Enhanced SMA (with Lag)":
             self.setup_sma_params()
         elif strategy_name == "RSI Momentum":
             self.setup_rsi_params()
@@ -206,6 +208,21 @@ class StrategyRunner(QtWidgets.QWidget):
             # Create strategy instance with parameters
             if strategy_name == "SMA Crossover":
                 strategy = SMACrossoverStrategy(
+                    fast_period=self.fast_period_spin.value(),
+                    slow_period=self.slow_period_spin.value(),
+                    long_only=self.long_only_check.isChecked()
+                )
+
+                # Calculate indicators for overlay
+                sma_fast, sma_slow = strategy.calculate_smas(self.chart_data)
+                indicators = {
+                    f'SMA_{strategy.fast_period}': sma_fast.values,
+                    f'SMA_{strategy.slow_period}': sma_slow.values
+                }
+                self.indicators_calculated.emit(indicators)
+
+            elif strategy_name == "Enhanced SMA (with Lag)":
+                strategy = EnhancedSMACrossoverStrategy(
                     fast_period=self.fast_period_spin.value(),
                     slow_period=self.slow_period_spin.value(),
                     long_only=self.long_only_check.isChecked()
