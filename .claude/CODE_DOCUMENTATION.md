@@ -1,34 +1,29 @@
-# CODE DOCUMENTATION - Unified Trading System
+# CODE DOCUMENTATION - PyQtGraph Trading Visualization System
 
 ## Overview
-This document provides comprehensive documentation for the Unified Trading System, which merges:
-- **OMtree**: Machine learning decision tree trading system with walk-forward validation
-- **ABtoPython**: VectorBT integration with PyQtGraph visualization and trade analysis
-- **PyQtGraph Range Bar Visualization**: High-performance charting with 122,609+ bar support
+Comprehensive trading visualization system with PyQtGraph for high-performance charting of range bar data, supporting 377,690+ bars with real-time updates and trade analysis.
 
 ## Architecture Diagram
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Unified Trading System GUI                    │
-│                  (integrated_trading_launcher.py)                │
+│                  PyQtGraph Trading Visualization                 │
+│                  (launch_pyqtgraph_with_selector.py)            │
 ├─────────────────────────────────────────────────────────────────┤
-│  Data Viz │ Walk-Forward │ Performance │ Trade List │ Strategy  │
-└────────┬───────┴──────┬───────┴──────┬──────┴─────┬─────┴───┬───┘
-         │              │              │             │         │
-    ┌────▼────┐    ┌────▼────┐   ┌────▼────┐  ┌────▼────┐ ┌──▼──┐
-    │PyQtGraph│    │OMtree   │   │Stats    │  │Trade    │ │Strat│
-    │Range Bar│    │Model    │   │Module   │  │Panel    │ │Runner│
-    └─────────┘    └─────────┘   └─────────┘  └─────────┘ └─────┘
-                        │                            │
-                   ┌────▼─────────────────────────┐  │
-                   │  Unified Data Pipeline       │──┘
-                   │  (ES-DIFF Range Bars)        │
-                   └───────────────────────────────┘
+│  Chart View │ Trade Panel │ Strategy Runner │ Data Selector     │
+└────────┬───────┴──────┬───────┴──────┬──────────┴────┬─────────┘
+         │              │              │               │
+    ┌────▼────┐    ┌────▼────┐   ┌────▼────┐    ┌────▼────┐
+    │Range Bar│    │Trade    │   │Strategy │    │Data     │
+    │Chart    │    │List     │   │Execution│    │Loader   │
+    └─────────┘    └─────────┘   └─────────┘    └─────────┘
+         │              │              │               │
+         └──────────────┴──────────────┴───────────────┘
                               │
                    ┌──────────▼──────────┐
-                   │   Feature Flags     │
-                   │  (feature_flags.py) │
+                   │   Unified Data      │
+                   │   Pipeline          │
+                   │  (377,690 bars)     │
                    └─────────────────────┘
 ```
 
@@ -36,272 +31,209 @@ This document provides comprehensive documentation for the Unified Trading Syste
 
 ```
 C:\code\PythonBT\
-├── .claude\                      # Project management & docs
-│   ├── CLAUDE.md                 # Development standards
-│   ├── CODE_DOCUMENTATION.md     # This file
-│   └── projecttodos.md          # Cleared - ready for new tasks
-├── src\                          # Source code
-│   ├── trading\                  # Trading system components
-│   │   ├── data\                 # Data structures & pipeline
-│   │   │   ├── __init__.py
-│   │   │   ├── trade_data.py     # Core trade data structures
-│   │   │   └── unified_pipeline.py  # Data format conversion
-│   │   ├── visualization\        # Visualization components
-│   │   │   ├── __init__.py
-│   │   │   ├── pyqtgraph_range_bars_final.py  # Main chart (122k+ bars)
-│   │   │   ├── trade_panel.py    # Trade list with DateTime
-│   │   │   ├── strategy_runner.py # Strategy execution
-│   │   │   └── trade_visualization.py # Trade markers on chart
-│   │   ├── strategies\           # Trading strategies
-│   │   │   ├── __init__.py
-│   │   │   ├── base.py           # Base strategy class
-│   │   │   ├── sma_crossover.py  # SMA crossover strategy
-│   │   │   └── rsi_momentum.py   # RSI momentum strategy
-│   │   └── integration\          # External integrations
-│   │       ├── __init__.py
-│   │       └── vbt_loader.py     # VectorBT integration
-├── parquetData\                  # Data files
-│   └── range\                    # Range bar data
-│       └── ATR30x0.1\
-│           └── ES-DIFF-range-ATR30x0.1-amibroker.parquet  # 122,609 bars
-├── integrated_trading_launcher.py  # Main application entry
-├── launch_integrated_system.bat    # Windows launcher
-├── requirements.txt              # Python dependencies
-└── README.md                     # Project overview
+├── .claude\
+│   ├── CLAUDE.md                    # Development standards
+│   ├── CODE_DOCUMENTATION.md        # This file
+│   └── projecttodos.md             # Task tracking
+├── src\
+│   └── trading\
+│       ├── visualization\
+│       │   ├── pyqtgraph_range_bars_final.py  # Main chart (377k+ bars)
+│       │   ├── trade_panel.py                 # Trade list with DateTime
+│       │   ├── simple_white_x_trades.py       # Trade markers (bold, 18px)
+│       │   ├── strategy_runner.py             # Strategy execution
+│       │   └── csv_trade_loader.py           # Trade import
+│       └── strategies\
+│           ├── base.py                       # Base strategy (lag=0)
+│           ├── sma_crossover.py              # SMA strategy
+│           └── rsi_momentum.py               # RSI strategy
+├── dataRaw\
+│   └── range-ATR30x0.05\
+│       └── ES\
+│           └── diffAdjusted\
+│               └── ES-DIFF-range-ATR30x0.05-dailyATR.csv  # 377,690 bars
+├── launch_pyqtgraph_with_selector.py    # Main entry point
+├── pyqtgraph_data_selector.py           # Data selection dialog
+└── integrated_trading_launcher.py       # Alternative launcher
 ```
 
-## Recent Critical Fixes (2025-09-22)
+## Critical Fixes Implemented (2025-09-22)
 
-### 1. X-Axis DateTime Labels - FIXED ✓
-**Problem**: X-axis showed "0:00:00" for all timestamps
+### 1. Timestamp Display Issue - FIXED ✅
+**Problem**: All timestamps showed "00:00:00" on x-axis and trade list
+**Root Cause**: Column mapping renamed 'Date' to 'DateTime' before combining with 'Time'
 **Solution**:
-- Fixed x-coordinate mapping in `format_time_axis()` (lines 305-389)
-- Added debug logging to trace timestamp processing
-- Properly maps bar indices to timestamp labels
+- Removed 'Date' from column_mapping dictionary (line 167)
+- Now properly combines Date+Time before any renaming
+- Timestamps display correctly: "2021-01-03 17:01:00"
 
-**Files Modified**:
-- `src/trading/visualization/pyqtgraph_range_bars_final.py`
-
-### 2. Trade List DateTime Display - FIXED ✓
-**Problem**: Trade list showed "-" for all DateTime values
+### 2. ViewBox Hardcoded Limit - FIXED ✅
+**Problem**: Could not pan past June 15, 2023 (bar 199,628)
+**Root Cause**: Hardcoded xMax=200000 in ViewBox limits
 **Solution**:
-- Verified DataFrame includes DateTime column in StrategyRunner
-- Strategy base class extracts DateTime from DataFrame
-- TradeData objects receive timestamp parameter
+- Removed hardcoded limits
+- Set limits dynamically: xMax = total_bars + 100
+- Now supports all 377,690 bars (2021-2025 data)
 
-**Files Modified**:
-- `src/trading/strategies/base.py` (DateTime extraction)
-- `src/trading/visualization/strategy_runner.py` (DataFrame creation)
-
-### 3. Dynamic Data Loading (122,609 bars) - FIXED ✓
-**Problem**: Chart appeared to stop loading data when panning
+### 3. Chart Navigation - FIXED ✅
+**Problem**: Chart jumped back to previous position after jump_to_trade
 **Solution**:
-- Increased ViewBox limits from 100,000 to 200,000 bars (lines 176-184)
-- Added `on_x_range_changed()` handler for dynamic loading (lines 514-531)
-- Fixed `is_rendering` flag management to prevent stuck state
-- Fixed `.items()` method call syntax
+- Temporarily disable range handlers during jump
+- Use QTimer to re-enable after 100ms
+- Prevents reversion to previous position
 
-**Files Modified**:
-- `src/trading/visualization/pyqtgraph_range_bars_final.py`
+### 4. Trade Marker Visibility - ENHANCED ✅
+**Changes**:
+- Size increased 25% (14px → 18px)
+- Bold white pen (width=3)
+- Z-value set to 1000 (renders on top)
+- Pure white color for maximum visibility
 
-## Module Documentation
+### 5. SMA/Indicator Rendering - FIXED ✅
+**Problem**: Indicators didn't render when jumping ahead
+**Solution**:
+- Improved visible range calculation
+- Proper z-ordering (indicators=500, trades=1000)
+- Line width increased to 2 for visibility
 
-### Core Visualization Components
+### 6. Trade Data Display - ENHANCED ✅
+**Added to hover info**:
+- DateTime in format YYYY-MM-DD HH:MM:SS
+- Bar number
+- Complete trade details
 
-#### 1. PyQtGraph Range Bar Chart (`pyqtgraph_range_bars_final.py`)
-**Purpose**: High-performance charting for 122,609+ range bars
+### 7. Initial View - IMPROVED ✅
+**Change**: Chart now opens showing last 500 bars instead of first 500
+**Benefit**: Recent data immediately visible
 
-**Key Classes**:
-- `RangeBarChartFinal`: Main chart window
-  - `load_data()`: Load ES-DIFF range bar parquet data
-  - `render_range(start, end)`: Render specific bar range
-  - `format_time_axis()`: Format DateTime labels on x-axis
-  - `on_x_range_changed()`: Handle dynamic data loading on pan
-  - `jump_to_trade()`: Navigate to specific trade location
+## Key Components
 
-**Key Features**:
-- Supports 122,609+ bars with dynamic loading
-- Real-time DateTime labels on x-axis
+### PyQtGraph Range Bar Chart (`pyqtgraph_range_bars_final.py`)
+**Features**:
+- Dynamic data loading for 377,690+ bars
+- Real-time timestamp labels
 - Trade overlay visualization
 - Indicator overlays (SMA, RSI)
-- Adaptive candle spacing based on zoom
+- Adaptive candle spacing
 - Multi-monitor DPI awareness
 
-#### 2. Trade Panel (`trade_panel.py`)
-**Purpose**: Display and manage trade list with filtering
-
-**Key Classes**:
-- `TradePanel`: Main trade panel widget
-  - `load_trades()`: Load trades into table
-  - `on_trade_double_clicked()`: Jump to trade on chart
-  - Signal: `trade_selected` - Emitted for chart navigation
-
-- `TradeTableModel`: QTableModel for trade display
-  - Columns: ID, DateTime, Type, Price, Size, P&L, Strategy
-
-#### 3. Strategy Runner (`strategy_runner.py`)
-**Purpose**: Execute trading strategies on chart data
-
-**Key Classes**:
-- `StrategyRunner`: Strategy execution widget
-  - `set_chart_data()`: Load OHLCV + DateTime data
-  - `run_strategy()`: Execute selected strategy
-  - Signals: `trades_generated`, `indicators_calculated`
-
-**Supported Strategies**:
-- SMA Crossover (configurable periods)
-- RSI Momentum (configurable levels)
-
-### Trading Strategies
-
-#### Base Strategy (`strategies/base.py`)
-**Purpose**: Abstract base class for all strategies
-
 **Key Methods**:
-- `generate_signals(df)`: Generate buy/sell signals
-- `signals_to_trades(signals, df)`: Convert signals to trades
-  - Extracts DateTime from DataFrame
-  - Calculates P&L for exit trades
-  - Creates TradeData objects with timestamps
+- `load_data()`: Load CSV/Parquet data
+- `render_range(start, end)`: Render specific range
+- `format_time_axis()`: Format DateTime labels
+- `jump_to_trade(trade)`: Navigate to trade
+- `on_x_range_changed()`: Handle panning
 
-### Data Pipeline
+### Trade Panel (`trade_panel.py`)
+**Features**:
+- Sortable trade list
+- DateTime display for all trades
+- Color-coded trade types
+- Double-click to jump to trade
+- PyQt signal type fixed (object)
 
-#### Trade Data (`data/trade_data.py`)
-**Purpose**: Core trade representation
+### Data Selector (`pyqtgraph_data_selector.py`)
+**Features**:
+- File browser for data selection
+- Trade source options (None/CSV/System)
+- Strategy selection
+- Indicator checkboxes
 
-**Key Classes**:
-- `TradeData`: Individual trade
-  - Required: bar_index, trade_type, price
-  - Optional: trade_id, timestamp, size, pnl, strategy, symbol
+## Data Pipeline
 
-- `TradeCollection`: Collection of trades
-  - `add_trade()`, `remove_trade()`
-  - `get_by_date_range()`: Filter by date
-  - `calculate_total_pnl()`: Total P&L
-  - `to_dataframe()`: Export to pandas
-
-## Data Flow
-
-### 1. Chart Data Loading
+### CSV Loading
 ```
-ES-DIFF Parquet (122,609 bars) → load_data() →
-full_data dict → render_range() → PyQtGraph Display
-```
-
-### 2. Strategy Execution
-```
-Chart Data → StrategyRunner → DataFrame with DateTime →
-Strategy.generate_signals() → signals_to_trades() →
-TradeCollection → Trade Panel Display
+CSV File → pd.read_csv() →
+Combine Date+Time → pd.to_datetime() →
+Convert to numpy arrays → full_data dict →
+Set dynamic ViewBox limits → Render
 ```
 
-### 3. Dynamic Rendering Pipeline
+### Trade Generation
 ```
-User Pans → on_x_range_changed() → Calculate visible range →
-render_range() → Slice data → Update candlesticks →
-format_time_axis() → Update DateTime labels
+Chart Data → Strategy.generate_signals() →
+signals_to_trades(lag=0) → TradeCollection →
+Trade Panel Display with DateTime
 ```
+
+## Performance Optimizations
+
+### Rendering
+- Downsampling when >2000 bars visible
+- Incremental indicator rendering
+- ScatterPlotItem for trades (fast)
+- is_rendering flag prevents overlap
+
+### Data Management
+- Float32 arrays for memory efficiency
+- Vectorized NumPy operations
+- Dynamic ViewBox limits
 
 ## Configuration
 
-### ViewBox Limits (Supporting 122,609+ bars)
+### Dynamic ViewBox Limits
 ```python
 viewBox.setLimits(
     xMin=-100,
-    xMax=200000,      # Supports up to 200k bars
+    xMax=self.total_bars + 100,    # Dynamic
     yMin=0,
     yMax=100000,
-    minXRange=10,     # Min 10 bars visible
-    maxXRange=150000, # Max 150k bars visible
+    minXRange=10,
+    maxXRange=self.total_bars + 1000,
     minYRange=1,
     maxYRange=50000
 )
 ```
 
-## Performance Optimizations
+### Signal Bar Lag
+- Currently set to: **0** (trades execute on signal bar)
+- Location: `src/trading/strategies/base.py`
 
-### 1. Rendering
-- Downsampling when >2000 bars visible
-- Incremental indicator rendering
-- ScatterPlotItem for trade marks (fast for thousands of trades)
-- OpenGL disabled for stability
+## Testing Verification
 
-### 2. Data Management
-- Float32 arrays for memory efficiency
-- Vectorized operations with NumPy
-- Lazy loading of indicators
+### Data Access Tests
+- ✅ All 377,690 bars accessible
+- ✅ June 15, 2023 at bar 199,628
+- ✅ Can pan to any date (2021-2025)
+- ✅ Jump to trades at any position
 
-### 3. GUI Responsiveness
-- `is_rendering` flag prevents overlapping renders
-- Signal throttling with SignalProxy
-- Separate threads for data loading
+### Display Tests
+- ✅ Timestamps show correct time
+- ✅ Trade list shows DateTime
+- ✅ Indicators render at all positions
+- ✅ Trade markers visible on top
 
-## Testing
+## Known Issues - ALL RESOLVED
 
-### Test Scripts Created
-- `test_large_dataset.py`: Generate 10k bar test data
-- `test_debug_logging.py`: Verify debug infrastructure
-- `test_range_bars_direct.py`: Test rendering at all positions
-- `test_all_fixes.py`: Comprehensive fix verification
-- `test_panning_edge.py`: Test edge cases
+Previously fixed issues:
+- ~~Timestamps showing 00:00:00~~ → Fixed with column mapping
+- ~~Cannot pan past June 2023~~ → Fixed with dynamic limits
+- ~~Chart jumps back after navigation~~ → Fixed with handler management
+- ~~Indicators not rendering~~ → Fixed with range calculation
+- ~~Trade markers hard to see~~ → Fixed with size/color/z-order
 
-### Verified Working
-- ✓ Renders all 122,609 bars
-- ✓ DateTime labels show real timestamps
-- ✓ Trades have DateTime values
-- ✓ Can pan to any position (0-122,609)
-- ✓ Jump-to-trade works at all positions
+## Usage
 
-## Debug Infrastructure
-
-### Debug Logging Added
-```python
-[RENDER_RANGE] Called with start=122109, end=122609
-[FORMAT_TIME_AXIS] Timestamps type: <class 'pandas.core.series.Series'>
-[STRATEGY] DataFrame columns: ['DateTime', 'Open', 'High', 'Low', 'Close']
-[ON_X_RANGE_CHANGED] X range changed: (0.0, 500.0)
-[JUMP_TO_TRADE] Called for trade: BUY, bar_index=5000
+### Basic Launch
+```bash
+python launch_pyqtgraph_with_selector.py
 ```
 
-## Known Issues & Solutions
+### Workflow
+1. Select data file (CSV/Parquet)
+2. Choose trade source
+3. Select indicators
+4. Chart opens with last 500 bars
+5. Pan/zoom with mouse
+6. Double-click trades to jump
 
-### Issue: "Skipping - already rendering"
-**Cause**: Multiple pan events while rendering
-**Solution**: This is normal behavior - prevents overlapping renders
-
-### Issue: Trade DateTime shows "-"
-**Cause**: Missing timestamp in TradeData
-**Solution**: Fixed - DataFrame now includes DateTime column
-
-### Issue: Can't pan past certain point
-**Cause**: ViewBox xMax limit too low
-**Solution**: Fixed - increased to 200,000 bars
-
-## Future Enhancements
-
-1. Real-time data feed integration
-2. Additional ML models integration
-3. Advanced risk management tools
-4. Multi-timeframe support
-5. Cloud deployment capabilities
-
-## Development Workflow
-
-### Adding New Features
-1. Create feature flag if needed
-2. Implement with proper error handling
-3. Add debug logging
-4. Write tests
-5. Update documentation
-6. Test with full 122k bar dataset
-
-### Commit Guidelines
-- Branch from `main` or `merge-with-ABToPython`
-- Clear, descriptive commit messages
-- Reference issue numbers
-- Update CODE_DOCUMENTATION.md
+### Controls
+- Mouse wheel: Zoom
+- Click+drag: Pan
+- Hover: See price/time/trade info
+- Trade list: Double-click to jump
 
 ---
 
-Last Updated: 2025-09-22
-Version: 2.0.0 (PyQtGraph Integration Complete)
+*Last Updated: 2025-09-22*
+*Version: 2.1.0 - All Critical Issues Resolved*
