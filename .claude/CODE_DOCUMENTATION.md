@@ -1,239 +1,196 @@
-# CODE DOCUMENTATION - PyQtGraph Trading Visualization System
+# CODE DOCUMENTATION - PythonBT Trading System
 
 ## Overview
-Comprehensive trading visualization system with PyQtGraph for high-performance charting of range bar data, supporting 377,690+ bars with real-time updates and trade analysis.
+Advanced trading system with two main components: PyQtGraph visualization for range bar charting and OMTree machine learning for trade signal generation.
 
-## Architecture Diagram
+## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                  PyQtGraph Trading Visualization                 │
-│                  (launch_pyqtgraph_with_selector.py)            │
-├─────────────────────────────────────────────────────────────────┤
-│  Chart View │ Trade Panel │ Strategy Runner │ Data Selector     │
-└────────┬───────┴──────┬───────┴──────┬──────────┴────┬─────────┘
-         │              │              │               │
-    ┌────▼────┐    ┌────▼────┐   ┌────▼────┐    ┌────▼────┐
-    │Range Bar│    │Trade    │   │Strategy │    │Data     │
-    │Chart    │    │List     │   │Execution│    │Loader   │
-    └─────────┘    └─────────┘   └─────────┘    └─────────┘
-         │              │              │               │
-         └──────────────┴──────────────┴───────────────┘
-                              │
-                   ┌──────────▼──────────┐
-                   │   Unified Data      │
-                   │   Pipeline          │
-                   │  (377,690 bars)     │
-                   └─────────────────────┘
+PythonBT Trading System
+├── PyQtGraph Visualization (377k+ bars support)
+│   ├── Real-time charting with trade overlays
+│   ├── Strategy execution & backtesting
+│   └── Technical indicators (SMA, RSI)
+└── OMTree ML Pipeline
+    ├── Decision tree classification
+    ├── Walk-forward validation
+    └── Feature engineering
 ```
 
 ## Directory Structure
 
 ```
 C:\code\PythonBT\
-├── .claude\
-│   ├── CLAUDE.md                    # Development standards
-│   ├── CODE_DOCUMENTATION.md        # This file
-│   └── projecttodos.md             # Task tracking
-├── src\
-│   └── trading\
-│       ├── visualization\
-│       │   ├── pyqtgraph_range_bars_final.py  # Main chart (377k+ bars)
-│       │   ├── trade_panel.py                 # Trade list with DateTime
-│       │   ├── simple_white_x_trades.py       # Trade markers (bold, 18px)
-│       │   ├── strategy_runner.py             # Strategy execution
-│       │   └── csv_trade_loader.py           # Trade import
-│       └── strategies\
-│           ├── base.py                       # Base strategy (lag=0)
-│           ├── sma_crossover.py              # SMA strategy
-│           └── rsi_momentum.py               # RSI strategy
-├── dataRaw\
-│   └── range-ATR30x0.05\
-│       └── ES\
-│           └── diffAdjusted\
-│               └── ES-DIFF-range-ATR30x0.05-dailyATR.csv  # 377,690 bars
-├── launch_pyqtgraph_with_selector.py    # Main entry point
-├── pyqtgraph_data_selector.py           # Data selection dialog
-└── integrated_trading_launcher.py       # Alternative launcher
+├── .claude\                              # Project documentation
+│   ├── CLAUDE.md                        # Development standards
+│   ├── CODE_DOCUMENTATION.md           # This file
+│   └── projecttodos.md                 # Task tracking
+│
+├── src\trading\                         # PyQtGraph components
+│   ├── visualization\
+│   │   ├── pyqtgraph_range_bars_final.py   # Main chart (377k bars)
+│   │   ├── trade_panel.py                  # Trade list display
+│   │   ├── simple_white_x_trades.py        # Trade markers
+│   │   ├── strategy_runner.py              # Strategy execution
+│   │   └── csv_trade_loader.py            # Trade import
+│   └── strategies\
+│       ├── base.py                         # Base strategy (lag=0)
+│       ├── sma_crossover.py               # SMA strategy
+│       └── rsi_momentum.py                # RSI strategy
+│
+├── OMTree ML Components\
+│   ├── OMtree_gui.py                      # ML model GUI
+│   ├── OMtree_walkforward.py              # Walk-forward validation
+│   ├── OMtree_model.py                    # Decision tree model
+│   ├── OMtree_preprocessing.py            # Feature engineering
+│   ├── OMtree_validation.py               # Model validation
+│   └── OMtree_config.ini                  # Configuration
+│
+├── Launch Scripts\
+│   ├── launch_pyqtgraph_with_selector.py  # Main PyQtGraph launcher
+│   ├── launch_trading_dashboard.py        # Trading dashboard
+│   ├── launch_pyqtgraph_chart.py         # Direct chart launch
+│   └── pyqtgraph_data_selector.py        # Data selection dialog
+│
+└── dataRaw\                              # Market data
+    └── range-ATR30x0.05\ES\               # 377,690 range bars
 ```
 
-## Critical Fixes Implemented (2025-09-22)
+## Component Details
 
-### 1. Timestamp Display Issue - FIXED ✅
-**Problem**: All timestamps showed "00:00:00" on x-axis and trade list
-**Root Cause**: Column mapping renamed 'Date' to 'DateTime' before combining with 'Time'
-**Solution**:
-- Removed 'Date' from column_mapping dictionary (line 167)
-- Now properly combines Date+Time before any renaming
-- Timestamps display correctly: "2021-01-03 17:01:00"
+### PyQtGraph Visualization System
 
-### 2. ViewBox Hardcoded Limit - FIXED ✅
-**Problem**: Could not pan past June 15, 2023 (bar 199,628)
-**Root Cause**: Hardcoded xMax=200000 in ViewBox limits
-**Solution**:
-- Removed hardcoded limits
-- Set limits dynamically: xMax = total_bars + 100
-- Now supports all 377,690 bars (2021-2025 data)
+#### Core Features
+- **Data Capacity**: Handles 377,690+ bars (2021-2025)
+- **Dynamic Loading**: Efficient rendering with downsampling
+- **Real-time Updates**: Live chart updates with trade execution
+- **Multi-monitor Support**: DPI-aware rendering
 
-### 3. Chart Navigation - FIXED ✅
-**Problem**: Chart jumped back to previous position after jump_to_trade
-**Solution**:
-- Temporarily disable range handlers during jump
-- Use QTimer to re-enable after 100ms
-- Prevents reversion to previous position
+#### Key Fixes (2025-09-22)
+1. **Timestamp Display**: Fixed DateTime column mapping
+2. **ViewBox Limits**: Removed 200k hardcoded limit
+3. **Navigation**: Fixed jump_to_trade position retention
+4. **Trade Markers**: Enhanced visibility (18px, bold white)
+5. **Indicator Rendering**: Fixed rendering across all ranges
+6. **Initial View**: Opens with last 500 bars
 
-### 4. Trade Marker Visibility - ENHANCED ✅
-**Changes**:
-- Size increased 25% (14px → 18px)
-- Bold white pen (width=3)
-- Z-value set to 1000 (renders on top)
-- Pure white color for maximum visibility
+#### Main Classes
+- `RangeBarChart`: Core chart widget with candle rendering
+- `TradePanel`: Trade list with DateTime display
+- `DataSelector`: File browser for data/trade selection
+- `StrategyRunner`: Executes trading strategies
 
-### 5. SMA/Indicator Rendering - FIXED ✅
-**Problem**: Indicators didn't render when jumping ahead
-**Solution**:
-- Improved visible range calculation
-- Proper z-ordering (indicators=500, trades=1000)
-- Line width increased to 2 for visibility
+### OMTree Machine Learning Pipeline
 
-### 6. Trade Data Display - ENHANCED ✅
-**Added to hover info**:
-- DateTime in format YYYY-MM-DD HH:MM:SS
-- Bar number
-- Complete trade details
+#### Core Components
+- **Decision Tree Model**: Custom implementation with bootstrapping
+- **Walk-forward Validation**: Time-series aware validation
+- **Feature Engineering**: 100+ technical indicators
+- **GUI Interface**: Real-time model training/testing
 
-### 7. Initial View - IMPROVED ✅
-**Change**: Chart now opens showing last 500 bars instead of first 500
-**Benefit**: Recent data immediately visible
+#### Key Parameters
+- Bootstrap fraction: 0.5-0.67
+- Min leaf fraction: 0.5-1.0%
+- Vote threshold: 70-80%
+- Target threshold: 0.4-0.6%
 
-## Key Components
-
-### PyQtGraph Range Bar Chart (`pyqtgraph_range_bars_final.py`)
-**Features**:
-- Dynamic data loading for 377,690+ bars
-- Real-time timestamp labels
-- Trade overlay visualization
-- Indicator overlays (SMA, RSI)
-- Adaptive candle spacing
-- Multi-monitor DPI awareness
-
-**Key Methods**:
-- `load_data()`: Load CSV/Parquet data
-- `render_range(start, end)`: Render specific range
-- `format_time_axis()`: Format DateTime labels
-- `jump_to_trade(trade)`: Navigate to trade
-- `on_x_range_changed()`: Handle panning
-
-### Trade Panel (`trade_panel.py`)
-**Features**:
-- Sortable trade list
-- DateTime display for all trades
-- Color-coded trade types
-- Double-click to jump to trade
-- PyQt signal type fixed (object)
-
-### Data Selector (`pyqtgraph_data_selector.py`)
-**Features**:
-- File browser for data selection
-- Trade source options (None/CSV/System)
-- Strategy selection
-- Indicator checkboxes
-
-## Data Pipeline
-
-### CSV Loading
+#### Processing Pipeline
 ```
-CSV File → pd.read_csv() →
-Combine Date+Time → pd.to_datetime() →
-Convert to numpy arrays → full_data dict →
-Set dynamic ViewBox limits → Render
+Raw Data → Feature Engineering →
+Normalization → Tree Training →
+Signal Generation → Validation
 ```
 
-### Trade Generation
+## Data Flow
+
+### PyQtGraph Visualization
 ```
-Chart Data → Strategy.generate_signals() →
-signals_to_trades(lag=0) → TradeCollection →
-Trade Panel Display with DateTime
+CSV/Parquet Data → DataFrame →
+NumPy Arrays → Chart Rendering →
+Trade Overlay → Interactive Display
 ```
+
+### OMTree ML Pipeline
+```
+Market Data → Feature Extraction →
+Model Training → Signal Generation →
+Walk-forward Validation → Performance Metrics
+```
+
+## Configuration Files
+
+### OMtree_config.ini
+- Feature selection
+- Model parameters
+- Data paths
+- Processing options
+
+### Strategy Parameters
+- Signal lag: 0 (execute on signal bar)
+- SMA periods: Configurable
+- RSI thresholds: 30/70 default
 
 ## Performance Optimizations
 
-### Rendering
-- Downsampling when >2000 bars visible
-- Incremental indicator rendering
-- ScatterPlotItem for trades (fast)
-- is_rendering flag prevents overlap
-
-### Data Management
+### Chart Rendering
+- Downsampling for >2000 visible bars
 - Float32 arrays for memory efficiency
+- Incremental indicator updates
+- Z-ordering for proper layering
+
+### ML Processing
 - Vectorized NumPy operations
-- Dynamic ViewBox limits
+- Parallel tree training
+- Cached feature calculations
+- Memory-mapped data access
 
-## Configuration
+## Testing & Validation
 
-### Dynamic ViewBox Limits
-```python
-viewBox.setLimits(
-    xMin=-100,
-    xMax=self.total_bars + 100,    # Dynamic
-    yMin=0,
-    yMax=100000,
-    minXRange=10,
-    maxXRange=self.total_bars + 1000,
-    minYRange=1,
-    maxYRange=50000
-)
-```
+### Chart System Tests
+- All 377,690 bars accessible
+- Timestamp display accuracy
+- Trade navigation reliability
+- Indicator rendering consistency
 
-### Signal Bar Lag
-- Currently set to: **0** (trades execute on signal bar)
-- Location: `src/trading/strategies/base.py`
+### ML Model Tests
+- Walk-forward validation results
+- Feature importance analysis
+- Performance metrics tracking
+- Parameter sensitivity testing
 
-## Testing Verification
+## Usage Examples
 
-### Data Access Tests
-- ✅ All 377,690 bars accessible
-- ✅ June 15, 2023 at bar 199,628
-- ✅ Can pan to any date (2021-2025)
-- ✅ Jump to trades at any position
-
-### Display Tests
-- ✅ Timestamps show correct time
-- ✅ Trade list shows DateTime
-- ✅ Indicators render at all positions
-- ✅ Trade markers visible on top
-
-## Known Issues - ALL RESOLVED
-
-Previously fixed issues:
-- ~~Timestamps showing 00:00:00~~ → Fixed with column mapping
-- ~~Cannot pan past June 2023~~ → Fixed with dynamic limits
-- ~~Chart jumps back after navigation~~ → Fixed with handler management
-- ~~Indicators not rendering~~ → Fixed with range calculation
-- ~~Trade markers hard to see~~ → Fixed with size/color/z-order
-
-## Usage
-
-### Basic Launch
+### Launch PyQtGraph Chart
 ```bash
 python launch_pyqtgraph_with_selector.py
 ```
 
-### Workflow
-1. Select data file (CSV/Parquet)
-2. Choose trade source
-3. Select indicators
-4. Chart opens with last 500 bars
-5. Pan/zoom with mouse
-6. Double-click trades to jump
+### Run OMTree GUI
+```bash
+python OMtree_gui.py
+```
 
-### Controls
-- Mouse wheel: Zoom
-- Click+drag: Pan
-- Hover: See price/time/trade info
-- Trade list: Double-click to jump
+### Walk-forward Validation
+```bash
+python OMtree_walkforward.py
+```
+
+## Key Achievements
+
+### PyQtGraph System
+- Full 377k+ bar support without limits
+- Accurate timestamp display throughout
+- Smooth navigation and trade jumping
+- Clear indicator and trade visualization
+
+### OMTree System
+- Robust decision tree implementation
+- Comprehensive feature engineering
+- Time-series aware validation
+- GUI for interactive model development
 
 ---
 
-*Last Updated: 2025-09-22*
-*Version: 2.1.0 - All Critical Issues Resolved*
+*Version: 3.0.0*
+*Last Updated: 2025-09-23*
+*Status: Production Ready*

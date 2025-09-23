@@ -1,49 +1,59 @@
-# Project TODOs - PyQtGraph Trading System
+# Project TODOs - PythonBT Trading System
 
-## Completed Tasks (2025-09-22) ✅
+## Current Development Focus
 
-### Critical Fixes Resolved
-1. ✅ **Timestamp Display Issue** - Fixed column mapping preventing Date+Time combination
-2. ✅ **ViewBox Hardcoded Limit** - Removed 200k bar limit, now supports all 377,690 bars
-3. ✅ **Chart Navigation** - Fixed jump_to_trade reverting to previous position
-4. ✅ **Trade Marker Visibility** - Increased size 25%, bold white, z-order 1000
-5. ✅ **SMA/Indicator Rendering** - Fixed rendering when jumping to different areas
-6. ✅ **Trade Data Display** - Added DateTime and bar # to hover info
-7. ✅ **Initial View** - Chart now opens showing recent data (last 500 bars)
+### PyQtGraph Enhancements
+- [ ] **Real-time Data Integration** - Connect to live market data feeds
+- [ ] **Multi-timeframe Analysis** - Support multiple time periods on single chart
+- [ ] **Advanced Analytics Dashboard** - Add performance metrics panel
+- [ ] **Custom Indicator Builder** - GUI for creating custom indicators
 
-## Current Status
-All critical issues have been resolved. The system is fully functional with:
-- Complete access to all 377,690 bars of data (2021-2025)
-- Proper timestamp display throughout the application
-- Smooth navigation and panning across the entire dataset
-- Clear trade markers and indicator visualization
-- Comprehensive trade information display
+### OMTree ML Improvements
+- [ ] **GPU Acceleration** - Implement CUDA support for tree training
+- [ ] **Feature Auto-selection** - Automatic feature importance ranking
+- [ ] **Ensemble Methods** - Add random forest and gradient boosting
+- [ ] **Real-time Predictions** - Live signal generation from streaming data
 
-## Future Enhancements (Optional)
+### System Integration
+- [ ] **Unified Trading Interface** - Combine PyQtGraph and OMTree in single app
+- [ ] **Automated Trading** - Connect to broker API for live execution
+- [ ] **Risk Management Module** - Position sizing and stop-loss automation
+- [ ] **Performance Reporting** - Comprehensive backtest and live trading reports
 
-### Performance
-- [ ] Implement GPU acceleration for very large datasets
-- [ ] Add data caching for frequently accessed ranges
-- [ ] Optimize memory usage for multi-chart views
+## Infrastructure & Performance
 
-### Features
-- [ ] Add real-time data feed integration
-- [ ] Implement multi-timeframe analysis
-- [ ] Add advanced trade analytics dashboard
-- [ ] Create custom indicator builder interface
+### Optimization Tasks
+- [ ] **Memory Management** - Optimize for datasets >1M bars
+- [ ] **Parallel Processing** - Multi-core support for backtesting
+- [ ] **Data Caching** - Implement smart caching for frequently accessed ranges
+- [ ] **Database Integration** - Move from CSV to time-series database
 
 ### User Experience
-- [ ] Add keyboard shortcuts for common operations
-- [ ] Implement chart templates/presets
-- [ ] Add export functionality for charts and reports
-- [ ] Create user preference persistence
+- [ ] **Keyboard Shortcuts** - Add hotkeys for common operations
+- [ ] **Chart Templates** - Save/load custom chart configurations
+- [ ] **Export Functionality** - Export charts, data, and reports
+- [ ] **User Preferences** - Persistent settings across sessions
+
+## Documentation & Testing
+
+### Documentation
+- [ ] **API Documentation** - Complete docstrings for all public methods
+- [ ] **User Manual** - Step-by-step guide for all features
+- [ ] **Video Tutorials** - Screen recordings for common workflows
+
+### Testing
+- [ ] **Unit Test Coverage** - Achieve >80% coverage
+- [ ] **Integration Tests** - Test component interactions
+- [ ] **Performance Benchmarks** - Track rendering and processing speed
+- [ ] **Regression Tests** - Ensure fixes remain stable
 
 ## Notes
-- Signal bar lag is currently set to 0 (trades execute on signal bar)
-- All test scripts have been created and verified working
-- Documentation has been updated to reflect all changes
+- PyQtGraph system fully functional with 377,690 bars
+- All critical timestamp and navigation issues resolved
+- OMTree ML pipeline operational with walk-forward validation
+- Both systems ready for production use
 
 ---
 
-*Last Updated: 2025-09-22*
-*Status: All Critical Issues Resolved*
+*Last Updated: 2025-09-23*
+*Status: Active Development*
