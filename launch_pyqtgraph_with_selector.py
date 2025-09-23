@@ -232,14 +232,24 @@ class ConfiguredChart(RangeBarChartFinal):
 
 
         print(f"Data loaded: {self.total_bars:,} bars in {time.time()-start_time:.2f}s")
-        
+
+        # Debug: Verify we have all data including June 2023
+        if self.total_bars > 199628:
+            june_idx = 199628
+            print(f"DEBUG: Checking bar at June 2023 (index {june_idx})...")
+            if june_idx < len(self.full_data['timestamp']):
+                june_ts = self.full_data['timestamp'][june_idx]
+                june_open = self.full_data['open'][june_idx]
+                print(f"  Bar {june_idx}: timestamp={june_ts}, open={june_open}")
+            print(f"  Total bars available: {self.total_bars}")
+
         # Load trades based on configuration
         self.load_configured_trades()
-        
+
         # Update trade panel if it exists
         if self.trade_panel and self.full_data['timestamp'] is not None:
             self.trade_panel.set_chart_timestamps(self.full_data['timestamp'])
-            
+
             bar_data = {
                 'timestamp': self.full_data['timestamp'],  # CRITICAL: Include timestamp!
                 'open': self.full_data['open'],
@@ -248,10 +258,17 @@ class ConfiguredChart(RangeBarChartFinal):
                 'close': self.full_data['close']
             }
             self.trade_panel.set_bar_data(bar_data)
-        
-        # Ensure initial render happens
+
+        # Initial render - show recent data instead of just first 500 bars
         if getattr(self, 'total_bars', 0) > 0:
-            self.render_range(0, min(500, self.total_bars))
+            # Show last 500 bars instead of first 500
+            if self.total_bars > 500:
+                start_idx = self.total_bars - 500
+                end_idx = self.total_bars
+            else:
+                start_idx = 0
+                end_idx = self.total_bars
+            self.render_range(start_idx, end_idx)
     
     def create_sample_data(self):
         """Disabled: sample data not permitted."""
