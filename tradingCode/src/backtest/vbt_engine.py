@@ -79,48 +79,56 @@ class VectorBTEngine:
                 if key not in self.config['backtest']:
                     raise ValueError(f"Missing required formula configuration: backtest.{key}")
     
-    def calculate_execution_prices(self, data: Dict[str, np.ndarray], 
-                                 entries: np.ndarray, exits: np.ndarray) -> np.ndarray:
+    def calculate_execution_prices(self, data: Dict[str, np.ndarray],
+                                 entries: np.ndarray, exits: np.ndarray,
+                                 lagged_entries: np.ndarray = None,
+                                 lagged_exits: np.ndarray = None) -> np.ndarray:
         """
         Calculate execution prices based on buy/sell formulas and signals.
-        
+
         Args:
             data: OHLC data dictionary
-            entries: Entry signals (buy signals)
-            exits: Exit signals (sell signals) 
-            
+            entries: Original entry signals (for reference)
+            exits: Original exit signals (for reference)
+            lagged_entries: Lagged entry signals (where trades actually execute)
+            lagged_exits: Lagged exit signals (where trades actually execute)
+
         Returns:
             Array of execution prices for each bar
         """
         execution_price_type = self.config['backtest'].get('execution_price', 'close')
-        
+
         # If using simple price type (not formula), return that price array
         if execution_price_type in ['open', 'high', 'low', 'close']:
             return data[execution_price_type]
-        
+
         # Use formula-based pricing
         buy_formula = self.config['backtest'].get('buy_execution_formula', 'C')
         sell_formula = self.config['backtest'].get('sell_execution_formula', 'C')
-        
+
         # Calculate buy and sell execution prices
         buy_prices = self.formula_evaluator.get_execution_prices(buy_formula, data, "buy")
         sell_prices = self.formula_evaluator.get_execution_prices(sell_formula, data, "sell")
-        
-        # Create execution price array
+
+        # Create execution price array - use the formula prices where trades execute
         execution_prices = data['close'].copy()  # Default to close prices
-        
+
+        # Use lagged signals if provided, otherwise use original signals
+        exec_entries = lagged_entries if lagged_entries is not None else entries
+        exec_exits = lagged_exits if lagged_exits is not None else exits
+
         # Handle multi-dimensional signals (for parameter sweeps)
-        if entries.ndim == 1:
-            # Single parameter case
-            execution_prices = np.where(entries, buy_prices, execution_prices)
-            execution_prices = np.where(exits, sell_prices, execution_prices)
+        if exec_entries.ndim == 1:
+            # Single parameter case - apply formula prices where trades execute
+            execution_prices = np.where(exec_entries, buy_prices, execution_prices)
+            execution_prices = np.where(exec_exits, sell_prices, execution_prices)
         else:
             # Multiple parameter case - use buy prices for any entry, sell prices for any exit
-            any_entries = np.any(entries, axis=1)
-            any_exits = np.any(exits, axis=1)
+            any_entries = np.any(exec_entries, axis=1)
+            any_exits = np.any(exec_exits, axis=1)
             execution_prices = np.where(any_entries, buy_prices, execution_prices)
             execution_prices = np.where(any_exits, sell_prices, execution_prices)
-        
+
         return execution_prices
             
     def run_vectorized_backtest(self, data: Dict[str, np.ndarray],
@@ -128,13 +136,13 @@ class VectorBTEngine:
                                symbol: str = "TEST") -> vbt.Portfolio:
         """
         Run backtest for multiple parameter combinations simultaneously.
-        
+
         Args:
             data: Dictionary with OHLCV arrays
             entries: 2D/3D boolean array of entry signals
             exits: 2D/3D boolean array of exit signals
             symbol: Symbol name for the backtest
-            
+
         Returns:
             VectorBT Portfolio object
         """
@@ -142,7 +150,7 @@ class VectorBTEngine:
         phased_size_array = None
         if self.phased_engine.config.enabled:
             logger.info("Applying phased trading to signals...")
-            
+
             # Process signals through phased engine
             phased_results = self.phased_engine.process_signals(
                 entries.flatten() if entries.ndim > 1 else entries,
@@ -150,17 +158,21 @@ class VectorBTEngine:
                 data,
                 position_size=self.config['backtest']['position_size']
             )
-            
+
             # Use phased signals
             entries = phased_results['entries']
             exits = phased_results['exits']
-            
+
             # Store phased sizes for position sizing
             phased_size_array = phased_results['entry_sizes']
-            
+
             # Log signal transformation
             logger.info(f"Phased trading: {np.sum(entries)} entry signals, {np.sum(exits)} exit signals")
-        
+
+        # Store original signals for price calculation
+        original_entries = entries.copy()
+        original_exits = exits.copy()
+
         # Apply signal lag if configured
         signal_lag = self.config['backtest'].get('signal_lag', 0)
         if signal_lag > 0:
@@ -170,15 +182,28 @@ class VectorBTEngine:
             # Clear signals at the beginning (can't execute before data starts)
             entries[:signal_lag] = False
             exits[:signal_lag] = False
-        
+
+            # Also shift phased size array if present
+            if phased_size_array is not None:
+                phased_size_array = np.roll(phased_size_array, signal_lag, axis=0)
+                phased_size_array[:signal_lag] = 0
+
         # Ensure arrays are properly shaped
         if entries.ndim == 1:
             entries = entries.reshape(-1, 1)
         if exits.ndim == 1:
             exits = exits.reshape(-1, 1)
-            
-        # Calculate execution prices based on buy/sell formulas and signals
-        execution_prices = self.calculate_execution_prices(data, entries, exits)
+        if original_entries.ndim == 1:
+            original_entries = original_entries.reshape(-1, 1)
+        if original_exits.ndim == 1:
+            original_exits = original_exits.reshape(-1, 1)
+
+        # Calculate execution prices - pass both original and lagged signals
+        # Original signals show where crossovers occurred
+        # Lagged signals show where trades actually execute
+        execution_prices = self.calculate_execution_prices(
+            data, original_entries, original_exits, entries, exits
+        )
             
         # Determine position sizing - use phased sizes if available
         if phased_size_array is not None:

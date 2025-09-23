@@ -1,56 +1,58 @@
 # Project TODOs - PythonBT Trading System
 
-## Current Development Focus
+## Immediate Priorities
 
-### PyQtGraph Enhancements
-- [ ] **Real-time Data Integration** - Connect to live market data feeds
-- [ ] **Multi-timeframe Analysis** - Support multiple time periods on single chart
-- [ ] **Advanced Analytics Dashboard** - Add performance metrics panel
-- [ ] **Custom Indicator Builder** - GUI for creating custom indicators
+### Data Integration
+- [ ] **Live Data Feed** - Connect to real-time market data providers
+- [ ] **Database Backend** - Migrate from CSV to TimescaleDB for time-series data
+- [ ] **Data Validation** - Add checks for data quality and missing bars
 
-### OMTree ML Improvements
-- [ ] **GPU Acceleration** - Implement CUDA support for tree training
-- [ ] **Feature Auto-selection** - Automatic feature importance ranking
-- [ ] **Ensemble Methods** - Add random forest and gradient boosting
-- [ ] **Real-time Predictions** - Live signal generation from streaming data
+### Trading Features
+- [ ] **Stop Loss/Take Profit** - Implement automatic exit conditions
+- [ ] **Portfolio Management** - Support multiple simultaneous strategies
+- [ ] **Commission Models** - Add realistic broker fee structures
 
-### System Integration
-- [ ] **Unified Trading Interface** - Combine PyQtGraph and OMTree in single app
-- [ ] **Automated Trading** - Connect to broker API for live execution
-- [ ] **Risk Management Module** - Position sizing and stop-loss automation
-- [ ] **Performance Reporting** - Comprehensive backtest and live trading reports
+## PyQtGraph Enhancements
 
-## Infrastructure & Performance
+### Visualization
+- [ ] **Multi-timeframe Display** - Show M5, H1, D1 on same chart
+- [ ] **Custom Indicators** - GUI for adding technical indicators
+- [ ] **Performance Dashboard** - Live P&L, drawdown, win rate display
+- [ ] **Trade Annotations** - Show entry/exit reasons on chart
 
-### Optimization Tasks
-- [ ] **Memory Management** - Optimize for datasets >1M bars
-- [ ] **Parallel Processing** - Multi-core support for backtesting
-- [ ] **Data Caching** - Implement smart caching for frequently accessed ranges
-- [ ] **Database Integration** - Move from CSV to time-series database
+### User Interface
+- [ ] **Keyboard Shortcuts** - Quick navigation and actions
+- [ ] **Chart Templates** - Save/load custom layouts
+- [ ] **Dark/Light Themes** - User preference support
 
-### User Experience
-- [ ] **Keyboard Shortcuts** - Add hotkeys for common operations
-- [ ] **Chart Templates** - Save/load custom chart configurations
-- [ ] **Export Functionality** - Export charts, data, and reports
-- [ ] **User Preferences** - Persistent settings across sessions
+## ML/AI Integration
 
-## Documentation & Testing
+### OMTree Improvements
+- [ ] **GPU Acceleration** - CUDA support for faster training
+- [ ] **Feature Engineering** - Automatic technical indicator generation
+- [ ] **Walk-Forward Analysis** - Automated parameter optimization
+- [ ] **Ensemble Models** - Combine multiple strategies
 
-### Documentation
-- [ ] **API Documentation** - Complete docstrings for all public methods
-- [ ] **User Manual** - Step-by-step guide for all features
-- [ ] **Video Tutorials** - Screen recordings for common workflows
+## Testing & Quality
 
-### Testing
-- [ ] **Unit Test Coverage** - Achieve >80% coverage
-- [ ] **Integration Tests** - Test component interactions
-- [ ] **Performance Benchmarks** - Track rendering and processing speed
-- [ ] **Regression Tests** - Ensure fixes remain stable
+### Coverage Goals
+- [ ] **Unit Tests** - Reach 80% code coverage
+- [ ] **Integration Tests** - Test strategy combinations
+- [ ] **Performance Tests** - Benchmark with 1M+ bars
+- [ ] **Regression Suite** - Prevent breaking changes
+
+## Recently Completed (2025-09-23)
+✅ Config.yaml integration with bar lag and execution formulas
+✅ $1 position sizing for clean percentage calculations
+✅ Sub-linear performance scaling (0.2-0.5x efficiency)
+✅ PyQtGraph handling 377,690+ bars smoothly
 
 ## Notes
 - PyQtGraph system fully functional with 377,690 bars
 - All critical timestamp and navigation issues resolved
 - OMTree ML pipeline operational with walk-forward validation
+- Config.yaml fully integrated with proper bar lag and execution formulas
+- $1 position sizing enables clean percentage-based profit calculations
 - Both systems ready for production use
 
 ---
