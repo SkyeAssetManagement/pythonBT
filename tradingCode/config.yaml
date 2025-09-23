@@ -19,7 +19,7 @@ backtest:
   position_size_type: "value"             # Size type: "value" (dollars), "amount" (shares), "percent" (% of portfolio)
   
   # Execution settings
-  execution_price: "close"                # Price for execution: "close", "open", "high", "low", or "formula"
+  execution_price: "formula"              # Price for execution: "close", "open", "high", "low", or "formula"
   signal_lag: 1                           # Bars to lag signals (1 = signal today, execute next bar, 0 = same bar)
   
   # Formula-based execution pricing (OHLC variables: O, H, L, C)
@@ -55,3 +55,6 @@ system:
   random_seed: 42                         # Random seed for reproducible results (null for random)
   max_workers: null                       # Maximum parallel workers (null = auto-detect)
   memory_limit: null                      # Memory limit in GB (null = no limit)
+
+# Unified execution engine configuration
+use_unified_engine: true                 # Enable unified execution engine (false = use legacy path)

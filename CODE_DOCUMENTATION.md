@@ -304,6 +304,134 @@ set DEBUG=1
 python launch_pyqtgraph_with_selector.py
 ```
 
+## Recent Modular Refactoring (2025-09-23)
+
+### New Core Components Added
+
+#### Standalone Execution Engine
+**Location**: `src/trading/core/standalone_execution.py`
+- Independent execution engine with config.yaml support
+- Handles bar lag and execution price formulas
+- Can be tested separately from visualization
+- Features:
+  - Signal lag (1+ bars between signal and execution)
+  - Price formulas: `(H+L+C)/3`, `(H+L)/2`, etc.
+  - Position sizing: value, amount, or percentage
+  - Friction costs: fees, fixed fees, slippage
+
+#### Enhanced Trade Types
+**Location**: `src/trading/core/trade_types.py`
+- `TradeRecord`: Complete trade with execution details
+- `TradeRecordCollection`: Collection with metrics calculation
+- Compatible with existing UI while adding:
+  - P&L in both points and percentage
+  - Cumulative P&L tracking
+  - Signal bar vs execution bar tracking
+  - Execution formula storage
+
+#### Strategy Wrapper System
+**Location**: `src/trading/strategies/strategy_wrapper.py`
+- Wraps existing strategies with metadata
+- Adds indicator definitions for future plotting
+- `StrategyFactory` for easy instantiation
+- Maintains backward compatibility
+
+#### Strategy Runner Adapter
+**Location**: `src/trading/core/strategy_runner_adapter.py`
+- Routes execution through legacy or unified engine
+- Configurable via `use_unified_engine` flag in config.yaml
+- Converts between trade formats for compatibility
+- Allows gradual migration without breaking changes
+
+#### Enhanced Trade Panel
+**Location**: `src/trading/visualization/enhanced_trade_panel.py`
+- Displays P&L as percentages instead of dollars
+- Adds trade summary statistics:
+  - Total trades and win rate
+  - Total and average P&L percentages
+  - Cumulative P&L column
+- Inherits from existing panel for compatibility
+
+### Configuration Updates
+
+#### config.yaml Enhancement
+```yaml
+# Unified execution engine configuration
+use_unified_engine: false  # Set to true to enable new engine
+
+# Execution settings
+backtest:
+  signal_lag: 1  # Bars between signal and execution
+  execution_price: "close"  # or "formula"
+  buy_execution_formula: "(H + L + C) / 3"
+  sell_execution_formula: "(H + L + C) / 3"
+```
+
+### Test Suite Additions
+
+#### test_execution_engine.py
+- Tests standalone execution engine
+- Verifies lag calculations
+- Tests price formula evaluation
+- Validates P&L tracking
+
+#### test_side_by_side_comparison.py
+- Compares legacy vs unified execution
+- Ensures consistent results
+- Validates both systems work in parallel
+
+### Migration Path
+
+1. **Phase 1 (Current)**: Both systems coexist
+   - Legacy path is default (`use_unified_engine: false`)
+   - New engine available for testing
+
+2. **Phase 2 (Future)**: Gradual adoption
+   - Enable unified engine per-strategy
+   - Monitor performance and accuracy
+
+3. **Phase 3 (Future)**: Full migration
+   - Set `use_unified_engine: true` as default
+   - Legacy code remains as fallback
+
+### Benefits of Refactoring
+
+1. **Modular Design**: Components can be tested independently
+2. **Config-Driven**: Execution behavior controlled by config.yaml
+3. **Enhanced Metrics**: P&L tracking in percentage terms
+4. **Execution Realism**: Proper signal lag implementation
+5. **Backward Compatible**: Existing code continues to work
+
+### Usage Examples
+
+#### Using Unified Engine Programmatically
+```python
+from src.trading.core.standalone_execution import ExecutionConfig, StandaloneExecutionEngine
+from src.trading.strategies.strategy_wrapper import StrategyFactory
+
+# Load config
+config = ExecutionConfig.from_yaml()
+
+# Create wrapped strategy
+strategy = StrategyFactory.create_sma_crossover(
+    fast_period=10,
+    slow_period=30,
+    execution_config=config
+)
+
+# Execute trades
+trades = strategy.execute_trades(price_data_df)
+
+# Get metrics
+metrics = trades.get_metrics()
+print(f"Win rate: {metrics['win_rate']:.1f}%")
+```
+
+#### Enabling Unified Engine Globally
+1. Edit `tradingCode/config.yaml`
+2. Set `use_unified_engine: true`
+3. Restart application
+
 ---
-*Last Updated: 2025-09-22*
-*Version: 1.0.1 - Timestamp Fix Applied*
+*Last Updated: 2025-09-23*
+*Version: 2.0.0 - Unified Execution Engine Added*
