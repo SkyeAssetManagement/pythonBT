@@ -173,18 +173,8 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
         # Store date boundary positions for special formatting
         self.date_boundary_positions = []
         
-        # Set ViewBox limits to prevent overflow
-        viewBox = self.plot_widget.getViewBox()
-        viewBox.setLimits(
-            xMin=-100,  # Allow some padding
-            xMax=200000,  # Increased to handle 122,609 bars with padding
-            yMin=0,  # Price shouldn't be negative
-            yMax=100000,  # Large but finite limit
-            minXRange=10,  # Minimum 10 bars visible
-            maxXRange=150000,  # Increased to allow viewing all bars at once
-            minYRange=1,  # Minimum price range
-            maxYRange=50000  # Maximum price range
-        )
+        # ViewBox limits will be set dynamically after data is loaded
+        self.viewBox = self.plot_widget.getViewBox()
 
         # Disable OpenGL to avoid driver issues
         self.plot_widget.useOpenGL(False)
@@ -287,7 +277,21 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
             self.total_bars = n
         
         print(f"Data loaded: {self.total_bars:,} bars in {time.time()-start_time:.2f}s")
-        
+
+        # Set ViewBox limits based on actual data
+        if hasattr(self, 'viewBox'):
+            self.viewBox.setLimits(
+                xMin=-100,  # Allow some padding
+                xMax=self.total_bars + 100,  # Dynamic based on actual data
+                yMin=0,  # Price shouldn't be negative
+                yMax=100000,  # Large but finite limit
+                minXRange=10,  # Minimum 10 bars visible
+                maxXRange=self.total_bars + 1000,  # Allow viewing all bars
+                minYRange=1,  # Minimum price range
+                maxYRange=50000  # Maximum price range
+            )
+            print(f"ViewBox limits set: xMax={self.total_bars + 100}")
+
         # Pass timestamps and bar data to trade panel for coordinated trade generation
         if self.trade_panel and self.full_data['timestamp'] is not None:
             self.trade_panel.set_chart_timestamps(self.full_data['timestamp'])

@@ -233,6 +233,20 @@ class ConfiguredChart(RangeBarChartFinal):
 
         print(f"Data loaded: {self.total_bars:,} bars in {time.time()-start_time:.2f}s")
 
+        # Set ViewBox limits based on actual data size
+        if hasattr(self, 'viewBox'):
+            self.viewBox.setLimits(
+                xMin=-100,  # Allow some padding
+                xMax=self.total_bars + 100,  # Dynamic based on actual data
+                yMin=0,  # Price shouldn't be negative
+                yMax=100000,  # Large but finite limit
+                minXRange=10,  # Minimum 10 bars visible
+                maxXRange=self.total_bars + 1000,  # Allow viewing all bars
+                minYRange=1,  # Minimum price range
+                maxYRange=50000  # Maximum price range
+            )
+            print(f"ViewBox limits set dynamically: xMax={self.total_bars + 100}")
+
         # Debug: Verify we have all data including June 2023
         if self.total_bars > 199628:
             june_idx = 199628
