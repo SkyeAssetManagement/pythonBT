@@ -13,6 +13,7 @@ from strategies.sma_crossover import SMACrossoverStrategy
 from strategies.rsi_momentum import RSIMomentumStrategy
 from strategies.enhanced_sma_crossover import EnhancedSMACrossoverStrategy
 from data.trade_data import TradeCollection
+from core.strategy_runner_adapter import StrategyRunnerAdapter
 
 
 class StrategyRunner(QtWidgets.QWidget):
@@ -256,10 +257,41 @@ class StrategyRunner(QtWidgets.QWidget):
 
             # Generate signals
             self.status_label.setText(f"Generating {strategy_name} signals...")
-            signals = strategy.generate_signals(self.chart_data)
 
-            # Convert signals to trades
-            trades = strategy.signals_to_trades(signals, self.chart_data)
+            # Use adapter to respect config.yaml settings (signal lag, execution formulas, etc.)
+            adapter = StrategyRunnerAdapter()
+
+            # Prepare parameters for adapter
+            params = {}
+            if hasattr(strategy, 'fast_period'):
+                params['fast_period'] = strategy.fast_period
+                params['slow_period'] = strategy.slow_period
+            if hasattr(strategy, 'period'):
+                params['period'] = strategy.period
+                params['oversold'] = strategy.oversold
+                params['overbought'] = strategy.overbought
+            params['long_only'] = self.long_only_check.isChecked()
+
+            # Map strategy name for adapter
+            adapter_strategy_name = {
+                "SMA Crossover": "sma_crossover",
+                "Enhanced SMA (with Lag)": "enhanced_sma",
+                "RSI Momentum": "rsi_momentum"
+            }.get(strategy_name, "sma_crossover")
+
+            # Run through adapter which will use unified engine if configured
+            print(f"[STRATEGY_RUNNER] Using adapter with use_unified_engine={adapter.use_unified_engine}")
+            trades = adapter.run_strategy(adapter_strategy_name, params, self.chart_data)
+
+            # Convert to legacy format if needed
+            # The adapter returns TradeRecordCollection when unified engine is enabled
+            from core.trade_types import TradeRecordCollection
+            if isinstance(trades, TradeRecordCollection):
+                print(f"[STRATEGY_RUNNER] Converting TradeRecordCollection to legacy format")
+                trades = trades.to_legacy_collection()
+
+            print(f"[STRATEGY_RUNNER] Trades type after conversion: {type(trades)}")
+            print(f"[STRATEGY_RUNNER] Number of trades: {len(trades)}")
 
             # Emit trades
             self.trades_generated.emit(trades)

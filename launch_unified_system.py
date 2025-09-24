@@ -203,7 +203,14 @@ class UnifiedConfiguredChart(RangeBarChartFinal):
                     'high': df['High'].values.astype(np.float64),
                     'low': df['Low'].values.astype(np.float64),
                     'close': df['Close'].values.astype(np.float64),
-                    'volume': df['Volume'].values.astype(np.float64) if 'Volume' in df.columns else np.zeros(len(df))
+                    'volume': df['Volume'].values.astype(np.float64) if 'Volume' in df.columns else np.zeros(len(df)),
+                    # Load ATR if available - check multiple column names
+                    'aux1': (df['AUX1'].values.astype(np.float64) if 'AUX1' in df.columns else
+                            df['ATR'].values.astype(np.float64) if 'ATR' in df.columns else
+                            df['atr'].values.astype(np.float64) if 'atr' in df.columns else None),
+                    # Load multiplier or use default
+                    'aux2': (df['AUX2'].values.astype(np.float64) if 'AUX2' in df.columns else
+                            np.full(len(df), 0.1, dtype=np.float64) if any(col in df.columns for col in ['AUX1', 'ATR', 'atr']) else None)
                 }
 
                 # Calculate returns if not present
@@ -212,6 +219,16 @@ class UnifiedConfiguredChart(RangeBarChartFinal):
 
                 print(f"[UNIFIED CHART] Loaded {len(self.full_data['timestamp'])} bars")
                 print(f"[UNIFIED CHART] Load time: {time.time() - start_time:.2f} seconds")
+
+                # Debug ATR loading
+                if self.full_data.get('aux1') is not None:
+                    atr_values = self.full_data['aux1']
+                    non_zero = atr_values[atr_values != 0]
+                    print(f"[UNIFIED CHART] ATR data loaded: {len(non_zero)} non-zero values out of {len(atr_values)}")
+                    if len(non_zero) > 0:
+                        print(f"[UNIFIED CHART] ATR range: {non_zero.min():.2f} - {non_zero.max():.2f}, mean: {non_zero.mean():.2f}")
+                else:
+                    print("[UNIFIED CHART] No ATR data found in file")
 
                 # Set required attributes for chart
                 self.total_bars = len(self.full_data['timestamp'])

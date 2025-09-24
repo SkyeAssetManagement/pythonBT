@@ -81,13 +81,18 @@ class TradingStrategy(ABC):
             if position != 0:
                 trade_type = 'SELL' if position > 0 else 'COVER'
 
-                # Calculate P&L for exit trades
+                # Calculate P&L for exit trades (percentage based on $1 invested)
                 pnl = None
+                pnl_percent = None
                 if entry_price is not None:
                     if position > 0:  # Long position
-                        pnl = price - entry_price
+                        # For $1 invested: (exit_price/entry_price - 1) * 100
+                        pnl_percent = ((price / entry_price) - 1) * 100
+                        pnl = price - entry_price  # Keep points for compatibility
                     else:  # Short position
-                        pnl = entry_price - price
+                        # For $1 invested in short: (1 - exit_price/entry_price) * 100
+                        pnl_percent = (1 - (price / entry_price)) * 100
+                        pnl = entry_price - price  # Keep points for compatibility
 
                 trade = TradeData(
                     bar_index=bar_idx,
@@ -95,9 +100,11 @@ class TradingStrategy(ABC):
                     price=price,
                     trade_id=trade_id,
                     timestamp=timestamp,
-                    pnl=pnl,
+                    pnl=pnl_percent,  # Store percentage as pnl
                     strategy=self.name
                 )
+                # Also store the percentage explicitly
+                trade.pnl_percent = pnl_percent
                 trades.append(trade)
                 trade_id += 1
                 entry_price = None
@@ -134,13 +141,18 @@ class TradingStrategy(ABC):
                 elif 'timestamp' in df.columns:
                     timestamp = pd.Timestamp(df['timestamp'].iloc[-1])
 
-            # Calculate final P&L
+            # Calculate final P&L (percentage based on $1 invested)
             pnl = None
+            pnl_percent = None
             if entry_price is not None:
                 if position > 0:  # Long position
-                    pnl = price - entry_price
+                    # For $1 invested: (exit_price/entry_price - 1) * 100
+                    pnl_percent = ((price / entry_price) - 1) * 100
+                    pnl = price - entry_price  # Keep points for compatibility
                 else:  # Short position
-                    pnl = entry_price - price
+                    # For $1 invested in short: (1 - exit_price/entry_price) * 100
+                    pnl_percent = (1 - (price / entry_price)) * 100
+                    pnl = entry_price - price  # Keep points for compatibility
 
             trade = TradeData(
                 bar_index=bar_idx,
@@ -148,9 +160,11 @@ class TradingStrategy(ABC):
                 price=price,
                 trade_id=trade_id,
                 timestamp=timestamp,
-                pnl=pnl,
+                pnl=pnl_percent,  # Store percentage as pnl
                 strategy=self.name
             )
+            # Also store the percentage explicitly
+            trade.pnl_percent = pnl_percent
             trades.append(trade)
 
         return TradeCollection(trades if trades else [])

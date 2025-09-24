@@ -236,15 +236,33 @@ class StandaloneExecutionEngine:
                     df, i, is_buy
                 )
 
-                # Calculate P&L
+                # Apply friction (fees and slippage) for exit
+                exec_price_adjusted, exit_fees = self.apply_friction(
+                    exec_price,
+                    abs(position),
+                    is_buy
+                )
+
+                # Calculate P&L based on $1 invested, including commissions
                 pnl_points = None
                 pnl_percent = None
                 if entry_price is not None:
+                    # Calculate commission impact as percentage of position value
+                    # Entry commission was already paid, now pay exit commission
+                    entry_commission_pct = (entry_fees / (entry_price * abs(position))) * 100 if 'entry_fees' in locals() else 0
+                    exit_commission_pct = (exit_fees / (exec_price * abs(position))) * 100
+                    total_commission_pct = entry_commission_pct + exit_commission_pct
+
                     if position > 0:  # Long position
-                        pnl_points = exec_price - entry_price
+                        # For $1 invested: (exit_value/entry_value - 1) * 100 - commissions
+                        gross_pnl_percent = ((exec_price / entry_price) - 1) * 100
+                        pnl_percent = gross_pnl_percent - total_commission_pct
+                        pnl_points = exec_price - entry_price  # Keep for compatibility
                     else:  # Short position
-                        pnl_points = entry_price - exec_price
-                    pnl_percent = (pnl_points / entry_price) * 100
+                        # For $1 invested in short: (1 - exit_value/entry_value) * 100 - commissions
+                        gross_pnl_percent = (1 - (exec_price / entry_price)) * 100
+                        pnl_percent = gross_pnl_percent - total_commission_pct
+                        pnl_points = entry_price - exec_price  # Keep for compatibility
 
                 # Get timestamp if available
                 timestamp = self._get_timestamp(df, exec_bar, has_datetime)
@@ -258,8 +276,10 @@ class StandaloneExecutionEngine:
                     'trade_type': trade_type,
                     'signal_price': self._get_price(df, i, 'Close'),
                     'execution_price': exec_price,
+                    'execution_price_adjusted': exec_price_adjusted,
                     'formula': formula,
                     'size': abs(position),
+                    'fees': exit_fees,
                     'pnl_points': pnl_points,
                     'pnl_percent': pnl_percent,
                     'timestamp': timestamp
@@ -286,8 +306,9 @@ class StandaloneExecutionEngine:
                     is_buy
                 )
 
-                # Store for P&L calculation
-                entry_price = exec_price
+                # Store for P&L calculation (use adjusted price)
+                entry_price = exec_price_adjusted
+                entry_fees = fees  # Store entry fees for P&L calculation
                 entry_bar = i
 
                 # Get timestamp if available
@@ -302,6 +323,7 @@ class StandaloneExecutionEngine:
                     'trade_type': trade_type,
                     'signal_price': self._get_price(df, i, 'Close'),
                     'execution_price': exec_price,
+                    'execution_price_adjusted': exec_price_adjusted,
                     'formula': formula,
                     'size': self.config.position_size,
                     'fees': fees,
@@ -322,15 +344,32 @@ class StandaloneExecutionEngine:
                 df, signal_bar, is_buy
             )
 
-            # Calculate final P&L
+            # Apply friction for final exit
+            exec_price_adjusted, exit_fees = self.apply_friction(
+                exec_price,
+                abs(position),
+                is_buy
+            )
+
+            # Calculate final P&L based on $1 invested, including commissions
             pnl_points = None
             pnl_percent = None
             if entry_price is not None:
-                if position > 0:
-                    pnl_points = exec_price - entry_price
-                else:
-                    pnl_points = entry_price - exec_price
-                pnl_percent = (pnl_points / entry_price) * 100
+                # Calculate commission impact
+                entry_commission_pct = (entry_fees / (entry_price * abs(position))) * 100 if 'entry_fees' in locals() else 0
+                exit_commission_pct = (exit_fees / (exec_price * abs(position))) * 100
+                total_commission_pct = entry_commission_pct + exit_commission_pct
+
+                if position > 0:  # Long position
+                    # For $1 invested: (exit_value/entry_value - 1) * 100 - commissions
+                    gross_pnl_percent = ((exec_price / entry_price) - 1) * 100
+                    pnl_percent = gross_pnl_percent - total_commission_pct
+                    pnl_points = exec_price - entry_price  # Keep for compatibility
+                else:  # Short position
+                    # For $1 invested in short: (1 - exit_value/entry_value) * 100 - commissions
+                    gross_pnl_percent = (1 - (exec_price / entry_price)) * 100
+                    pnl_percent = gross_pnl_percent - total_commission_pct
+                    pnl_points = entry_price - exec_price  # Keep for compatibility
 
             timestamp = self._get_timestamp(df, exec_bar, has_datetime)
 
@@ -342,8 +381,10 @@ class StandaloneExecutionEngine:
                 'trade_type': trade_type,
                 'signal_price': self._get_price(df, signal_bar, 'Close'),
                 'execution_price': exec_price,
+                'execution_price_adjusted': exec_price_adjusted,
                 'formula': formula,
                 'size': abs(position),
+                'fees': exit_fees,
                 'pnl_points': pnl_points,
                 'pnl_percent': pnl_percent,
                 'timestamp': timestamp

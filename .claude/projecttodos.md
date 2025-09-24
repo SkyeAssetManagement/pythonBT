@@ -1,75 +1,121 @@
 # Project TODOs - PythonBT Trading System
 
-## Current Focus: System Integration & Enhancement
+## Current Sprint Focus
 
-### Strategy System Improvements
-- [ ] Add minimum bars between trades parameter to reduce noise
-- [ ] Implement stop-loss and take-profit functionality
-- [ ] Create strategy performance metrics dashboard
-- [ ] Add strategy parameter optimization framework
+### Critical Bug Fixes
+- [ ] Fix memory leak in long-running chart sessions
+- [ ] Resolve SMA strategy excessive trade generation
+- [ ] Fix trade timestamp display showing None occasionally
 
-### Unified Execution Engine Migration
-- [ ] Complete integration of unified engine with all strategies
-- [ ] Add UI toggle for switching between legacy/unified modes
-- [ ] Create validation tests comparing legacy vs unified results
-- [ ] Document migration guide for users
+### Performance Optimization
+- [ ] Optimize for 10M+ bar datasets
+- [ ] Implement data chunking for memory efficiency
+- [ ] Add progress indicators for long operations
+- [ ] Profile and optimize viewport rendering
 
-### User Interface Enhancements
-- [ ] Add configuration UI for editing config.yaml settings
-- [ ] Create indicator overlay panel for technical indicators
-- [ ] Implement trade statistics summary panel
-- [ ] Add export functionality for trades and performance metrics
+## Next Release Features
 
-### Data & Performance
-- [ ] Profile and optimize for 10M+ bar datasets
-- [ ] Implement data caching for faster repeated loads
-- [ ] Add support for multiple timeframes
-- [ ] Create data validation and cleaning utilities
+### Strategy Enhancements
+- [ ] Add minimum bars between trades parameter
+- [ ] Implement stop-loss and take-profit orders
+- [ ] Create Bollinger Bands strategy
+- [ ] Add MACD strategy
+- [ ] Implement strategy combination framework
 
-### Documentation & Testing
+### User Interface
+- [ ] Add configuration UI for config.yaml editing
+- [ ] Create indicator overlay panel
+- [ ] Add trade statistics dashboard
+- [ ] Implement equity curve visualization
+- [ ] Add drawing tools (trend lines, channels)
+
+### Data Management
+- [ ] Add real-time data feed integration
+- [ ] Implement multi-symbol backtesting
+- [ ] Create data validation utilities
+- [ ] Add automatic data updates
+- [ ] Support multiple timeframes
+
+## Infrastructure Improvements
+
+### Testing & Quality
+- [ ] Increase test coverage to >80%
+- [ ] Add performance benchmarks
+- [ ] Create regression test suite
+- [ ] Implement CI/CD pipeline
+
+### Documentation
 - [ ] Create comprehensive user guide
-- [ ] Add integration tests for full workflow
-- [ ] Document all execution price formulas
-- [ ] Create video tutorials for common workflows
+- [ ] Add video tutorials
+- [ ] Write strategy development guide
+- [ ] Create API documentation
 
-## Completed (2025-09-23)
+### Platform Support
+- [ ] Test Linux compatibility
+- [ ] Ensure macOS compatibility
+- [ ] Create standalone executables
+- [ ] Add Docker support
 
-### Critical Fixes ✅
-- Fixed hover data KeyErrors with proper dictionary checks
-- Fixed strategy runner "no chart data" in unified system
-- Added trade panel scrolling fix with get_first_visible_trade()
-- Improved strategy execution feedback with color coding
+## Completed (2025-09-24)
 
-### System Improvements ✅
-- Verified performance with 6.6M bar datasets
-- Added pass_data_to_trade_panel() for data connection
-- Implemented excessive trade warnings (>1000 trades)
-- Enhanced trade panel with P&L percentage display
+### Major Fixes & Enhancements ✅
+- [x] **Fixed strategy runner TradeCollection type error**
+  - Corrected import paths in trade_types.py
+  - Added proper type checking and conversion
 
-## Known Issues to Address
+- [x] **Fixed ATR data display (was showing 0.00)**
+  - Added column detection for AUX1/ATR/atr
+  - Created test_atr_data.py for ATR calculation
+  - Fixed data loading in chart components
+
+- [x] **Implemented signal lag system**
+  - Configurable 1-10 bar delay between signal and execution
+  - Proper tracking of signal_bar and execution_bar
+
+- [x] **Added execution price formulas**
+  - Support for custom formulas like "(H + L + C) / 3"
+  - Formula evaluation at execution time
+
+- [x] **Integrated commission calculations**
+  - Fees and slippage properly deducted from P&L
+  - Commission displayed in backtest summary
+
+- [x] **Normalized P&L to $1 invested basis**
+  - All profits calculated as percentage on $1
+  - Consistent returns regardless of instrument price
+
+- [x] **Enhanced trade panel display**
+  - P&L shown as percentage to 2 decimal places
+  - Cumulative P&L tracking
+  - Backtest summary with win rate, total/avg P&L
+  - Commission and execution lag statistics
+
+## Completed (Previous Releases)
+
+### Version 2.3.0
+- Fixed strategy runner "no chart data" issue
+- Added pass_data_to_trade_panel() method
+- Improved strategy feedback with color coding
+- Added excessive trade warnings
+
+### Version 2.2.0
+- Fixed hover data KeyErrors
+- Fixed trade panel scrolling
+- Verified 6.6M bar dataset performance
+
+## Known Issues
 
 ### High Priority
-- SMA strategy generates excessive trades with short periods
-- Need better default parameters for strategies
-- Unified engine not enabled by default
+- Memory usage increases over time in long sessions
+- SMA strategy can generate 1000+ trades with short periods
+- Windows-specific file paths in some scripts
 
 ### Medium Priority
-- Trade timestamp display sometimes shows None
-- Large datasets (>10M bars) may cause memory issues
-- Strategy runner UI could be more intuitive
+- PyQt6 not supported (requires PyQt5)
+- Large datasets (>10M bars) may cause crashes
+- Config changes require restart
 
 ### Low Priority
-- Add more built-in strategies
-- Improve error messages for data loading failures
-- Add keyboard shortcuts for common operations
-
-## Future Roadmap
-
-### Phase 1: Stabilization (Current)
-Focus on fixing critical bugs and improving user experience
-
-### Phase 2: Enhancement
-Add advanced features like optimization and real-time data
-
-### Phase 3: Production
-Polish for production use with comprehensive documentation
+- No keyboard shortcuts
+- Limited color theme options
+- No undo/redo for operations

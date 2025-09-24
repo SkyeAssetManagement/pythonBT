@@ -115,8 +115,8 @@ class TradeRecord:
         # Import here to avoid circular dependency
         import sys
         import os
-        sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-        from trading.data.trade_data import TradeData
+        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        from data.trade_data import TradeData
 
         return TradeData(
             bar_index=self.bar_index,
@@ -260,8 +260,8 @@ class TradeRecordCollection:
         """Convert to legacy TradeCollection for compatibility"""
         import sys
         import os
-        sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-        from trading.data.trade_data import TradeCollection
+        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        from data.trade_data import TradeCollection
 
         legacy_trades = [t.to_legacy_trade_data() for t in self.trades]
         return TradeCollection(legacy_trades)

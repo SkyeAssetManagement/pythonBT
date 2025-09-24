@@ -50,28 +50,28 @@ class EnhancedTradeTableModel(QtCore.QAbstractTableModel):
         logger.debug(f"Updated table model with {len(trades)} trades")
 
     def _calculate_cumulative_pnl(self):
-        """Calculate cumulative P&L percentages"""
+        """Calculate cumulative P&L percentages (cumulative sum of returns)"""
         self.cumulative_pnl_percent = []
         cumulative = 0.0
 
         for trade in self.trades:
-            # Convert dollar P&L to percentage if needed
+            # Get P&L percentage (based on $1 invested)
             pnl_percent = self._get_pnl_percent(trade)
             if pnl_percent is not None:
                 cumulative += pnl_percent
             self.cumulative_pnl_percent.append(cumulative)
 
     def _get_pnl_percent(self, trade: TradeData) -> Optional[float]:
-        """Convert P&L to percentage format"""
+        """Get P&L as percentage (already calculated based on $1 invested)"""
         # Check if trade has pnl_percent attribute (new format)
         if hasattr(trade, 'pnl_percent') and trade.pnl_percent is not None:
             return trade.pnl_percent
 
         # Otherwise try to calculate from dollar P&L
+        # Note: Legacy pnl field represents points, not dollars
         if hasattr(trade, 'pnl') and trade.pnl is not None:
-            # Assume $1 position size for percentage calculation
-            # This gives clean percentage display
-            return trade.pnl * 100  # Convert to percentage
+            # For compatibility - treat pnl as percentage if it's the old format
+            return trade.pnl
 
         return None
 
@@ -105,15 +105,21 @@ class EnhancedTradeTableModel(QtCore.QAbstractTableModel):
             if column_attr == "pnl_percent":
                 pnl_percent = self._get_pnl_percent(trade)
                 if pnl_percent is not None:
-                    sign = '+' if pnl_percent >= 0 else ''
-                    return f"{sign}{pnl_percent:.2f}%"
+                    if pnl_percent != 0:
+                        sign = '+' if pnl_percent >= 0 else ''
+                        return f"{sign}{pnl_percent:.2f}%"
+                    else:
+                        return "0.00%"
                 return "-"
 
             elif column_attr == "cumulative_pnl_percent":
                 if index.row() < len(self.cumulative_pnl_percent):
                     cum_pnl = self.cumulative_pnl_percent[index.row()]
-                    sign = '+' if cum_pnl >= 0 else ''
-                    return f"{sign}{cum_pnl:.2f}%"
+                    if cum_pnl != 0:
+                        sign = '+' if cum_pnl >= 0 else ''
+                        return f"{sign}{cum_pnl:.2f}%"
+                    else:
+                        return "0.00%"
                 return "-"
 
             # Standard columns
@@ -208,37 +214,69 @@ class EnhancedTradeListPanel(TradeListPanel):
         self.add_summary_panel()
 
     def add_summary_panel(self):
-        """Add P&L summary statistics panel"""
+        """Add P&L summary statistics panel at the bottom of the trade list"""
         # Find the main layout
         main_layout = self.layout()
 
-        # Create summary widget
-        summary_widget = QtWidgets.QGroupBox("Trade Summary")
+        # Create summary widget with better visibility
+        summary_widget = QtWidgets.QGroupBox("Backtest Summary")
+        summary_widget.setStyleSheet("""
+            QGroupBox {
+                font-weight: bold;
+                border: 2px solid #555555;
+                border-radius: 5px;
+                margin-top: 10px;
+                padding-top: 10px;
+                background-color: #2a2a2a;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                subcontrol-position: top left;
+                padding: 0 3px;
+                color: #ffffff;
+            }
+        """)
         summary_layout = QtWidgets.QGridLayout(summary_widget)
+        summary_layout.setContentsMargins(10, 10, 10, 10)
+        summary_layout.setSpacing(5)
 
-        # Summary labels
+        # Summary labels with better styling
         self.total_trades_label = QtWidgets.QLabel("Total Trades: 0")
-        self.win_rate_label = QtWidgets.QLabel("Win Rate: 0.0%")
+        self.win_rate_label = QtWidgets.QLabel("Win Rate: 0.00%")
         self.total_pnl_label = QtWidgets.QLabel("Total P&L: 0.00%")
         self.avg_pnl_label = QtWidgets.QLabel("Avg P&L: 0.00%")
+        # Additional labels for commission and execution info
+        self.commission_label = QtWidgets.QLabel("Commission: $0.00")
+        self.execution_label = QtWidgets.QLabel("Avg Lag: 0 bars")
 
-        # Style the labels
-        label_style = "QLabel { font-size: 10pt; padding: 2px; }"
+        # Style the labels for better visibility
+        label_style = "QLabel { font-size: 11pt; padding: 5px; color: #ffffff; background-color: #333333; border-radius: 3px; }"
         for label in [self.total_trades_label, self.win_rate_label,
-                     self.total_pnl_label, self.avg_pnl_label]:
+                     self.total_pnl_label, self.avg_pnl_label,
+                     self.commission_label, self.execution_label]:
             label.setStyleSheet(label_style)
 
-        # Add to grid layout
+        # Add to grid layout with better spacing
         summary_layout.addWidget(self.total_trades_label, 0, 0)
         summary_layout.addWidget(self.win_rate_label, 0, 1)
         summary_layout.addWidget(self.total_pnl_label, 1, 0)
         summary_layout.addWidget(self.avg_pnl_label, 1, 1)
+        summary_layout.addWidget(self.commission_label, 2, 0)
+        summary_layout.addWidget(self.execution_label, 2, 1)
+
+        # Set minimum height to ensure visibility (increased for extra row)
+        summary_widget.setMinimumHeight(120)
+        summary_widget.setMaximumHeight(150)
 
         # Insert summary panel at the bottom
         main_layout.addWidget(summary_widget)
 
-        # Adjust layout stretch factors
-        main_layout.setStretchFactor(summary_widget, 0)  # Don't stretch summary
+        # Adjust layout stretch factors - ensure summary is visible
+        # Set stretch for items above to allow them to expand
+        for i in range(main_layout.count() - 1):
+            main_layout.setStretch(i, 1)
+        # Don't stretch summary panel
+        main_layout.setStretch(main_layout.count() - 1, 0)
 
     def on_trades_loaded(self, trades: TradeCollection):
         """Handle trades loaded - override to update summary"""
@@ -249,40 +287,59 @@ class EnhancedTradeListPanel(TradeListPanel):
         """Calculate and display summary statistics"""
         if not self.trades or len(self.trades) == 0:
             self.total_trades_label.setText("Total Trades: 0")
-            self.win_rate_label.setText("Win Rate: 0.0%")
+            self.win_rate_label.setText("Win Rate: 0.00%")
             self.total_pnl_label.setText("Total P&L: 0.00%")
             self.avg_pnl_label.setText("Avg P&L: 0.00%")
+            self.commission_label.setText("Commission: $0.00")
+            self.execution_label.setText("Avg Lag: 0 bars")
             return
 
         # Calculate statistics
         total_trades = len(self.trades)
         trades_with_pnl = []
+        total_commission = 0.0
+        lag_values = []
 
         for trade in self.trades:
-            # Get P&L percentage
+            # Get P&L percentage (based on $1 invested)
             pnl_percent = None
             if hasattr(trade, 'pnl_percent') and trade.pnl_percent is not None:
                 pnl_percent = trade.pnl_percent
             elif hasattr(trade, 'pnl') and trade.pnl is not None:
-                pnl_percent = trade.pnl * 100
+                # For compatibility - treat pnl as percentage if it's the old format
+                pnl_percent = trade.pnl
 
             if pnl_percent is not None:
                 trades_with_pnl.append(pnl_percent)
 
+            # Sum commissions if available
+            if hasattr(trade, 'fees') and trade.fees is not None:
+                total_commission += trade.fees
+
+            # Track execution lag
+            if hasattr(trade, 'lag') and trade.lag is not None:
+                lag_values.append(trade.lag)
+
         # Calculate metrics
         if trades_with_pnl:
-            wins = [p for p in trades_with_pnl if p > 0]
-            win_rate = (len(wins) / len(trades_with_pnl)) * 100 if trades_with_pnl else 0
+            # Only count closed trades for win rate
+            closed_trades = [p for p in trades_with_pnl if p != 0]
+            wins = [p for p in closed_trades if p > 0]
+            win_rate = (len(wins) / len(closed_trades)) * 100 if closed_trades else 0
+            # Total P&L is cumulative percentage return
             total_pnl = sum(trades_with_pnl)
-            avg_pnl = total_pnl / len(trades_with_pnl)
+            avg_pnl = total_pnl / len(trades_with_pnl) if trades_with_pnl else 0
         else:
-            win_rate = 0
-            total_pnl = 0
-            avg_pnl = 0
+            win_rate = 0.00
+            total_pnl = 0.00
+            avg_pnl = 0.00
 
-        # Update labels
+        # Calculate average lag
+        avg_lag = sum(lag_values) / len(lag_values) if lag_values else 0
+
+        # Update labels with proper formatting
         self.total_trades_label.setText(f"Total Trades: {total_trades}")
-        self.win_rate_label.setText(f"Win Rate: {win_rate:.1f}%")
+        self.win_rate_label.setText(f"Win Rate: {win_rate:.2f}%")
 
         # Color code P&L labels
         total_color = "green" if total_pnl >= 0 else "red"
@@ -297,10 +354,18 @@ class EnhancedTradeListPanel(TradeListPanel):
         self.avg_pnl_label.setText(f"Avg P&L: {avg_sign}{avg_pnl:.2f}%")
         self.avg_pnl_label.setStyleSheet(f"QLabel {{ color: {avg_color}; font-size: 10pt; padding: 2px; }}")
 
-    def set_trades(self, trades: TradeCollection):
-        """Set trades and update display"""
-        super().set_trades(trades)
+        # Update commission and execution info
+        self.commission_label.setText(f"Commission: ${total_commission:.2f}")
+        self.execution_label.setText(f"Avg Lag: {avg_lag:.1f} bars")
+
+    def load_trades(self, trades: TradeCollection):
+        """Load trades and update display - override parent method"""
+        super().load_trades(trades)
         self.update_summary_stats()
+
+    def set_trades(self, trades: TradeCollection):
+        """Set trades and update display - convenience method"""
+        self.load_trades(trades)
 
 
 # Export the enhanced panel as the default

@@ -76,12 +76,12 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
         screen = QtWidgets.QApplication.primaryScreen()
         screen_rect = screen.availableGeometry()
         
-        # Set initial size
-        width = int(screen_rect.width() * 0.8)
-        height = int(screen_rect.height() * 0.8)
+        # Set initial size - use 90% of screen height for more vertical space
+        width = int(screen_rect.width() * 0.85)
+        height = int(screen_rect.height() * 0.90)
         self.setGeometry(
-            int(screen_rect.width() * 0.1),
-            int(screen_rect.height() * 0.1),
+            int(screen_rect.width() * 0.075),  # Center horizontally
+            int(screen_rect.height() * 0.05),   # 5% from top for more height
             width, height
         )
         
@@ -252,8 +252,13 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
                 'low': df['low'].values.astype(np.float32),
                 'close': df['close'].values.astype(np.float32),
                 'volume': df['volume'].values.astype(np.float32) if 'volume' in df else None,
-                'aux1': df['AUX1'].values.astype(np.float32) if 'AUX1' in df else None,  # ATR
-                'aux2': df['AUX2'].values.astype(np.float32) if 'AUX2' in df else None   # Range multiplier
+                # Try multiple column names for ATR
+                'aux1': (df['AUX1'].values.astype(np.float32) if 'AUX1' in df else
+                        df['ATR'].values.astype(np.float32) if 'ATR' in df else
+                        df['atr'].values.astype(np.float32) if 'atr' in df else None),  # ATR
+                # For now, use a default multiplier if AUX2 not present
+                'aux2': (df['AUX2'].values.astype(np.float32) if 'AUX2' in df else
+                        np.full(len(df), 0.1, dtype=np.float32) if any(col in df for col in ['AUX1', 'ATR', 'atr']) else None)  # Range multiplier
             }
             self.total_bars = len(self.full_data['open'])
             print(f"Loaded {self.total_bars:,} bars from {file_path.name}")

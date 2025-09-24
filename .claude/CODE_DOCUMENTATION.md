@@ -1,176 +1,232 @@
 # CODE DOCUMENTATION - PythonBT Trading System
 
 ## Project Overview
-PythonBT is a comprehensive backtesting and trading visualization platform built with PyQt5 and PyQtGraph. Features real-time charting, strategy execution, and unified execution engine for realistic trade simulation with support for massive datasets (6M+ bars).
+PythonBT is a comprehensive backtesting and trading visualization platform built with PyQt5 and PyQtGraph. Features real-time charting with range bars, unified execution engine for realistic trade simulation, and support for massive datasets (6M+ bars).
 
 ## System Architecture
 
-### Core Components
+### Core Directory Structure
 ```
 PythonBT/
 ├── Launch Scripts
-│   ├── launch_pyqtgraph_with_selector.py    # Main entry with data selector dialog
-│   ├── launch_unified_system.py             # Unified execution engine launcher
+│   ├── launch_unified_system.py             # Primary launcher with unified engine
+│   ├── launch_pyqtgraph_with_selector.py    # Legacy launcher with data selector
 │   └── integrated_trading_launcher.py       # Alternative launcher
 │
 ├── src/trading/
-│   ├── visualization/
-│   │   ├── pyqtgraph_range_bars_final.py   # Main chart widget (RangeBarChartFinal class)
-│   │   ├── trade_panel.py                  # Trade list panel (TradeListPanel class)
-│   │   ├── enhanced_trade_panel.py         # Enhanced panel with P&L percentages
-│   │   ├── strategy_runner.py              # Strategy execution UI (StrategyRunner class)
-│   │   └── chart_components.py             # Reusable chart UI components
+│   ├── visualization/                       # UI Components
+│   │   ├── pyqtgraph_range_bars_final.py   # Main chart (RangeBarChartFinal)
+│   │   ├── enhanced_trade_panel.py         # Trade panel with % P&L display
+│   │   ├── strategy_runner.py              # Strategy execution UI
+│   │   ├── pyqtgraph_data_selector.py      # Data source selection dialog
+│   │   └── trade_panel.py                  # Legacy trade panel
 │   │
-│   ├── strategies/
-│   │   ├── base.py                         # TradingStrategy base class
-│   │   ├── sma_crossover.py               # SMACrossoverStrategy implementation
-│   │   ├── rsi_momentum.py                # RSIMomentumStrategy implementation
-│   │   └── strategy_wrapper.py            # StrategyFactory and metadata wrapper
+│   ├── strategies/                         # Trading Strategies
+│   │   ├── base.py                         # TradingStrategy abstract base
+│   │   ├── sma_crossover.py               # SMA crossover implementation
+│   │   ├── rsi_momentum.py                # RSI momentum strategy
+│   │   ├── enhanced_sma_crossover.py      # SMA with signal lag support
+│   │   └── strategy_wrapper.py            # StrategyFactory and wrappers
 │   │
-│   ├── core/
-│   │   ├── standalone_execution.py        # ExecutionEngine with lag/price formulas
-│   │   ├── strategy_runner_adapter.py     # Routes between legacy/unified engines
-│   │   └── trade_types.py                 # TradeRecord, TradeRecordCollection classes
+│   ├── core/                              # Execution Engine
+│   │   ├── standalone_execution.py        # ExecutionEngine with lag/formulas
+│   │   ├── strategy_runner_adapter.py     # Adapter for legacy/unified routing
+│   │   └── trade_types.py                 # TradeRecord, TradeRecordCollection
 │   │
-│   └── data/
-│       ├── trade_data.py                  # TradeData, TradeCollection classes
-│       └── csv_trade_loader.py            # CSV trade import functionality
+│   └── data/                              # Data Management
+│       ├── trade_data.py                  # TradeData, TradeCollection
+│       └── csv_trade_loader.py            # CSV trade import
+│
+├── tradingCode/
+│   └── config.yaml                        # System configuration
+│
+└── Data/                                  # Data files (parquet/csv)
 ```
 
-## Critical Design Patterns & Implementation
+## Critical Design Patterns
 
-### 1. Data Structure Requirements
+### 1. Unified Execution Engine
+The system supports two execution modes controlled by `config.yaml`:
+
+```yaml
+use_unified_engine: true    # Enable realistic execution
+backtest:
+  signal_lag: 1            # Bars between signal and execution
+  execution_price: "formula"
+  buy_execution_formula: "(H + L + C) / 3"
+  sell_execution_formula: "(H + L + C) / 3"
+  fees: 2.0               # Commission per trade
+  slippage: 0.25          # Slippage per trade
+```
+
+**Execution Flow:**
+```
+Signal Generation → Lag Application → Price Formula → Commission → P&L Calculation
+       ↓                    ↓              ↓             ↓              ↓
+   Bar N detected      Bar N+lag      Custom price    Deduct fees   % based on $1
+```
+
+### 2. P&L Calculation System
+All P&L calculations are normalized to $1 invested for consistent percentage returns:
+
 ```python
-# Chart expects lowercase keys - CRITICAL for hover functionality
+# Long position P&L
+pnl_percent = ((exit_price / entry_price) - 1) * 100
+
+# Short position P&L
+pnl_percent = (1 - (exit_price / entry_price)) * 100
+
+# Commission deduction
+pnl_percent -= (commission / entry_price) * 100
+```
+
+### 3. Data Structure Requirements
+Chart components expect specific data formats:
+
+```python
+# Chart data dictionary (lowercase keys required)
 full_data = {
-    'timestamp': numpy_array,  # Required by parent RangeBarChartFinal
-    'open': numpy_array,       # Must be lowercase
-    'high': numpy_array,
-    'low': numpy_array,
-    'close': numpy_array,
-    'volume': numpy_array,     # Optional - check existence before access
-    'aux1': numpy_array,       # Optional - ATR values
-    'aux2': numpy_array        # Optional - range multiplier
+    'timestamp': np.array,  # Required for hover
+    'open': np.array,       # Must be lowercase
+    'high': np.array,
+    'low': np.array,
+    'close': np.array,
+    'volume': np.array,     # Optional
+    'aux1': np.array,       # ATR values
+    'aux2': np.array        # Range multiplier
 }
 ```
 
-### 2. Data Flow Pipeline
-```
-CSV/Parquet → DataFrame → Column Standardization → Numpy Arrays → Chart Display
-                              ↓
-                    Strategy Runner → Signal Generation → Trade Creation
-```
+### 4. Trade Type Conversion
+System handles conversion between unified and legacy trade formats:
 
-### 3. Critical Connections
-
-#### Chart to Strategy Runner
 ```python
-# MUST call this after loading data to enable strategy execution
-if self.trade_panel:
-    bar_data = {
-        'timestamp': self.full_data['timestamp'],
-        'open': self.full_data['open'],
-        'high': self.full_data['high'],
-        'low': self.full_data['low'],
-        'close': self.full_data['close']
-    }
-    self.trade_panel.set_bar_data(bar_data)  # Connects to strategy runner
+TradeRecordCollection → to_legacy_collection() → TradeCollection
+        ↓                                              ↓
+  (Unified format)                              (Legacy format)
+  Has lag tracking                              Compatible with UI
+  % P&L built-in                                Requires conversion
 ```
 
-#### Error Prevention Pattern
-```python
-# Prevent KeyError for optional fields
-value = data['aux1'][idx] if 'aux1' in data and data['aux1'] is not None else 0
+## Key Components
+
+### Chart System (pyqtgraph_range_bars_final.py)
+- **RangeBarChartFinal**: Main chart widget with viewport optimization
+- **Features**:
+  - Range bar rendering with ATR-based sizing
+  - Hover data display (OHLC, volume, ATR)
+  - Trade markers as white X symbols
+  - Crosshair tracking
+  - Viewport-based rendering for performance
+
+### Trade Panel (enhanced_trade_panel.py)
+- **EnhancedTradeListPanel**: Displays trades with percentage P&L
+- **Features**:
+  - P&L shown as percentage to 2 decimal places
+  - Cumulative P&L tracking
+  - Backtest summary with:
+    - Total trades count
+    - Win rate percentage
+    - Total/Average P&L percentages
+    - Commission totals
+    - Average execution lag
+
+### Strategy Runner (strategy_runner.py)
+- **StrategyRunner**: UI for executing trading strategies
+- **Features**:
+  - Dynamic parameter controls
+  - Color-coded feedback (green/orange/red)
+  - Excessive trade warnings (>1000)
+  - Integration with unified execution engine
+  - Proper TradeCollection type handling
+
+### Execution Engine (standalone_execution.py)
+- **StandaloneExecutionEngine**: Core execution logic
+- **ExecutionConfig**: Configuration management
+- **Features**:
+  - Signal lag implementation (1-10 bars)
+  - Custom price formula evaluation
+  - Commission calculation (fees + slippage)
+  - Position tracking
+  - $1-based P&L calculation
+
+## Data Flow Pipeline
+
+```
+1. Data Loading
+   Parquet/CSV → DataFrame → Column mapping → Numpy arrays
+
+2. Strategy Execution
+   Data → Signal generation → Lag application → Trade creation
+
+3. Trade Display
+   TradeRecordCollection → Legacy conversion → UI emission → Panel display
+
+4. P&L Tracking
+   Entry price → Exit price → % calculation → Cumulative tracking
 ```
 
-### 4. Strategy Execution Pipeline
-- **Signal Generation**: Returns Series with 1 (long), 0 (flat), -1 (short)
-- **Trade Conversion**: Signal changes trigger trades (BUY/SELL/SHORT/COVER)
-- **P&L Tracking**: Enhanced trades include entry/exit prices and P&L calculations
+## ATR Data Handling
+ATR (Average True Range) data is used for range bar sizing:
 
-### 5. Unified Execution Engine
-- **Config-driven**: YAML configuration controls execution behavior
-- **Signal Lag**: Realistic delay between signal and execution (default 1 bar)
-- **Price Formulas**: Custom execution prices like "(H+L+C)/3"
-- **Dual Mode**: Switch between legacy (immediate) and unified (realistic) execution
-
-## UI Components & Features
-
-### Trade Panel (3 tabs)
-1. **Trades Tab**: Sortable list with DateTime, Price, Type, P&L%
-2. **Source Selector**: Choose None/CSV/System-generated trades
-3. **Run Strategy**: Execute strategies with parameter controls
-
-### Strategy Runner Features
-- **Color-coded feedback**: Green (success), Orange (warning/excessive trades)
-- **Trade limits**: Warns when >1000 trades generated
-- **Dynamic parameters**: UI adapts to selected strategy
-
-### Chart Features
-- **Viewport rendering**: Only visible bars rendered for performance
-- **Hover data**: Shows OHLC, volume, timestamp on mouse movement
-- **Crosshair**: Tracks mouse with price/time display
-- **Trade markers**: White X marks at trade positions
+1. **Column Detection**: Checks for AUX1, ATR, or atr columns
+2. **Calculation**: If missing, calculates 14-period ATR
+3. **Display**: Shows in data window as "ATR" and "mult"
+4. **Storage**: Saved as AUX1 (ATR) and AUX2 (multiplier)
 
 ## Performance Specifications
-- **Loading**: 377K bars in ~0.6s, 6.6M bars in ~14s
-- **Rendering**: Smooth pan/zoom with viewport optimization
-- **Memory**: ~68MB for 377K bar dataset
-- **Trade capacity**: Handles 100K+ trades efficiently
+- **Data Loading**: 377K bars in ~0.6s, 6.6M bars in ~14s
+- **Memory Usage**: ~68MB for 377K bars
+- **Trade Capacity**: Handles 100K+ trades efficiently
+- **Rendering**: 60 FPS with viewport optimization
+- **Hover Response**: <16ms update time
 
-## Configuration System
+## Recent Fixes (2025-09-24)
 
-### config.yaml
-```yaml
-use_unified_engine: false    # Enable new execution engine
-backtest:
-  signal_lag: 1              # Bars between signal and execution
-  execution_price: "close"   # or "formula"
-  buy_execution_formula: "(H + L + C) / 3"
-  sell_execution_formula: "(H + L + C) / 3"
-```
-
-## Recent Fixes & Improvements
-
-### Version 2.3.0 (Current Session)
-- **Fixed**: Strategy runner "no chart data" in unified system
-- **Added**: `pass_data_to_trade_panel()` method in UnifiedConfiguredChart
-- **Improved**: Strategy feedback with color coding and excessive trade warnings
-
-### Version 2.2.0
-- **Fixed**: Hover data KeyErrors with dictionary existence checks
-- **Fixed**: Trade panel scrolling with `get_first_visible_trade()`
-- **Verified**: Performance with 6.6M bar datasets
+### Critical Issues Resolved
+1. **Strategy Runner Type Error**: Fixed TradeCollection emission type mismatch
+2. **ATR Display**: Fixed 0.00 display issue by adding column detection
+3. **Signal Lag**: Properly implemented with bar delay tracking
+4. **Execution Formulas**: Working with custom price calculations
+5. **Commission Integration**: Fees and slippage properly deducted
+6. **P&L Percentages**: All calculations based on $1 invested
 
 ## Testing Infrastructure
-- `test_hover_proof.py`: Validates hover functionality
-- `test_strategy_execution.py`: Tests strategy pipeline
-- `test_unified_strategy_runner.py`: Verifies unified system
-- `test_full_dataset.py`: Performance validation
+- `test_all_fixes_comprehensive.py`: Validates all recent fixes
+- `test_strategy_runner_fix.py`: TradeCollection type conversion
+- `test_atr_data.py`: ATR calculation and display
+- `test_all_fixes.py`: Integration testing
 
-## Usage
+## Usage Instructions
 
-### Launch Commands
+### Quick Start
 ```bash
-python launch_pyqtgraph_with_selector.py    # Standard with dialog
-python launch_unified_system.py              # Unified execution engine
+# Launch with unified engine
+python launch_unified_system.py
+
+# Select data file with ATR
+Choose: test_data_10000_bars_with_atr.parquet
+
+# Configure trades
+Trade Source: System
+Strategy: Simple Moving Average
 ```
 
-### Typical Workflow
-1. Select data file (CSV/Parquet) from dialog
-2. Choose trade source (None/CSV/System)
-3. Navigate to "Run Strategy" tab
-4. Select strategy and parameters
-5. Click "Run Strategy" button
-6. View generated trades with P&L tracking
+### Adding ATR to Data Files
+```bash
+# Generate ATR for existing data
+python test_atr_data.py
 
-## Known Issues & Limitations
-- SMA strategy can generate excessive trades with short periods
-- Maximum practical dataset ~10M bars
-- Unified engine in migration phase (use_unified_engine: false by default)
+# Creates: original_file_with_atr.parquet
+```
 
-## Future Enhancements
-- Real-time data feed integration
-- Strategy optimization framework
-- Multi-timeframe analysis
-- Additional execution price formulas
+## Configuration Best Practices
+1. Set `use_unified_engine: true` for realistic backtesting
+2. Use `signal_lag: 1` minimum for realistic execution
+3. Configure commission (fees + slippage) for accurate P&L
+4. Use formula-based execution prices for realism
+
+## Known Limitations
+- Maximum practical dataset: ~10M bars
+- PyQt5 required (not compatible with PyQt6)
+- Windows-specific file paths in some scripts
