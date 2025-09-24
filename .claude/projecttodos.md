@@ -98,6 +98,10 @@
 ### Documentation ✅
 - [x] Created CODEBASE_DOCUMENTATION.md with complete architecture overview
 - [x] Created projectToDos.md for task tracking
+- [x] Created AI_ASSISTANT_PROMPT.md for automated task execution
+  - Comprehensive prompt for AI assistants to analyze, plan, execute, and track
+  - Includes user task prioritization system
+  - Clear progress tracking format
 - [x] Updated .claude/CODE_DOCUMENTATION.md with current design patterns
 
 ## Known Issues
