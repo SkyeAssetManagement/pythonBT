@@ -9,6 +9,12 @@
 - **If you think you have completed and achieved the outcome, you need to provide data and proof eg date modified for file created, result of a database query showing populated records etc etc.  Do NOT CLAIM COMPLETION WITHOUT PROOF!**
 **Never use unicode characters.  Not in omments, debug or conversation.  EVER!**
 
+### CLAUDE MODEL REQUIREMENTS
+- **ONLY use Claude Sonnet 4.0+ or Claude Opus 4.x models for API calls**
+- **Model ID for Sonnet: claude-sonnet-4-20250514** 
+- **Model ID for Opus: claude-opus-4-1-20250805**
+- **NEVER use Claude 3.5 or earlier versions**
+ - If a model API is not working then return NA rather than degrading to a simpler model
 
 ## Development Process
 

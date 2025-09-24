@@ -86,12 +86,12 @@ class TradingStrategy(ABC):
                 pnl_percent = None
                 if entry_price is not None:
                     if position > 0:  # Long position
-                        # For $1 invested: (exit_price/entry_price - 1) * 100
-                        pnl_percent = ((price / entry_price) - 1) * 100
+                        # For $1 invested: (exit_price/entry_price - 1) as decimal
+                        pnl_percent = ((price / entry_price) - 1)
                         pnl = price - entry_price  # Keep points for compatibility
                     else:  # Short position
-                        # For $1 invested in short: (1 - exit_price/entry_price) * 100
-                        pnl_percent = (1 - (price / entry_price)) * 100
+                        # For $1 invested in short: (1 - exit_price/entry_price) as decimal
+                        pnl_percent = (1 - (price / entry_price))
                         pnl = entry_price - price  # Keep points for compatibility
 
                 trade = TradeData(
@@ -146,12 +146,12 @@ class TradingStrategy(ABC):
             pnl_percent = None
             if entry_price is not None:
                 if position > 0:  # Long position
-                    # For $1 invested: (exit_price/entry_price - 1) * 100
-                    pnl_percent = ((price / entry_price) - 1) * 100
+                    # For $1 invested: (exit_price/entry_price - 1) as decimal
+                    pnl_percent = ((price / entry_price) - 1)
                     pnl = price - entry_price  # Keep points for compatibility
                 else:  # Short position
-                    # For $1 invested in short: (1 - exit_price/entry_price) * 100
-                    pnl_percent = (1 - (price / entry_price)) * 100
+                    # For $1 invested in short: (1 - exit_price/entry_price) as decimal
+                    pnl_percent = (1 - (price / entry_price))
                     pnl = entry_price - price  # Keep points for compatibility
 
             trade = TradeData(

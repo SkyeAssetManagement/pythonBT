@@ -58,6 +58,47 @@
 
 ## Completed (2025-09-24)
 
+### Data Accuracy Fixes ✅
+- [x] **P&L Calculation Corrections**
+  - Fixed 100x error by storing as decimal, displaying as percentage
+  - Added legacy pnl field conversion (points/price)
+  - Ensured $1 position size basis for all calculations
+
+- [x] **Trade Classification Fixes**
+  - Fixed shorts count: BUY/SELL = longs, SHORT/COVER = shorts
+  - Corrected SELL being counted as short (now properly long exit)
+
+- [x] **Dynamic Configuration**
+  - Lag display now reads from config.yaml (signal_lag parameter)
+  - Updates automatically when config changes
+  - Shows actual configured lag (e.g., 2.0 bars)
+
+- [x] **Enhanced Data Display**
+  - Added indicator values to hover tooltip
+  - Format: "SMA_10_30: 4275.50"
+  - Shows all plotted indicators dynamically
+
+### UI/UX Improvements ✅
+- [x] **Simplified strategy runner interface**
+  - Removed excessive warning messages about trade counts
+  - Cleaned up status feedback to single line
+  - Removed redundant trade type counts from status bar
+
+- [x] **Enhanced trade summary panel**
+  - Increased panel size by 50% (from 80-100px to 120-150px)
+  - Added Longs/Shorts trade type counts
+  - Fixed counts: BUY/SELL = longs, SHORT/COVER = shorts
+  - Removed duplicate trade statistics display
+  - Better organized 4-row layout for all metrics
+
+- [x] **Fixed data window display issues**
+  - ATR multiplier now shows 2 decimal places
+  - Commission and slippage always display (show $0.00 if not available)
+  - P&L shows as percentage matching trade list format
+  - Fixed P&L calculation: now stored as decimal, displayed as percentage
+  - Added proper lag calculation from actual trade data (reads from config.yaml)
+  - Added indicator values to hover display (shows SMA_10_30, etc. when hovering)
+
 ### Major Fixes & Enhancements ✅
 - [x] **Fixed strategy runner TradeCollection type error**
   - Corrected import paths in trade_types.py

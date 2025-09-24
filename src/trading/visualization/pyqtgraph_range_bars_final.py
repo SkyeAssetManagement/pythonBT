@@ -23,6 +23,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 from pathlib import Path
 import time
 from datetime import datetime
+import os
 
 # Trade visualization imports
 from enhanced_trade_panel import EnhancedTradeListPanel  # Use enhanced version with P&L %
@@ -67,10 +68,13 @@ class BoldDateAxisItem(pg.AxisItem):
 
 class RangeBarChartFinal(QtWidgets.QMainWindow):
     """Final production version of range bar chart"""
-    
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Range Bar Chart - FINAL VERSION")
+
+        # Debug verbosity control
+        self.debug_verbose = os.environ.get('DEBUG_VERBOSE', 'FALSE').upper() == 'TRUE'
         
         # Get screen info
         screen = QtWidgets.QApplication.primaryScreen()
@@ -238,7 +242,8 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
         
     def load_data(self):
         """Load range bar data with AUX fields"""
-        print("Loading range bar data...")
+        if self.debug_verbose:
+            print("Loading range bar data...")
         start_time = time.time()
         
         file_path = Path("parquetData/range/ATR30x0.1/ES-DIFF-range-ATR30x0.1-amibroker.parquet")
@@ -261,10 +266,12 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
                         np.full(len(df), 0.1, dtype=np.float32) if any(col in df for col in ['AUX1', 'ATR', 'atr']) else None)  # Range multiplier
             }
             self.total_bars = len(self.full_data['open'])
-            print(f"Loaded {self.total_bars:,} bars from {file_path.name}")
+            if self.debug_verbose:
+                print(f"Loaded {self.total_bars:,} bars from {file_path.name}")
         else:
             # Test data
-            print("Using test data - file not found")
+            if self.debug_verbose:
+                print("Using test data - file not found")
             n = 10000
             base = 4000
             prices = base + np.cumsum(np.random.randn(n) * 2)
@@ -281,7 +288,8 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
             self.full_data['open'][0] = base
             self.total_bars = n
         
-        print(f"Data loaded: {self.total_bars:,} bars in {time.time()-start_time:.2f}s")
+        if self.debug_verbose:
+            print(f"Data loaded: {self.total_bars:,} bars in {time.time()-start_time:.2f}s")
 
         # Set ViewBox limits based on actual data
         if hasattr(self, 'viewBox'):
@@ -295,7 +303,8 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
                 minYRange=1,  # Minimum price range
                 maxYRange=50000  # Maximum price range
             )
-            print(f"ViewBox limits set: xMax={self.total_bars + 100}")
+            if self.debug_verbose:
+                print(f"ViewBox limits set: xMax={self.total_bars + 100}")
 
         # Pass timestamps and bar data to trade panel for coordinated trade generation
         if self.trade_panel and self.full_data['timestamp'] is not None:
@@ -310,7 +319,8 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
                 'close': self.full_data['close']
             }
             self.trade_panel.set_bar_data(bar_data)
-            print(f"Set chart timestamps and OHLC data in trade panel: {self.full_data['timestamp'].iloc[0]} to {self.full_data['timestamp'].iloc[-1]}")
+            if self.debug_verbose:
+                print(f"Set chart timestamps and OHLC data in trade panel: {self.full_data['timestamp'].iloc[0]} to {self.full_data['timestamp'].iloc[-1]}")
         
         # Initial render
         self.render_range(0, min(500, self.total_bars))
@@ -321,8 +331,9 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
             return
 
         # Debug logging
-        print(f"[FORMAT_TIME_AXIS] start={start_idx}, end={end_idx}, num_bars={num_bars}")
-        print(f"[FORMAT_TIME_AXIS] Timestamps type: {type(self.full_data['timestamp'])}")
+        if self.debug_verbose:
+            print(f"[FORMAT_TIME_AXIS] start={start_idx}, end={end_idx}, num_bars={num_bars}")
+            print(f"[FORMAT_TIME_AXIS] Timestamps type: {type(self.full_data['timestamp'])}")
 
         try:
             # Get timestamps for visible range - convert to list for safer indexing
@@ -336,8 +347,9 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
             #     print(f"  [{i}] {timestamps_array[i]} -> hour={ts.hour}, minute={ts.minute}, second={ts.second}")
 
             # print(f"[PHASE1-DEBUG] Timestamp slice: first={timestamps_array[0] if len(timestamps_array) > 0 else 'EMPTY'}, last={timestamps_array[-1] if len(timestamps_array) > 0 else 'EMPTY'}")
-            print(f"[FORMAT_TIME_AXIS] First timestamp: {timestamps_array[0] if len(timestamps_array) > 0 else 'EMPTY'}")
-            print(f"[FORMAT_TIME_AXIS] Timestamp slice length: {len(timestamps_array)}")
+            if self.debug_verbose:
+                print(f"[FORMAT_TIME_AXIS] First timestamp: {timestamps_array[0] if len(timestamps_array) > 0 else 'EMPTY'}")
+                print(f"[FORMAT_TIME_AXIS] Timestamp slice length: {len(timestamps_array)}")
             
             # Downsample if needed
             if num_bars > 2000:
@@ -395,18 +407,21 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
                     # Debug output - show actual time components
                     if i < 3:  # Only first few to avoid spam
                         ts_obj = pd.Timestamp(ts)
-                        print(f"[FORMAT_TIME_AXIS] Label {i}: x_pos={x_pos}, timestamp={ts}, hour={ts_obj.hour}, min={ts_obj.minute}, sec={ts_obj.second}, label={x_labels[-1]}")
+                        if self.debug_verbose:
+                            print(f"[FORMAT_TIME_AXIS] Label {i}: x_pos={x_pos}, timestamp={ts}, hour={ts_obj.hour}, min={ts_obj.minute}, sec={ts_obj.second}, label={x_labels[-1]}")
 
                 # Update custom axis with date labels
                 if hasattr(self, 'custom_axis'):
                     self.custom_axis.setDateLabels(date_labels)
 
                 # Set custom ticks
-                print(f"[FORMAT_TIME_AXIS] Setting {len(x_ticks)} ticks")
+                if self.debug_verbose:
+                    print(f"[FORMAT_TIME_AXIS] Setting {len(x_ticks)} ticks")
                 self.plot_widget.getAxis('bottom').setTicks([list(zip(x_ticks, x_labels))])
         except Exception as e:
             # If time axis formatting fails, don't crash the whole render
-            print(f"Warning: Time axis formatting error: {e}")
+            if self.debug_verbose:
+                print(f"Warning: Time axis formatting error: {e}")
             pass
         
     def render_range(self, start_idx, end_idx, update_x_range=True):
@@ -606,7 +621,19 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
                 # Check for trades near the mouse position
                 hover_text = f"Bar {bar_idx:,} | {time_str}\n" \
                            f"OHLC: ${o:.2f} / ${h:.2f} / ${l:.2f} / ${c:.2f} | Vol: {v:,.0f}\n" \
-                           f"ATR: {atr:.2f} | Range: {atr:.2f} x {range_mult:.1f} = {range_value:.2f}"
+                           f"ATR: {atr:.2f} | Range: {atr:.2f} x {range_mult:.2f} = {range_value:.2f}"
+
+                # Add indicator values if available
+                if hasattr(self, 'indicator_data') and self.indicator_data:
+                    indicator_values = []
+                    for name, values in self.indicator_data.items():
+                        if 0 <= bar_idx < len(values):
+                            val = values[bar_idx]
+                            if not np.isnan(val):
+                                indicator_values.append(f"{name}: {val:.2f}")
+
+                    if indicator_values:
+                        hover_text += "\n" + " | ".join(indicator_values)
                 
                 # Check if there are trades at this bar or nearby
                 if self.trade_visualization and len(self.current_trades) > 0:
@@ -618,6 +645,9 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
                         size = getattr(nearby_trade, 'size', 1)
                         strategy = getattr(nearby_trade, 'strategy', None)
                         pnl_value = getattr(nearby_trade, 'pnl', None)
+                        pnl_percent = getattr(nearby_trade, 'pnl_percent', None)
+                        commission = getattr(nearby_trade, 'commission', getattr(nearby_trade, 'fees', None))
+                        slippage = getattr(nearby_trade, 'slippage', None)
                         id_text = f" #{trade_id}" if trade_id is not None else ""
 
                         # Get trade DateTime if available
@@ -639,8 +669,21 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
                             f"Price: ${nearby_trade.price:.2f} | Size: {size}\n"
                             f"Strategy: {strategy or 'N/A'}"
                         )
-                        if isinstance(pnl_value, (int, float)):
-                            hover_text += f" | P&L: ${pnl_value:.2f}"
+
+                        # Show P&L as percentage (matching trade list)
+                        if pnl_percent is not None and isinstance(pnl_percent, (int, float)):
+                            sign = '+' if pnl_percent >= 0 else ''
+                            hover_text += f" | P&L: {sign}{pnl_percent:.2f}%"
+                        elif isinstance(pnl_value, (int, float)):
+                            # Convert to percentage if it's points (assuming $1 per point)
+                            pnl_as_percent = pnl_value  # Treating pnl_value as percentage for consistency
+                            sign = '+' if pnl_as_percent >= 0 else ''
+                            hover_text += f" | P&L: {sign}{pnl_as_percent:.2f}%"
+
+                        # Always show commission and slippage lines (with default values if not available)
+                        commission_val = commission if commission is not None and isinstance(commission, (int, float)) else 0.00
+                        slippage_val = slippage if slippage is not None and isinstance(slippage, (int, float)) else 0.00
+                        hover_text += f"\nCommission: ${commission_val:.2f} | Slippage: ${slippage_val:.2f}"
                 
                 # Update hover label with all information
                 self.hover_label.setText(hover_text)
@@ -705,14 +748,16 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
             self.trade_dots_scatter.setZValue(1001)  # Dots even higher if they exist
             self.plot_widget.addItem(self.trade_dots_scatter)
         
-        print(f"Loaded {len(trades)} trades to chart using optimized ScatterPlotItem")
+        if self.debug_verbose:
+            print(f"Loaded {len(trades)} trades to chart using optimized ScatterPlotItem")
         
         # Also populate the trade list panel if available
         if self.trade_panel is not None:
             try:
                 self.trade_panel.load_trades(trades)
             except Exception as e:
-                print(f"Warning: could not load trades into panel: {e}")
+                if self.debug_verbose:
+                    print(f"Warning: could not load trades into panel: {e}")
 
     def add_indicator_overlays(self, indicators: dict):
         """Add indicator lines to the chart - store full data but render incrementally"""
@@ -724,7 +769,8 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
             self.plot_widget.removeItem(line)
         self.indicator_lines.clear()
 
-        print(f"Stored {len(indicators)} indicators for incremental rendering")
+        if self.debug_verbose:
+            print(f"Stored {len(indicators)} indicators for incremental rendering")
 
         # Render visible portion if we have a current range
         if hasattr(self, 'current_x_range'):
@@ -785,7 +831,8 @@ class RangeBarChartFinal(QtWidgets.QMainWindow):
 
         # Validate target bar
         if target_bar < 0 or target_bar >= self.total_bars:
-            print(f"Invalid trade bar index: {target_bar} (total bars: {self.total_bars})")
+            if self.debug_verbose:
+                print(f"Invalid trade bar index: {target_bar} (total bars: {self.total_bars})")
             return
 
         # Calculate viewport range (250 bars on each side)
@@ -941,22 +988,24 @@ def main():
     dark_palette.setColor(QtGui.QPalette.Text, QtCore.Qt.white)
     app.setPalette(dark_palette)
     
-    print("\n" + "="*70)
-    print("RANGE BAR CHART - FINAL PRODUCTION VERSION")
-    print("="*70)
-    print("Features:")
-    print("- 3x larger axis text for better readability")
-    print("- Time axis with HH:MM:SS format and date boundaries")
-    print("- Hover display with full timestamp including seconds")
-    print("- ATR and Range (AUX1 x AUX2) fields displayed")
-    print("- Multi-monitor support with DPI awareness")
-    print("- Auto Y-axis scaling on zoom in/out")
-    print("- Dynamic data loading for 122K+ bars")
-    print("\nControls:")
-    print("- Drag: Pan the chart")
-    print("- Wheel: Zoom in/out")
-    print("- Hover: See complete bar data")
-    print("="*70 + "\n")
+    # Startup info only in verbose mode
+    if os.environ.get('DEBUG_VERBOSE', 'FALSE').upper() == 'TRUE':
+        print("\n" + "="*70)
+        print("RANGE BAR CHART - FINAL PRODUCTION VERSION")
+        print("="*70)
+        print("Features:")
+        print("- 3x larger axis text for better readability")
+        print("- Time axis with HH:MM:SS format and date boundaries")
+        print("- Hover display with full timestamp including seconds")
+        print("- ATR and Range (AUX1 x AUX2) fields displayed")
+        print("- Multi-monitor support with DPI awareness")
+        print("- Auto Y-axis scaling on zoom in/out")
+        print("- Dynamic data loading for 122K+ bars")
+        print("\nControls:")
+        print("- Drag: Pan the chart")
+        print("- Wheel: Zoom in/out")
+        print("- Hover: See complete bar data")
+        print("="*70 + "\n")
     
     # Create and show chart
     chart = RangeBarChartFinal()

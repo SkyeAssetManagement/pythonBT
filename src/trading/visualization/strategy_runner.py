@@ -299,26 +299,14 @@ class StrategyRunner(QtWidgets.QWidget):
             # Update status with better feedback
             num_trades = len(trades)
 
-            # Provide clear feedback based on results
-            if num_trades == 0:
-                self.status_label.setText(
-                    f"No trades generated using {strategy_name}\n"
-                    f"Try adjusting parameters or checking if the data has enough price movement"
-                )
-                self.status_label.setStyleSheet("color: orange;")
-            elif num_trades > 1000:
-                self.status_label.setText(
-                    f"Generated {num_trades:,} trades using {strategy_name} (WARNING: Excessive trades!)\n"
-                    f"Entries: {len(trades.get_entry_trades())}, Exits: {len(trades.get_exit_trades())}\n"
-                    f"Consider using longer periods to reduce trade frequency"
-                )
-                self.status_label.setStyleSheet("color: orange;")
-            else:
-                self.status_label.setText(
-                    f"Successfully generated {num_trades} trades using {strategy_name}\n"
-                    f"Entries: {len(trades.get_entry_trades())}, Exits: {len(trades.get_exit_trades())}"
-                )
+            # Simple status update without warnings
+            self.status_label.setText(
+                f"Generated {num_trades} trades using {strategy_name}"
+            )
+            if num_trades > 0:
                 self.status_label.setStyleSheet("color: green;")
+            else:
+                self.status_label.setStyleSheet("color: #666;")
 
         except Exception as e:
             self.status_label.setText(f"Error: {str(e)}")

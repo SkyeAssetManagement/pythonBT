@@ -6,11 +6,7 @@ data:
   amibroker_path: "C:\\Users\\skyeAM\\OneDrive - Verona Capital\\Documents\\ABDatabase\\OneModel5MinDataABDB_1"
   data_frequency: "1T"                    # Data frequency (5T = 5 minutes)
   
-# Strategy parameters (can be overridden by individual strategies)
-strategy:
-  fast_ma_period: 20                      # Fast moving average period
-  slow_ma_period: 100                     # Slow moving average period
-  
+
 # Backtesting configuration
 backtest:
   # Portfolio settings
@@ -20,7 +16,7 @@ backtest:
   
   # Execution settings
   execution_price: "formula"              # Price for execution: "close", "open", "high", "low", or "formula"
-  signal_lag: 1                           # Bars to lag signals (1 = signal today, execute next bar, 0 = same bar)
+  signal_lag: 2                           # Bars to lag signals (1 = signal today, execute next bar, 0 = same bar)
   
   # Formula-based execution pricing (OHLC variables: O, H, L, C)
   # Common formulas: "C" (close), "(H+L+C)/3" (typical), "(H+L)/2" (median), "H" (high), "L" (low)

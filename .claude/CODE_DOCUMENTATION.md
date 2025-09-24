@@ -1,7 +1,7 @@
 # CODE DOCUMENTATION - PythonBT Trading System
 
 ## Project Overview
-PythonBT is a comprehensive backtesting and trading visualization platform built with PyQt5 and PyQtGraph. Features real-time charting with range bars, unified execution engine for realistic trade simulation, and support for massive datasets (6M+ bars).
+PythonBT is a high-performance backtesting and trading visualization platform built with PyQt5 and PyQtGraph. Optimized for massive datasets (6M+ bars) with real-time charting, range bars, and unified execution engine for realistic trade simulation with configurable signal lag and execution formulas.
 
 ## System Architecture
 
@@ -45,7 +45,24 @@ PythonBT/
 
 ## Critical Design Patterns
 
-### 1. Unified Execution Engine
+### 1. Position Sizing & P&L Calculation
+- **$1 Position Size**: All trades use $1 position for clean percentage calculations
+- **P&L Storage**: Stored as decimal (0.0238), displayed as percentage (2.38%)
+- **Legacy Conversion**: Points converted via `pnl / price` formula
+- **Display Formula**: `pnl_display = pnl_decimal * 100`
+
+### 2. Signal Lag & Execution
+- **Configurable Lag**: 0-10 bars between signal and execution (config.yaml: `signal_lag`)
+- **Dynamic Reading**: Panel reads lag from config.yaml at runtime
+- **Trade Tracking**: Each trade stores signal_bar and execution_bar
+- **Lag Calculation**: `lag = execution_bar - signal_bar`
+
+### 3. Trade Type Classification
+- **Long Trades**: BUY (entry) and SELL (exit)
+- **Short Trades**: SHORT (entry) and COVER (exit)
+- **Counting Logic**: Fixed to properly categorize SELL as long exit, not short
+
+### 4. Unified Execution Engine
 The system supports two execution modes controlled by `config.yaml`:
 
 ```yaml

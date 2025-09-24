@@ -506,15 +506,8 @@ class TradeListPanel(QtWidgets.QWidget):
         self.trades = trades
         self.table_model.set_trades(trades)
 
-        # Update status
-        stats = trades.get_statistics()
-        self.status_bar.setText(
-            f"{len(trades)} trades loaded | "
-            f"Buy: {stats.get('trade_types', {}).get('BUY', 0)} | "
-            f"Sell: {stats.get('trade_types', {}).get('SELL', 0)} | "
-            f"Short: {stats.get('trade_types', {}).get('SHORT', 0)} | "
-            f"Cover: {stats.get('trade_types', {}).get('COVER', 0)}"
-        )
+        # Simple status without redundant trade type counts
+        self.status_bar.setText(f"{len(trades)} trades loaded")
         
         # Enable export buttons when trades are loaded
         if len(trades) > 0:

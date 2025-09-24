@@ -27,6 +27,8 @@ class EnhancedTradeData(TradeData):
         self.bars_since_signal = bars_since_signal
         self.execution_formula = execution_formula
         self.signal_price = signal_price
+        # Calculate lag: execution bar - signal bar
+        self.lag = bar_index - self.signal_bar if signal_bar is not None else 0
 
 
 class EnhancedTradingStrategy(ABC):
