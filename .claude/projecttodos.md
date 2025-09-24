@@ -1,21 +1,44 @@
 # Project TODOs - PythonBT Trading System
 
-## Current Sprint Focus
+## Active Development
 
-### Critical Bug Fixes
+### PyQtGraph Trade Panel Enhancements
+- [ ] Add export functionality for trade list (CSV/Excel)
+- [ ] Implement trade filtering (by date range, P&L range, trade type)
+- [ ] Add equity curve visualization below trade list
+- [ ] Create performance metrics (Sharpe ratio, max drawdown)
+- [ ] Add trade grouping by day/week/month
+
+### Machine Learning Improvements
+- [ ] Integrate ML predictions with PyQtGraph visualization
+- [ ] Add feature importance overlay on chart
+- [ ] Create prediction confidence bands
+- [ ] Implement ensemble model support
+- [ ] Add real-time model retraining capability
+
+## Bug Fixes
+
+### High Priority
 - [ ] Fix memory leak in long-running chart sessions
-- [ ] Resolve SMA strategy excessive trade generation
+- [ ] Resolve SMA strategy excessive trade generation (>1000 trades)
 - [ ] Fix trade timestamp display showing None occasionally
 
-### Performance Optimization
+### Medium Priority
+- [ ] Windows-specific path issues in some scripts
+- [ ] Config changes requiring restart
+- [ ] PyQt6 compatibility (currently PyQt5 only)
+
+## Performance Optimization
+
+### Data Handling
 - [ ] Optimize for 10M+ bar datasets
 - [ ] Implement data chunking for memory efficiency
 - [ ] Add progress indicators for long operations
 - [ ] Profile and optimize viewport rendering
 
-## Next Release Features
+## Feature Roadmap
 
-### Strategy Enhancements
+### Trading Strategies
 - [ ] Add minimum bars between trades parameter
 - [ ] Implement stop-loss and take-profit orders
 - [ ] Create Bollinger Bands strategy
@@ -25,18 +48,18 @@
 ### User Interface
 - [ ] Add configuration UI for config.yaml editing
 - [ ] Create indicator overlay panel
-- [ ] Add trade statistics dashboard
-- [ ] Implement equity curve visualization
 - [ ] Add drawing tools (trend lines, channels)
+- [ ] Implement dark/light theme toggle
+- [ ] Add keyboard shortcuts
 
 ### Data Management
 - [ ] Add real-time data feed integration
 - [ ] Implement multi-symbol backtesting
+- [ ] Support multiple timeframes
 - [ ] Create data validation utilities
 - [ ] Add automatic data updates
-- [ ] Support multiple timeframes
 
-## Infrastructure Improvements
+## Infrastructure
 
 ### Testing & Quality
 - [ ] Increase test coverage to >80%
@@ -58,105 +81,38 @@
 
 ## Completed (2025-09-24)
 
-### Data Accuracy Fixes ✅
-- [x] **P&L Calculation Corrections**
-  - Fixed 100x error by storing as decimal, displaying as percentage
-  - Added legacy pnl field conversion (points/price)
-  - Ensured $1 position size basis for all calculations
+### Trade Panel Fixes ✅
+- [x] **Fixed Total P&L Calculation**
+  - Corrected from sum to proper compounding: (1+r1)*(1+r2)*...-1
+  - Files: enhanced_trade_panel.py
 
-- [x] **Trade Classification Fixes**
-  - Fixed shorts count: BUY/SELL = longs, SHORT/COVER = shorts
-  - Corrected SELL being counted as short (now properly long exit)
+- [x] **Added Column Sorting**
+  - Click headers to sort ascending/descending
+  - Works on all columns: Trade #, DateTime, P&L %, etc.
+  - Files: enhanced_trade_panel.py
 
-- [x] **Dynamic Configuration**
-  - Lag display now reads from config.yaml (signal_lag parameter)
-  - Updates automatically when config changes
-  - Shows actual configured lag (e.g., 2.0 bars)
+- [x] **Fixed Trade Data Attributes**
+  - kwargs now accessible as attributes
+  - Files: trade_data.py
 
-- [x] **Enhanced Data Display**
-  - Added indicator values to hover tooltip
-  - Format: "SMA_10_30: 4275.50"
-  - Shows all plotted indicators dynamically
-
-### UI/UX Improvements ✅
-- [x] **Simplified strategy runner interface**
-  - Removed excessive warning messages about trade counts
-  - Cleaned up status feedback to single line
-  - Removed redundant trade type counts from status bar
-
-- [x] **Enhanced trade summary panel**
-  - Increased panel size by 50% (from 80-100px to 120-150px)
-  - Added Longs/Shorts trade type counts
-  - Fixed counts: BUY/SELL = longs, SHORT/COVER = shorts
-  - Removed duplicate trade statistics display
-  - Better organized 4-row layout for all metrics
-
-- [x] **Fixed data window display issues**
-  - ATR multiplier now shows 2 decimal places
-  - Commission and slippage always display (show $0.00 if not available)
-  - P&L shows as percentage matching trade list format
-  - Fixed P&L calculation: now stored as decimal, displayed as percentage
-  - Added proper lag calculation from actual trade data (reads from config.yaml)
-  - Added indicator values to hover display (shows SMA_10_30, etc. when hovering)
-
-### Major Fixes & Enhancements ✅
-- [x] **Fixed strategy runner TradeCollection type error**
-  - Corrected import paths in trade_types.py
-  - Added proper type checking and conversion
-
-- [x] **Fixed ATR data display (was showing 0.00)**
-  - Added column detection for AUX1/ATR/atr
-  - Created test_atr_data.py for ATR calculation
-  - Fixed data loading in chart components
-
-- [x] **Implemented signal lag system**
-  - Configurable 1-10 bar delay between signal and execution
-  - Proper tracking of signal_bar and execution_bar
-
-- [x] **Added execution price formulas**
-  - Support for custom formulas like "(H + L + C) / 3"
-  - Formula evaluation at execution time
-
-- [x] **Integrated commission calculations**
-  - Fees and slippage properly deducted from P&L
-  - Commission displayed in backtest summary
-
-- [x] **Normalized P&L to $1 invested basis**
-  - All profits calculated as percentage on $1
-  - Consistent returns regardless of instrument price
-
-- [x] **Enhanced trade panel display**
-  - P&L shown as percentage to 2 decimal places
-  - Cumulative P&L tracking
-  - Backtest summary with win rate, total/avg P&L
-  - Commission and execution lag statistics
-
-## Completed (Previous Releases)
-
-### Version 2.3.0
-- Fixed strategy runner "no chart data" issue
-- Added pass_data_to_trade_panel() method
-- Improved strategy feedback with color coding
-- Added excessive trade warnings
-
-### Version 2.2.0
-- Fixed hover data KeyErrors
-- Fixed trade panel scrolling
-- Verified 6.6M bar dataset performance
+### Documentation ✅
+- [x] Created CODEBASE_DOCUMENTATION.md with complete architecture overview
+- [x] Created projectToDos.md for task tracking
+- [x] Updated .claude/CODE_DOCUMENTATION.md with current design patterns
 
 ## Known Issues
 
-### High Priority
+### High Impact
 - Memory usage increases over time in long sessions
-- SMA strategy can generate 1000+ trades with short periods
+- SMA strategy can generate excessive trades with short periods
+- Large datasets (>10M bars) may cause crashes
+
+### Medium Impact
+- PyQt6 not supported (PyQt5 required)
+- Config changes require application restart
 - Windows-specific file paths in some scripts
 
-### Medium Priority
-- PyQt6 not supported (requires PyQt5)
-- Large datasets (>10M bars) may cause crashes
-- Config changes require restart
-
-### Low Priority
-- No keyboard shortcuts
+### Low Impact
+- No keyboard shortcuts implemented
 - Limited color theme options
 - No undo/redo for operations

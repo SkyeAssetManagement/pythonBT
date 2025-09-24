@@ -39,6 +39,8 @@ class EnhancedTradeTableModel(QtCore.QAbstractTableModel):
         super().__init__()
         self.trades = TradeCollection([])
         self.cumulative_pnl_percent = []  # Track cumulative P&L
+        self.sort_column = None
+        self.sort_order = QtCore.Qt.AscendingOrder
 
     def set_trades(self, trades: TradeCollection):
         """Update trade data and calculate cumulative P&L"""
@@ -50,16 +52,19 @@ class EnhancedTradeTableModel(QtCore.QAbstractTableModel):
         logger.debug(f"Updated table model with {len(trades)} trades")
 
     def _calculate_cumulative_pnl(self):
-        """Calculate cumulative P&L percentages (cumulative sum of returns)"""
+        """Calculate cumulative P&L percentages (properly compounded returns)"""
         self.cumulative_pnl_percent = []
-        cumulative = 0.0
+        cumulative_multiplier = 1.0  # Start with $1
 
         for trade in self.trades:
             # Get P&L percentage (based on $1 invested)
             pnl_percent = self._get_pnl_percent(trade)
             if pnl_percent is not None:
-                cumulative += pnl_percent
-            self.cumulative_pnl_percent.append(cumulative)
+                # Properly compound the return: new value = old value * (1 + return)
+                cumulative_multiplier *= (1 + pnl_percent)
+            # Store as percentage gain/loss from initial capital
+            cumulative_return = cumulative_multiplier - 1.0
+            self.cumulative_pnl_percent.append(cumulative_return)
 
     def _get_pnl_percent(self, trade: TradeData) -> Optional[float]:
         """Get P&L as percentage (already calculated based on $1 invested)"""
@@ -223,6 +228,10 @@ class EnhancedTradeListPanel(TradeListPanel):
         self.table_model = EnhancedTradeTableModel()
         self.table_view.setModel(self.table_model)
 
+        # Enable sorting on the table
+        self.table_view.setSortingEnabled(True)
+        self.table_view.horizontalHeader().sectionClicked.connect(self.on_header_clicked)
+
         # Add summary panel
         self.add_summary_panel()
 
@@ -361,9 +370,15 @@ class EnhancedTradeListPanel(TradeListPanel):
             closed_trades = [p for p in trades_with_pnl if p != 0]
             wins = [p for p in closed_trades if p > 0]
             win_rate = (len(wins) / len(closed_trades)) * 100 if closed_trades else 0
-            # Total P&L is cumulative percentage return
-            total_pnl = sum(trades_with_pnl)
-            avg_pnl = total_pnl / len(trades_with_pnl) if trades_with_pnl else 0
+
+            # Properly calculate total P&L as compounded return
+            cumulative_multiplier = 1.0
+            for pnl in trades_with_pnl:
+                cumulative_multiplier *= (1 + pnl)
+            total_pnl = cumulative_multiplier - 1.0  # Convert back to percentage gain/loss
+
+            # Average P&L per trade (arithmetic mean is OK for individual trade performance)
+            avg_pnl = sum(trades_with_pnl) / len(trades_with_pnl) if trades_with_pnl else 0
         else:
             win_rate = 0.00
             total_pnl = 0.00
@@ -425,6 +440,77 @@ class EnhancedTradeListPanel(TradeListPanel):
     def set_trades(self, trades: TradeCollection):
         """Set trades and update display - convenience method"""
         self.load_trades(trades)
+
+    def on_header_clicked(self, logical_index: int):
+        """Handle header click for sorting"""
+        # Toggle sort order if clicking same column
+        if self.table_model.sort_column == logical_index:
+            if self.table_model.sort_order == QtCore.Qt.AscendingOrder:
+                self.table_model.sort_order = QtCore.Qt.DescendingOrder
+            else:
+                self.table_model.sort_order = QtCore.Qt.AscendingOrder
+        else:
+            self.table_model.sort_column = logical_index
+            self.table_model.sort_order = QtCore.Qt.AscendingOrder
+
+        # Sort the trades
+        self.sort_trades(logical_index, self.table_model.sort_order)
+
+    def sort_trades(self, column: int, order: QtCore.Qt.SortOrder):
+        """Sort trades by specified column"""
+        if not self.trades or len(self.trades) == 0:
+            return
+
+        column_attr = self.table_model.COLUMNS[column][1]
+
+        # Create list of (value, trade) pairs for sorting
+        sort_data = []
+        for i, trade in enumerate(self.trades):
+            if column_attr == "pnl_percent":
+                value = self.table_model._get_pnl_percent(trade)
+                if value is None:
+                    value = 0.0
+            elif column_attr == "cumulative_pnl_percent":
+                if i < len(self.table_model.cumulative_pnl_percent):
+                    value = self.table_model.cumulative_pnl_percent[i]
+                else:
+                    value = 0.0
+            elif column_attr == "timestamp":
+                value = getattr(trade, column_attr, None)
+                if value is not None:
+                    try:
+                        if not hasattr(value, 'timestamp'):
+                            value = pd.to_datetime(value)
+                        # Convert to timestamp for sorting
+                        value = value.timestamp() if hasattr(value, 'timestamp') else 0
+                    except:
+                        value = 0
+                else:
+                    value = 0
+            else:
+                value = getattr(trade, column_attr, None)
+                if value is None:
+                    value = 0 if column_attr in ["trade_id", "bar_index", "price", "size"] else ""
+
+            sort_data.append((value, trade))
+
+        # Sort the data
+        reverse = (order == QtCore.Qt.DescendingOrder)
+        try:
+            sort_data.sort(key=lambda x: x[0], reverse=reverse)
+        except TypeError:
+            # If sorting fails due to mixed types, convert to strings
+            sort_data.sort(key=lambda x: str(x[0]), reverse=reverse)
+
+        # Extract sorted trades
+        sorted_trades = [trade for _, trade in sort_data]
+
+        # Update the model with sorted trades
+        self.table_model.set_trades(TradeCollection(sorted_trades))
+        self.trades = TradeCollection(sorted_trades)
+
+        # Update summary stats after sorting
+        self.update_summary_stats()
 
 
 # Export the enhanced panel as the default

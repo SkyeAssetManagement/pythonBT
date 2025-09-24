@@ -11,14 +11,18 @@ import pandas as pd
 
 class TradeData:
     """Single trade data point"""
-    
-    def __init__(self, bar_index: int, price: float, trade_type: str = 'Buy', 
+
+    def __init__(self, bar_index: int = 0, price: float = 0.0, trade_type: str = 'Buy',
                  timestamp: Optional[datetime] = None, **kwargs):
         self.bar_index = bar_index
         self.price = price
         self.trade_type = trade_type  # 'Buy' or 'Sell'
         self.timestamp = timestamp
         self.extra_data = kwargs  # Store any additional fields
+
+        # Set all kwargs as attributes for easier access
+        for key, value in kwargs.items():
+            setattr(self, key, value)
         
     def __str__(self):
         return f"{self.trade_type} @ {self.price:.2f} (bar {self.bar_index})"

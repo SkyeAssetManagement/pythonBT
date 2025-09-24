@@ -1,249 +1,207 @@
 # CODE DOCUMENTATION - PythonBT Trading System
 
 ## Project Overview
-PythonBT is a high-performance backtesting and trading visualization platform built with PyQt5 and PyQtGraph. Optimized for massive datasets (6M+ bars) with real-time charting, range bars, and unified execution engine for realistic trade simulation with configurable signal lag and execution formulas.
+PythonBT is a comprehensive backtesting platform combining machine learning (decision trees) with high-performance PyQtGraph visualization. Features range bar generation, walk-forward optimization, and advanced trade analytics with properly compounded P&L calculations.
 
 ## System Architecture
 
-### Core Directory Structure
+### Primary Components
 ```
 PythonBT/
-├── Launch Scripts
-│   ├── launch_unified_system.py             # Primary launcher with unified engine
-│   ├── launch_pyqtgraph_with_selector.py    # Legacy launcher with data selector
-│   └── integrated_trading_launcher.py       # Alternative launcher
+├── Main GUI Application
+│   └── OMtree_gui.py                      # Main tabbed interface for ML models
 │
-├── src/trading/
-│   ├── visualization/                       # UI Components
-│   │   ├── pyqtgraph_range_bars_final.py   # Main chart (RangeBarChartFinal)
-│   │   ├── enhanced_trade_panel.py         # Trade panel with % P&L display
-│   │   ├── strategy_runner.py              # Strategy execution UI
-│   │   ├── pyqtgraph_data_selector.py      # Data source selection dialog
-│   │   └── trade_panel.py                  # Legacy trade panel
-│   │
-│   ├── strategies/                         # Trading Strategies
-│   │   ├── base.py                         # TradingStrategy abstract base
-│   │   ├── sma_crossover.py               # SMA crossover implementation
-│   │   ├── rsi_momentum.py                # RSI momentum strategy
-│   │   ├── enhanced_sma_crossover.py      # SMA with signal lag support
-│   │   └── strategy_wrapper.py            # StrategyFactory and wrappers
-│   │
-│   ├── core/                              # Execution Engine
-│   │   ├── standalone_execution.py        # ExecutionEngine with lag/formulas
-│   │   ├── strategy_runner_adapter.py     # Adapter for legacy/unified routing
-│   │   └── trade_types.py                 # TradeRecord, TradeRecordCollection
-│   │
-│   └── data/                              # Data Management
-│       ├── trade_data.py                  # TradeData, TradeCollection
-│       └── csv_trade_loader.py            # CSV trade import
+├── PyQtGraph Visualization System
+│   ├── launch_unified_system.py           # Primary launcher for charts
+│   └── src/trading/visualization/
+│       ├── pyqtgraph_range_bars_final.py  # High-performance candlestick chart
+│       ├── enhanced_trade_panel.py        # Trade list with compounded P&L %
+│       ├── simple_white_x_trades.py       # Trade mark overlays (white X)
+│       └── trade_data.py                  # Core trade data structures
 │
-├── tradingCode/
-│   └── config.yaml                        # System configuration
+├── Machine Learning System
+│   └── src/
+│       ├── OMtree_model.py               # Random forest decision trees
+│       ├── OMtree_preprocessing.py       # Feature engineering pipeline
+│       ├── OMtree_validation.py          # Backtesting & validation
+│       └── OMtree_walkforward.py         # Walk-forward optimization
 │
-└── Data/                                  # Data files (parquet/csv)
+├── Data Processing
+│   └── createRangeBars/                  # Range bar generation tools
+│       ├── main.py                       # Entry point
+│       └── parallel_range_bars.py        # Parallel processing
+│
+└── Configuration
+    ├── OMtree_config.ini                 # ML model configuration
+    └── tradingCode/config.yaml           # Trading system settings
 ```
 
 ## Critical Design Patterns
 
-### 1. Position Sizing & P&L Calculation
-- **$1 Position Size**: All trades use $1 position for clean percentage calculations
-- **P&L Storage**: Stored as decimal (0.0238), displayed as percentage (2.38%)
-- **Legacy Conversion**: Points converted via `pnl / price` formula
-- **Display Formula**: `pnl_display = pnl_decimal * 100`
+### 1. P&L Calculation System (FIXED 2025-09-24)
+**Properly Compounded Returns**
+- Individual trades: Store as decimal (0.0238 = 2.38% gain)
+- Total P&L: `(1 + r1) * (1 + r2) * ... * (1 + rn) - 1`
+- Display: Multiply by 100 for percentage
+- All calculations based on $1 invested per trade
 
-### 2. Signal Lag & Execution
-- **Configurable Lag**: 0-10 bars between signal and execution (config.yaml: `signal_lag`)
-- **Dynamic Reading**: Panel reads lag from config.yaml at runtime
-- **Trade Tracking**: Each trade stores signal_bar and execution_bar
-- **Lag Calculation**: `lag = execution_bar - signal_bar`
+### 2. Trade List Sorting (ADDED 2025-09-24)
+**Column Sorting Features**
+- Click header to sort ascending
+- Click again for descending
+- Supports all columns: Trade #, DateTime, Type, Price, P&L %, etc.
+- Maintains data integrity during sort
 
 ### 3. Trade Type Classification
-- **Long Trades**: BUY (entry) and SELL (exit)
-- **Short Trades**: SHORT (entry) and COVER (exit)
-- **Counting Logic**: Fixed to properly categorize SELL as long exit, not short
+- **Long Trades**: BUY (entry) → SELL (exit)
+- **Short Trades**: SHORT (entry) → COVER (exit)
+- **Counting**: Properly categorizes exits with their entries
 
-### 4. Unified Execution Engine
-The system supports two execution modes controlled by `config.yaml`:
-
-```yaml
-use_unified_engine: true    # Enable realistic execution
-backtest:
-  signal_lag: 1            # Bars between signal and execution
-  execution_price: "formula"
-  buy_execution_formula: "(H + L + C) / 3"
-  sell_execution_formula: "(H + L + C) / 3"
-  fees: 2.0               # Commission per trade
-  slippage: 0.25          # Slippage per trade
-```
-
-**Execution Flow:**
-```
-Signal Generation → Lag Application → Price Formula → Commission → P&L Calculation
-       ↓                    ↓              ↓             ↓              ↓
-   Bar N detected      Bar N+lag      Custom price    Deduct fees   % based on $1
-```
-
-### 2. P&L Calculation System
-All P&L calculations are normalized to $1 invested for consistent percentage returns:
-
+### 4. Data Structure Standards
 ```python
-# Long position P&L
-pnl_percent = ((exit_price / entry_price) - 1) * 100
+# Trade data with kwargs support
+TradeData(
+    bar_index=100,
+    price=4200.50,
+    trade_type='BUY',
+    timestamp='2021-01-04 10:30:00',
+    pnl_percent=0.0238,    # 2.38% gain
+    trade_id=1,
+    size=1,
+    fees=2.0
+)
 
-# Short position P&L
-pnl_percent = (1 - (exit_price / entry_price)) * 100
-
-# Commission deduction
-pnl_percent -= (commission / entry_price) * 100
-```
-
-### 3. Data Structure Requirements
-Chart components expect specific data formats:
-
-```python
-# Chart data dictionary (lowercase keys required)
-full_data = {
+# Chart data dictionary (lowercase required)
+{
     'timestamp': np.array,  # Required for hover
     'open': np.array,       # Must be lowercase
     'high': np.array,
     'low': np.array,
     'close': np.array,
-    'volume': np.array,     # Optional
+    'volume': np.array,
     'aux1': np.array,       # ATR values
     'aux2': np.array        # Range multiplier
 }
 ```
 
-### 4. Trade Type Conversion
-System handles conversion between unified and legacy trade formats:
+## Key Components Detail
 
-```python
-TradeRecordCollection → to_legacy_collection() → TradeCollection
-        ↓                                              ↓
-  (Unified format)                              (Legacy format)
-  Has lag tracking                              Compatible with UI
-  % P&L built-in                                Requires conversion
-```
+### OMtree_gui.py - Main Application
+**Tabs:**
+- Data & Fields: Load CSV, select features
+- Model Tester: Configure and run backtests
+- Performance Stats: View results and metrics
+- Tree Visualizer: Visualize decision trees
+- PermuteAlpha: Feature importance analysis
+- Regression Analysis: Statistical testing
 
-## Key Components
+### enhanced_trade_panel.py - Trade Analytics
+**Features:**
+- P&L as percentages (properly compounded)
+- Sortable columns (all fields)
+- Summary statistics:
+  - Total trades & win rate
+  - Total/Average P&L %
+  - Long/Short counts
+  - Commission totals
+  - Execution lag tracking
 
-### Chart System (pyqtgraph_range_bars_final.py)
-- **RangeBarChartFinal**: Main chart widget with viewport optimization
-- **Features**:
-  - Range bar rendering with ATR-based sizing
-  - Hover data display (OHLC, volume, ATR)
-  - Trade markers as white X symbols
-  - Crosshair tracking
-  - Viewport-based rendering for performance
+### pyqtgraph_range_bars_final.py - Chart System
+**Capabilities:**
+- Auto Y-axis scaling on zoom
+- Dynamic data loading on pan
+- Multi-monitor DPI awareness
+- Enhanced time axis (HH:MM:SS)
+- Hover display with full data
+- Trade marks as white X symbols
 
-### Trade Panel (enhanced_trade_panel.py)
-- **EnhancedTradeListPanel**: Displays trades with percentage P&L
-- **Features**:
-  - P&L shown as percentage to 2 decimal places
-  - Cumulative P&L tracking
-  - Backtest summary with:
-    - Total trades count
-    - Win rate percentage
-    - Total/Average P&L percentages
-    - Commission totals
-    - Average execution lag
-
-### Strategy Runner (strategy_runner.py)
-- **StrategyRunner**: UI for executing trading strategies
-- **Features**:
-  - Dynamic parameter controls
-  - Color-coded feedback (green/orange/red)
-  - Excessive trade warnings (>1000)
-  - Integration with unified execution engine
-  - Proper TradeCollection type handling
-
-### Execution Engine (standalone_execution.py)
-- **StandaloneExecutionEngine**: Core execution logic
-- **ExecutionConfig**: Configuration management
-- **Features**:
-  - Signal lag implementation (1-10 bars)
-  - Custom price formula evaluation
-  - Commission calculation (fees + slippage)
-  - Position tracking
-  - $1-based P&L calculation
-
-## Data Flow Pipeline
-
-```
-1. Data Loading
-   Parquet/CSV → DataFrame → Column mapping → Numpy arrays
-
-2. Strategy Execution
-   Data → Signal generation → Lag application → Trade creation
-
-3. Trade Display
-   TradeRecordCollection → Legacy conversion → UI emission → Panel display
-
-4. P&L Tracking
-   Entry price → Exit price → % calculation → Cumulative tracking
-```
-
-## ATR Data Handling
-ATR (Average True Range) data is used for range bar sizing:
-
-1. **Column Detection**: Checks for AUX1, ATR, or atr columns
-2. **Calculation**: If missing, calculates 14-period ATR
-3. **Display**: Shows in data window as "ATR" and "mult"
-4. **Storage**: Saved as AUX1 (ATR) and AUX2 (multiplier)
+### OMtree Model System
+**Workflow:**
+1. **Preprocessing**: Feature engineering, technical indicators
+2. **Model Training**: Random forest with configurable parameters
+3. **Validation**: Out-of-sample testing with trade generation
+4. **Walk-Forward**: Rolling window optimization
 
 ## Performance Specifications
-- **Data Loading**: 377K bars in ~0.6s, 6.6M bars in ~14s
+- **Data Capacity**: 6M+ bars handled efficiently
+- **Trade Capacity**: 100K+ trades without lag
+- **Chart Performance**: 60 FPS with viewport optimization
 - **Memory Usage**: ~68MB for 377K bars
-- **Trade Capacity**: Handles 100K+ trades efficiently
-- **Rendering**: 60 FPS with viewport optimization
-- **Hover Response**: <16ms update time
+- **Load Time**: 377K bars in ~0.6s
 
 ## Recent Fixes (2025-09-24)
 
-### Critical Issues Resolved
-1. **Strategy Runner Type Error**: Fixed TradeCollection emission type mismatch
-2. **ATR Display**: Fixed 0.00 display issue by adding column detection
-3. **Signal Lag**: Properly implemented with bar delay tracking
-4. **Execution Formulas**: Working with custom price calculations
-5. **Commission Integration**: Fees and slippage properly deducted
-6. **P&L Percentages**: All calculations based on $1 invested
+### Issue 1: Total P&L Calculation
+- **Problem**: Summing percentages instead of compounding
+- **Fix**: Implemented `(1+r1)*(1+r2)*...-1` formula
+- **Files**: enhanced_trade_panel.py (lines 52-63, 359-370)
+
+### Issue 2: Column Sorting
+- **Problem**: No sorting functionality in trade list
+- **Fix**: Added click-to-sort on all columns
+- **Files**: enhanced_trade_panel.py (added sort methods)
+
+### Issue 3: Trade Data Attributes
+- **Problem**: kwargs not accessible as attributes
+- **Fix**: Added setattr loop in TradeData.__init__
+- **Files**: trade_data.py (lines 23-25)
 
 ## Testing Infrastructure
-- `test_all_fixes_comprehensive.py`: Validates all recent fixes
-- `test_strategy_runner_fix.py`: TradeCollection type conversion
-- `test_atr_data.py`: ATR calculation and display
-- `test_all_fixes.py`: Integration testing
-
-## Usage Instructions
-
-### Quick Start
 ```bash
-# Launch with unified engine
+# Test P&L and sorting fixes
+python test_enhanced_trade_panel.py
+
+# Launch visualization system
 python launch_unified_system.py
 
-# Select data file with ATR
-Choose: test_data_10000_bars_with_atr.parquet
+# Run ML model GUI
+python OMtree_gui.py
 
-# Configure trades
-Trade Source: System
-Strategy: Simple Moving Average
+# Test components individually
+python src/trading/visualization/pyqtgraph_range_bars_final.py
 ```
 
-### Adding ATR to Data Files
-```bash
-# Generate ATR for existing data
-python test_atr_data.py
+## Configuration Files
 
-# Creates: original_file_with_atr.parquet
-```
+### OMtree_config.ini
+- Model parameters (max_depth, min_samples)
+- Feature selections
+- Data paths
+- Backtest settings
 
-## Configuration Best Practices
-1. Set `use_unified_engine: true` for realistic backtesting
-2. Use `signal_lag: 1` minimum for realistic execution
-3. Configure commission (fees + slippage) for accurate P&L
-4. Use formula-based execution prices for realism
+### tradingCode/config.yaml
+- Execution settings (signal_lag, formulas)
+- Commission rates
+- Strategy parameters
+
+## Usage Workflow
+
+### Machine Learning Pipeline
+1. Load data in OMtree_gui
+2. Select features and configure model
+3. Run validation or walk-forward
+4. Export results to CSV
+
+### Visualization Pipeline
+1. Launch pyqtgraph system
+2. Select data source (parquet/CSV)
+3. Configure trade source (System/CSV)
+4. Run strategy or load trades
+5. Analyze with sortable trade list
+
+## Dependencies
+- **Core**: pandas, numpy, scikit-learn
+- **GUI**: PyQt5, pyqtgraph
+- **Visualization**: matplotlib, PIL
+- **Data**: parquet, pickle
 
 ## Known Limitations
+- Windows-specific paths in some scripts
 - Maximum practical dataset: ~10M bars
-- PyQt5 required (not compatible with PyQt6)
-- Windows-specific file paths in some scripts
+- PyQt5 required (not PyQt6 compatible)
+
+## Future Enhancements
+- Real-time data feed integration
+- Portfolio-level analytics
+- Additional ML models (XGBoost, LSTM)
+- Cloud storage for models/data
