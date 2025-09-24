@@ -52,19 +52,18 @@ class EnhancedTradeTableModel(QtCore.QAbstractTableModel):
         logger.debug(f"Updated table model with {len(trades)} trades")
 
     def _calculate_cumulative_pnl(self):
-        """Calculate cumulative P&L percentages (properly compounded returns)"""
+        """Calculate cumulative P&L percentages using simple summation"""
         self.cumulative_pnl_percent = []
-        cumulative_multiplier = 1.0  # Start with $1
+        cumulative = 0.0
 
         for trade in self.trades:
             # Get P&L percentage (based on $1 invested)
             pnl_percent = self._get_pnl_percent(trade)
             if pnl_percent is not None:
-                # Properly compound the return: new value = old value * (1 + return)
-                cumulative_multiplier *= (1 + pnl_percent)
-            # Store as percentage gain/loss from initial capital
-            cumulative_return = cumulative_multiplier - 1.0
-            self.cumulative_pnl_percent.append(cumulative_return)
+                # Simple sum of percentages
+                cumulative += pnl_percent
+            # Store the running sum
+            self.cumulative_pnl_percent.append(cumulative)
 
     def _get_pnl_percent(self, trade: TradeData) -> Optional[float]:
         """Get P&L as percentage (already calculated based on $1 invested)"""
@@ -120,10 +119,9 @@ class EnhancedTradeTableModel(QtCore.QAbstractTableModel):
                 pnl_percent = self._get_pnl_percent(trade)
                 if pnl_percent is not None:
                     if pnl_percent != 0:
-                        # Convert decimal to percentage for display
-                        pnl_display = pnl_percent * 100
-                        sign = '+' if pnl_display >= 0 else ''
-                        return f"{sign}{pnl_display:.2f}%"
+                        # P&L is already in percentage format, don't multiply by 100
+                        sign = '+' if pnl_percent >= 0 else ''
+                        return f"{sign}{pnl_percent:.2f}%"
                     else:
                         return "0.00%"
                 return "-"
@@ -132,10 +130,9 @@ class EnhancedTradeTableModel(QtCore.QAbstractTableModel):
                 if index.row() < len(self.cumulative_pnl_percent):
                     cum_pnl = self.cumulative_pnl_percent[index.row()]
                     if cum_pnl != 0:
-                        # Convert decimal to percentage for display
-                        cum_pnl_display = cum_pnl * 100
-                        sign = '+' if cum_pnl_display >= 0 else ''
-                        return f"{sign}{cum_pnl_display:.2f}%"
+                        # Cumulative P&L is already in percentage format, don't multiply by 100
+                        sign = '+' if cum_pnl >= 0 else ''
+                        return f"{sign}{cum_pnl:.2f}%"
                     else:
                         return "0.00%"
                 return "-"
@@ -371,11 +368,8 @@ class EnhancedTradeListPanel(TradeListPanel):
             wins = [p for p in closed_trades if p > 0]
             win_rate = (len(wins) / len(closed_trades)) * 100 if closed_trades else 0
 
-            # Properly calculate total P&L as compounded return
-            cumulative_multiplier = 1.0
-            for pnl in trades_with_pnl:
-                cumulative_multiplier *= (1 + pnl)
-            total_pnl = cumulative_multiplier - 1.0  # Convert back to percentage gain/loss
+            # Calculate total P&L as simple sum of percentages
+            total_pnl = sum(trades_with_pnl)
 
             # Average P&L per trade (arithmetic mean is OK for individual trade performance)
             avg_pnl = sum(trades_with_pnl) / len(trades_with_pnl) if trades_with_pnl else 0
@@ -397,17 +391,14 @@ class EnhancedTradeListPanel(TradeListPanel):
         total_color = "green" if total_pnl >= 0 else "red"
         avg_color = "green" if avg_pnl >= 0 else "red"
 
-        # Convert decimal to percentage for display
-        total_pnl_display = total_pnl * 100
-        avg_pnl_display = avg_pnl * 100
+        # Already in percentage format, no need to multiply by 100
+        total_sign = '+' if total_pnl >= 0 else ''
+        avg_sign = '+' if avg_pnl >= 0 else ''
 
-        total_sign = '+' if total_pnl_display >= 0 else ''
-        avg_sign = '+' if avg_pnl_display >= 0 else ''
-
-        self.total_pnl_label.setText(f"Total P&L: {total_sign}{total_pnl_display:.2f}%")
+        self.total_pnl_label.setText(f"Total P&L: {total_sign}{total_pnl:.2f}%")
         self.total_pnl_label.setStyleSheet(f"QLabel {{ color: {total_color}; font-size: 10pt; padding: 2px; }}")
 
-        self.avg_pnl_label.setText(f"Avg P&L: {avg_sign}{avg_pnl_display:.2f}%")
+        self.avg_pnl_label.setText(f"Avg P&L: {avg_sign}{avg_pnl:.2f}%")
         self.avg_pnl_label.setStyleSheet(f"QLabel {{ color: {avg_color}; font-size: 10pt; padding: 2px; }}")
 
         # Update commission and execution info with correct formatting

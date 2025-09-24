@@ -1,207 +1,204 @@
 # CODE DOCUMENTATION - PythonBT Trading System
 
 ## Project Overview
-PythonBT is a comprehensive backtesting platform combining machine learning (decision trees) with high-performance PyQtGraph visualization. Features range bar generation, walk-forward optimization, and advanced trade analytics with properly compounded P&L calculations.
+PythonBT is a high-performance backtesting platform combining machine learning models with PyQtGraph visualization. Features vectorized P&L calculations, range bar processing, and advanced trade analytics.
 
 ## System Architecture
 
-### Primary Components
 ```
 PythonBT/
-├── Main GUI Application
-│   └── OMtree_gui.py                      # Main tabbed interface for ML models
-│
-├── PyQtGraph Visualization System
-│   ├── launch_unified_system.py           # Primary launcher for charts
+├── Visualization Layer
+│   ├── launch_unified_system.py              # Primary launcher
 │   └── src/trading/visualization/
-│       ├── pyqtgraph_range_bars_final.py  # High-performance candlestick chart
-│       ├── enhanced_trade_panel.py        # Trade list with compounded P&L %
-│       ├── simple_white_x_trades.py       # Trade mark overlays (white X)
-│       └── trade_data.py                  # Core trade data structures
+│       ├── pyqtgraph_range_bars_final.py     # High-performance charts
+│       ├── enhanced_trade_panel.py           # Trade list with vectorized P&L
+│       ├── strategy_runner.py                # Real-time strategy execution
+│       └── trade_data.py                     # Core data structures
 │
-├── Machine Learning System
+├── Trading Engine
+│   └── src/trading/
+│       ├── core/
+│       │   ├── strategy_runner_adapter.py    # VectorBT integration
+│       │   └── trade_types.py                # Modern trade records
+│       ├── strategies/
+│       │   ├── base.py                       # Strategy base class
+│       │   └── sma_crossover.py             # Signal generation only
+│       └── integration/
+│           └── vbt_integration.py            # VectorBT Portfolio adapter
+│
+├── Machine Learning
 │   └── src/
-│       ├── OMtree_model.py               # Random forest decision trees
-│       ├── OMtree_preprocessing.py       # Feature engineering pipeline
-│       ├── OMtree_validation.py          # Backtesting & validation
-│       └── OMtree_walkforward.py         # Walk-forward optimization
-│
-├── Data Processing
-│   └── createRangeBars/                  # Range bar generation tools
-│       ├── main.py                       # Entry point
-│       └── parallel_range_bars.py        # Parallel processing
+│       ├── OMtree_model.py                   # Random forest models
+│       ├── OMtree_preprocessing.py           # Feature engineering
+│       ├── OMtree_validation.py              # Backtesting framework
+│       └── OMtree_walkforward.py             # Walk-forward optimization
 │
 └── Configuration
-    ├── OMtree_config.ini                 # ML model configuration
-    └── tradingCode/config.yaml           # Trading system settings
+    ├── OMtree_config.ini                     # ML model settings
+    └── tradingCode/config.yaml               # Trading execution settings
 ```
 
 ## Critical Design Patterns
 
-### 1. P&L Calculation System (FIXED 2025-09-24)
-**Properly Compounded Returns**
-- Individual trades: Store as decimal (0.0238 = 2.38% gain)
-- Total P&L: `(1 + r1) * (1 + r2) * ... * (1 + rn) - 1`
-- Display: Multiply by 100 for percentage
-- All calculations based on $1 invested per trade
-
-### 2. Trade List Sorting (ADDED 2025-09-24)
-**Column Sorting Features**
-- Click header to sort ascending
-- Click again for descending
-- Supports all columns: Trade #, DateTime, Type, Price, P&L %, etc.
-- Maintains data integrity during sort
-
-### 3. Trade Type Classification
-- **Long Trades**: BUY (entry) → SELL (exit)
-- **Short Trades**: SHORT (entry) → COVER (exit)
-- **Counting**: Properly categorizes exits with their entries
-
-### 4. Data Structure Standards
+### 1. Vectorized P&L Calculation (VectorBT Integration)
 ```python
-# Trade data with kwargs support
-TradeData(
-    bar_index=100,
-    price=4200.50,
-    trade_type='BUY',
-    timestamp='2021-01-04 10:30:00',
-    pnl_percent=0.0238,    # 2.38% gain
-    trade_id=1,
-    size=1,
-    fees=2.0
+# Strategies generate signals only
+signals = strategy.generate_signals(df)
+
+# VectorBT handles all P&L calculations
+portfolio = vbt.Portfolio.from_signals(
+    close=close_prices,
+    entries=entry_signals,
+    exits=exit_signals,
+    init_cash=1.0  # $1 investment = percentage returns
 )
 
-# Chart data dictionary (lowercase required)
-{
-    'timestamp': np.array,  # Required for hover
-    'open': np.array,       # Must be lowercase
+# Results: Proper vectorized P&L with consistent calculations
+```
+
+### 2. Trade Data Flow
+```python
+# Modern format (VectorBT → TradeRecord)
+TradeRecord(
+    bar_index=100,
+    trade_type='BUY',
+    price=4200.50,
+    pnl_percent=0.0238,  # Decimal format (2.38%)
+    timestamp=pd.Timestamp('2021-01-04 10:30:00')
+)
+
+# Legacy format (UI compatibility)
+TradeData(
+    bar_index=100,
+    trade_type='BUY',
+    price=4200.50,
+    pnl_percent=0.0238   # Copied from TradeRecord
+)
+```
+
+### 3. Chart Data Standards
+```python
+# Required format for PyQtGraph charts
+chart_data = {
+    'timestamp': pd.DatetimeIndex,  # Required for hover display
+    'open': np.array,               # OHLCV data
     'high': np.array,
     'low': np.array,
     'close': np.array,
     'volume': np.array,
-    'aux1': np.array,       # ATR values
-    'aux2': np.array        # Range multiplier
+    'aux1': np.array               # Additional indicators (ATR, etc.)
 }
 ```
 
-## Key Components Detail
+## Key Components
 
-### OMtree_gui.py - Main Application
-**Tabs:**
-- Data & Fields: Load CSV, select features
-- Model Tester: Configure and run backtests
-- Performance Stats: View results and metrics
-- Tree Visualizer: Visualize decision trees
-- PermuteAlpha: Feature importance analysis
-- Regression Analysis: Statistical testing
+### Enhanced Trade Panel
+- **P&L Display**: Simple summation of percentage returns
+- **Sortable Columns**: Click headers for ascending/descending sort
+- **Summary Statistics**: Win rate, total P&L, trade counts
+- **Color Coding**: Green/red for profits/losses
 
-### enhanced_trade_panel.py - Trade Analytics
-**Features:**
-- P&L as percentages (properly compounded)
-- Sortable columns (all fields)
-- Summary statistics:
-  - Total trades & win rate
-  - Total/Average P&L %
-  - Long/Short counts
-  - Commission totals
-  - Execution lag tracking
+### Strategy Runner Adapter
+- **Signal Generation**: Strategies produce position signals only
+- **VectorBT Integration**: Portfolio.from_signals() for P&L calculation
+- **Legacy Compatibility**: Converts to existing UI format
+- **Fallback Support**: Manual calculation if VectorBT unavailable
 
-### pyqtgraph_range_bars_final.py - Chart System
-**Capabilities:**
-- Auto Y-axis scaling on zoom
-- Dynamic data loading on pan
-- Multi-monitor DPI awareness
-- Enhanced time axis (HH:MM:SS)
-- Hover display with full data
-- Trade marks as white X symbols
+### PyQtGraph Chart System
+- **Performance**: 60+ FPS with viewport optimization
+- **Scalability**: Handles 6M+ bars efficiently
+- **Features**: Auto Y-scaling, hover data, trade overlays
+- **Multi-monitor**: DPI-aware rendering
 
-### OMtree Model System
-**Workflow:**
-1. **Preprocessing**: Feature engineering, technical indicators
-2. **Model Training**: Random forest with configurable parameters
-3. **Validation**: Out-of-sample testing with trade generation
-4. **Walk-Forward**: Rolling window optimization
+## Configuration System
 
-## Performance Specifications
-- **Data Capacity**: 6M+ bars handled efficiently
-- **Trade Capacity**: 100K+ trades without lag
-- **Chart Performance**: 60 FPS with viewport optimization
-- **Memory Usage**: ~68MB for 377K bars
-- **Load Time**: 377K bars in ~0.6s
+### config.yaml Structure
+```yaml
+backtest:
+  signal_lag: 2                    # Bars delay for execution
+  commission: 0.01                 # Per trade commission
+  slippage: 0.001                  # Price slippage percentage
 
-## Recent Fixes (2025-09-24)
-
-### Issue 1: Total P&L Calculation
-- **Problem**: Summing percentages instead of compounding
-- **Fix**: Implemented `(1+r1)*(1+r2)*...-1` formula
-- **Files**: enhanced_trade_panel.py (lines 52-63, 359-370)
-
-### Issue 2: Column Sorting
-- **Problem**: No sorting functionality in trade list
-- **Fix**: Added click-to-sort on all columns
-- **Files**: enhanced_trade_panel.py (added sort methods)
-
-### Issue 3: Trade Data Attributes
-- **Problem**: kwargs not accessible as attributes
-- **Fix**: Added setattr loop in TradeData.__init__
-- **Files**: trade_data.py (lines 23-25)
-
-## Testing Infrastructure
-```bash
-# Test P&L and sorting fixes
-python test_enhanced_trade_panel.py
-
-# Launch visualization system
-python launch_unified_system.py
-
-# Run ML model GUI
-python OMtree_gui.py
-
-# Test components individually
-python src/trading/visualization/pyqtgraph_range_bars_final.py
+execution:
+  formulas:
+    entry_price: "close[i+1]"      # Entry price calculation
+    exit_price: "close[i+1]"       # Exit price calculation
 ```
 
-## Configuration Files
-
 ### OMtree_config.ini
-- Model parameters (max_depth, min_samples)
-- Feature selections
-- Data paths
-- Backtest settings
+```ini
+[model]
+max_depth = 10
+min_samples_split = 5
+n_estimators = 100
 
-### tradingCode/config.yaml
-- Execution settings (signal_lag, formulas)
-- Commission rates
-- Strategy parameters
+[data]
+features = price_change,volume,atr
+target = future_return
+```
 
-## Usage Workflow
+## Performance Specifications
+- **Chart Rendering**: 60 FPS with 377K bars
+- **Memory Usage**: ~68MB for large datasets
+- **Load Time**: 377K bars in ~0.6 seconds
+- **Trade Processing**: 100K+ trades without lag
 
-### Machine Learning Pipeline
-1. Load data in OMtree_gui
-2. Select features and configure model
-3. Run validation or walk-forward
-4. Export results to CSV
+## Testing Framework
+```bash
+# Test vectorized P&L calculations
+python test_vectorbt_integration.py
 
-### Visualization Pipeline
-1. Launch pyqtgraph system
-2. Select data source (parquet/CSV)
-3. Configure trade source (System/CSV)
-4. Run strategy or load trades
-5. Analyze with sortable trade list
+# Launch main visualization system
+python launch_unified_system.py
+
+# Test individual components
+python src/trading/visualization/strategy_runner.py
+python src/trading/core/strategy_runner_adapter.py
+```
+
+## Recent Architectural Changes (2025-09-24)
+
+### VectorBT P&L Integration
+- **Purpose**: Eliminate inconsistent P&L calculations across strategies
+- **Implementation**: Centralized Portfolio.from_signals() approach
+- **Benefits**: Vectorized calculations, consistent results, better performance
+
+### Trade Display Fixes
+- **Issue**: P&L values off by factor of 100
+- **Fix**: Removed double multiplication in display code
+- **Result**: Trade list and summary panel now show matching values
 
 ## Dependencies
 - **Core**: pandas, numpy, scikit-learn
-- **GUI**: PyQt5, pyqtgraph
-- **Visualization**: matplotlib, PIL
-- **Data**: parquet, pickle
+- **Visualization**: PyQt5, pyqtgraph
+- **Trading**: vectorbtpro (optional, with fallback)
+- **Data**: parquet, pickle, yaml
+
+## Usage Patterns
+
+### Strategy Development
+```python
+class CustomStrategy(TradingStrategy):
+    def generate_signals(self, df: pd.DataFrame) -> pd.Series:
+        # Generate position signals only
+        # Return: 1 (long), -1 (short), 0 (no position)
+        return signals
+
+    # No P&L calculation needed - handled by VectorBT
+```
+
+### Chart Integration
+```python
+# Load data and run strategy
+runner.set_chart_data(data_dict)
+runner.run_strategy()  # Generates trades with vectorized P&L
+
+# Display results in enhanced trade panel
+trade_panel.load_trades(trades)  # Shows sorted, colored results
+```
 
 ## Known Limitations
-- Windows-specific paths in some scripts
+- VectorBT Pro required for full functionality
+- Windows-specific paths in some modules
+- PyQt5 dependency (PyQt6 not supported)
 - Maximum practical dataset: ~10M bars
-- PyQt5 required (not PyQt6 compatible)
-
-## Future Enhancements
-- Real-time data feed integration
-- Portfolio-level analytics
-- Additional ML models (XGBoost, LSTM)
-- Cloud storage for models/data

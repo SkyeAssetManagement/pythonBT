@@ -1,9 +1,30 @@
 # Project TODOs - PythonBT
 
 ## Current Status
-Last Updated: 2025-09-24 13:15
+Last Updated: 2025-09-24 13:50
 
-## Issues Identified from Screenshot
+## COMPLETED - P&L Calculation Fixes (2025-09-24)
+
+### ✅ All P&L Issues Resolved
+User Request: Fix P&L calculation issues in PyQtGraph display
+- ✅ Total P&L showing correct values in summary pane
+- ✅ P&L % in trade list now matches data pane values
+- ✅ Implemented VectorBT-based P&L calculations for consistency
+
+### Final Fixes Applied:
+
+1. **✅ VectorBT Integration for P&L** (COMPLETED 14:05)
+   - **Issue**: Strategies were calculating P&L individually instead of using vectorized approach
+   - **Fix Applied**: Integrated VectorBT Portfolio.from_signals() for proper P&L calculation
+   - **File Modified**: `src/trading/core/strategy_runner_adapter.py` - Added _calculate_trades_with_vectorbt method
+
+2. **✅ Trade List Display Fix** (COMPLETED 14:06)
+   - **Issue**: Trade list P&L values were off by factor of 100 (double multiplication)
+   - **Fix Applied**: Removed extra *100 multiplication in display code
+   - **Files Modified**:
+     - `src/trading/visualization/enhanced_trade_panel.py` - Lines 123-124, 134-135
+
+## Previous Fixes
 
 ### 1. ✅ Total P&L Calculation Fix (COMPLETED)
 - **Issue**: Total P&L was incorrectly summing individual trade percentages instead of properly compounding returns

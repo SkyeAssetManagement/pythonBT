@@ -118,7 +118,7 @@ class TradeRecord:
         sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         from data.trade_data import TradeData
 
-        return TradeData(
+        legacy_trade = TradeData(
             bar_index=self.bar_index,
             trade_type=self.trade_type,
             price=self.price,
@@ -127,6 +127,22 @@ class TradeRecord:
             pnl=self.pnl_points,  # Legacy uses points not percent
             strategy=self.strategy
         )
+
+        # IMPORTANT: Copy the pnl_percent attribute for proper display
+        if self.pnl_percent is not None:
+            legacy_trade.pnl_percent = self.pnl_percent
+
+        # Also copy cumulative P&L if available
+        if self.cumulative_pnl_percent is not None:
+            legacy_trade.cumulative_pnl_percent = self.cumulative_pnl_percent
+
+        # Copy other important fields
+        if hasattr(self, 'fees') and self.fees is not None:
+            legacy_trade.fees = self.fees
+        if hasattr(self, 'signal_lag') and self.signal_lag is not None:
+            legacy_trade.lag = self.signal_lag
+
+        return legacy_trade
 
     def format_pnl_display(self) -> str:
         """Format P&L for display (as percentage)"""
@@ -170,10 +186,11 @@ class TradeRecordCollection:
         self._update_cumulative_pnl()
 
     def _update_cumulative_pnl(self):
-        """Update cumulative P&L for all trades"""
+        """Update cumulative P&L for all trades using simple summation"""
         cumulative = 0.0
         for trade in self.trades:
             if trade.pnl_percent is not None:
+                # Simple sum of percentages
                 cumulative += trade.pnl_percent
                 trade.cumulative_pnl_percent = cumulative
 

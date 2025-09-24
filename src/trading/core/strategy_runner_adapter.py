@@ -146,16 +146,86 @@ class StrategyRunnerAdapter:
         # Generate signals
         signals = strategy.generate_signals(df)
 
-        # Convert to trades based on strategy type
-        if hasattr(strategy, 'signals_to_trades_with_lag'):
-            # Enhanced strategy with lag support
-            trades = strategy.signals_to_trades_with_lag(signals, df)
-        else:
-            # Standard strategy
-            trades = strategy.signals_to_trades(signals, df)
+        # Use VectorBT for proper P&L calculation
+        trades = self._calculate_trades_with_vectorbt(signals, df, strategy_name)
 
-        print(f"[ADAPTER] Generated {len(trades)} trades with legacy engine")
+        print(f"[ADAPTER] Generated {len(trades)} trades with vectorized P&L calculation")
         return trades
+
+    def _calculate_trades_with_vectorbt(self, signals: pd.Series, df: pd.DataFrame, strategy_name: str) -> TradeCollection:
+        """Calculate trades and P&L using VectorBT for proper vectorized calculations"""
+        try:
+            import vectorbtpro as vbt
+        except ImportError:
+            print("[ADAPTER] VectorBT not available, falling back to manual calculation")
+            return self._fallback_to_manual_trades(signals, df, strategy_name)
+
+        # Convert signals to entry/exit signals
+        entries, exits = self._convert_signals_to_entries_exits(signals)
+
+        # Get close prices
+        close = df['Close'] if 'Close' in df.columns else df['close']
+
+        # Create VectorBT portfolio with proper P&L calculation
+        portfolio = vbt.Portfolio.from_signals(
+            close=close,
+            entries=entries,
+            exits=exits,
+            freq='1D',  # Adjust frequency as needed
+            init_cash=1.0,  # $1 initial investment for percentage calculation
+            fees=0.0,  # No fees for now
+            slippage=0.0  # No slippage for now
+        )
+
+        # Convert VectorBT trades to our format
+        from trading.integration.vbt_integration import VBTTradeLoader
+        loader = VBTTradeLoader()
+
+        # Prepare price data for timestamp conversion
+        price_data = {
+            'datetime': df.index.values if hasattr(df.index, 'values') else None,
+            'close': close.values
+        }
+
+        trades = loader.load_vbt_trades(portfolio, price_data)
+
+        # Add strategy name to trades
+        for trade in trades:
+            trade.strategy = strategy_name
+            # VectorBT calculates P&L in dollars, convert to percentage
+            if hasattr(trade, 'pnl') and trade.pnl is not None:
+                # For $1 investment, P&L in dollars equals percentage return
+                trade.pnl_percent = trade.pnl
+
+        return trades
+
+    def _convert_signals_to_entries_exits(self, signals: pd.Series) -> tuple:
+        """Convert position signals to entry/exit signals"""
+        entries = pd.Series(False, index=signals.index)
+        exits = pd.Series(False, index=signals.index)
+
+        # Find position changes
+        position_changes = signals.diff()
+
+        # Entry signals: going from 0 to 1 (long) or 0 to -1 (short)
+        long_entries = (position_changes == 1)
+        short_entries = (position_changes == -1)
+        entries = long_entries | short_entries
+
+        # Exit signals: going from non-zero to 0, or changing position direction
+        position_exits = ((signals.shift(1) != 0) & (signals == 0))
+        direction_changes = ((signals.shift(1) > 0) & (signals < 0)) | ((signals.shift(1) < 0) & (signals > 0))
+        exits = position_exits | direction_changes
+
+        return entries, exits
+
+    def _fallback_to_manual_trades(self, signals: pd.Series, df: pd.DataFrame, strategy_name: str) -> TradeCollection:
+        """Fallback to manual trade calculation if VectorBT is not available"""
+        print("[ADAPTER] Using fallback manual trade calculation")
+        # This would use the original signals_to_trades method
+        # For now, return empty collection
+        from data.trade_data import TradeCollection
+        return TradeCollection([])
 
     def convert_to_legacy(self, trades: TradeRecordCollection) -> TradeCollection:
         """

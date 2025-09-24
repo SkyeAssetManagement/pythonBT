@@ -1,63 +1,86 @@
 # Project TODOs - PythonBT Trading System
 
-## Active Development
+## High Priority Development
 
-### PyQtGraph Trade Panel Enhancements
-- [ ] Add export functionality for trade list (CSV/Excel)
-- [ ] Implement trade filtering (by date range, P&L range, trade type)
-- [ ] Add equity curve visualization below trade list
-- [ ] Create performance metrics (Sharpe ratio, max drawdown)
-- [ ] Add trade grouping by day/week/month
+### Commission & Slippage Testing Framework
+- [ ] **Unit Testing for Config Flow**
+  - Create test scripts to verify commission/slippage data flows from config.yaml → VectorBT → chart visualizer
+  - Test edge cases: zero commission, high slippage, negative values
+  - Validate proper P&L impact calculations with different commission structures
 
-### Machine Learning Improvements
-- [ ] Integrate ML predictions with PyQtGraph visualization
-- [ ] Add feature importance overlay on chart
-- [ ] Create prediction confidence bands
-- [ ] Implement ensemble model support
-- [ ] Add real-time model retraining capability
+- [ ] **Integration Testing**
+  - End-to-end tests from config.yaml settings to final trade P&L display
+  - Verify commission deduction appears in trade list and summary panel
+  - Test slippage impact on entry/exit prices in hover data pane
+
+- [ ] **VectorBT Configuration Integration**
+  - Ensure config.yaml commission/slippage values properly feed into Portfolio.from_signals()
+  - Add validation for reasonable commission/slippage ranges
+  - Create config validation utilities
+
+### Phased Entry/Exit Implementation
+- [ ] **Time-Based Entry Phasing**
+  - Add config parameter for entry/exit phase duration (e.g., "30min", "2hours")
+  - Implement bar count calculation based on data frequency
+  - Support multiple entry/exit executions over phase period
+
+- [ ] **Trade List Enhancements**
+  - Add "Entry Bars" and "Exit Bars" columns showing phase duration
+  - Display bar count in trade list sortable columns
+  - Color code phased entries differently from instant entries
+
+- [ ] **Hover Data Integration**
+  - Show entry/exit bar counts in chart hover pane
+  - Display phase progress information
+  - Add visual indicators for phased vs instant trades
+
+### Array Processing Preservation
+- [ ] **Performance Validation**
+  - Maintain current 60+ FPS chart rendering performance
+  - Preserve vectorized P&L calculations with VectorBT
+  - Ensure no regression in 6M+ bar data handling
+
+- [ ] **Feature Compatibility**
+  - Keep all existing trade syncing functionality
+  - Maintain proper chart scaling with phased entries
+  - Preserve sortable trade list performance
+
+- [ ] **Memory Efficiency**
+  - Ensure phased entry data doesn't increase memory usage significantly
+  - Use array processing for phase calculations
+  - Maintain efficient viewport rendering
+
+## Medium Priority Features
+
+### Enhanced Visualization
+- [ ] Add equity curve below trade list
+- [ ] Implement trade filtering by date/P&L range
+- [ ] Create performance metrics dashboard (Sharpe, drawdown)
+- [ ] Add export functionality for trade results
+
+### Strategy Development
+- [ ] Add minimum bars between trades parameter
+- [ ] Implement stop-loss/take-profit orders
+- [ ] Create additional strategy templates (Bollinger, MACD)
+- [ ] Add strategy combination framework
+
+### User Interface Improvements
+- [ ] Add configuration UI for config.yaml editing
+- [ ] Implement dark/light theme toggle
+- [ ] Add keyboard shortcuts for common actions
+- [ ] Create indicator overlay management panel
 
 ## Bug Fixes
 
 ### High Priority
 - [ ] Fix memory leak in long-running chart sessions
-- [ ] Resolve SMA strategy excessive trade generation (>1000 trades)
-- [ ] Fix trade timestamp display showing None occasionally
+- [ ] Resolve excessive trade generation in some strategies
+- [ ] Fix occasional timestamp display showing None
 
 ### Medium Priority
 - [ ] Windows-specific path issues in some scripts
-- [ ] Config changes requiring restart
+- [ ] Config changes requiring application restart
 - [ ] PyQt6 compatibility (currently PyQt5 only)
-
-## Performance Optimization
-
-### Data Handling
-- [ ] Optimize for 10M+ bar datasets
-- [ ] Implement data chunking for memory efficiency
-- [ ] Add progress indicators for long operations
-- [ ] Profile and optimize viewport rendering
-
-## Feature Roadmap
-
-### Trading Strategies
-- [ ] Add minimum bars between trades parameter
-- [ ] Implement stop-loss and take-profit orders
-- [ ] Create Bollinger Bands strategy
-- [ ] Add MACD strategy
-- [ ] Implement strategy combination framework
-
-### User Interface
-- [ ] Add configuration UI for config.yaml editing
-- [ ] Create indicator overlay panel
-- [ ] Add drawing tools (trend lines, channels)
-- [ ] Implement dark/light theme toggle
-- [ ] Add keyboard shortcuts
-
-### Data Management
-- [ ] Add real-time data feed integration
-- [ ] Implement multi-symbol backtesting
-- [ ] Support multiple timeframes
-- [ ] Create data validation utilities
-- [ ] Add automatic data updates
 
 ## Infrastructure
 
@@ -65,58 +88,40 @@
 - [ ] Increase test coverage to >80%
 - [ ] Add performance benchmarks
 - [ ] Create regression test suite
-- [ ] Implement CI/CD pipeline
+- [ ] Implement continuous integration
 
 ### Documentation
 - [ ] Create comprehensive user guide
 - [ ] Add video tutorials
 - [ ] Write strategy development guide
-- [ ] Create API documentation
-
-### Platform Support
-- [ ] Test Linux compatibility
-- [ ] Ensure macOS compatibility
-- [ ] Create standalone executables
-- [ ] Add Docker support
+- [ ] Generate API documentation
 
 ## Completed (2025-09-24)
 
-### Trade Panel Fixes ✅
-- [x] **Fixed Total P&L Calculation**
-  - Corrected from sum to proper compounding: (1+r1)*(1+r2)*...-1
-  - Files: enhanced_trade_panel.py
+### P&L System Overhaul ✅
+- [x] **VectorBT Integration**
+  - Implemented centralized P&L calculation using Portfolio.from_signals()
+  - Eliminated inconsistent strategy-level P&L calculations
+  - Added vectorized performance improvements
 
-- [x] **Added Column Sorting**
-  - Click headers to sort ascending/descending
-  - Works on all columns: Trade #, DateTime, P&L %, etc.
-  - Files: enhanced_trade_panel.py
+- [x] **Display Fixes**
+  - Fixed trade list P&L values off by factor of 100
+  - Corrected double multiplication in percentage display
+  - Aligned trade list and summary panel values
 
-- [x] **Fixed Trade Data Attributes**
-  - kwargs now accessible as attributes
-  - Files: trade_data.py
+- [x] **Trade Data Pipeline**
+  - Added proper TradeRecord to TradeData conversion
+  - Fixed missing pnl_percent attribute transfers
+  - Implemented simple summation for cumulative P&L
 
-### Documentation ✅
-- [x] Created CODEBASE_DOCUMENTATION.md with complete architecture overview
-- [x] Created projectToDos.md for task tracking
-- [x] Created AI_ASSISTANT_PROMPT.md for automated task execution
-  - Comprehensive prompt for AI assistants to analyze, plan, execute, and track
-  - Includes user task prioritization system
-  - Clear progress tracking format
-- [x] Updated .claude/CODE_DOCUMENTATION.md with current design patterns
+### Documentation Updates ✅
+- [x] Updated CODE_DOCUMENTATION.md with current architecture
+- [x] Documented VectorBT integration patterns
+- [x] Added performance specifications and usage examples
+- [x] Created comprehensive component descriptions
 
 ## Known Issues
-
-### High Impact
-- Memory usage increases over time in long sessions
-- SMA strategy can generate excessive trades with short periods
-- Large datasets (>10M bars) may cause crashes
-
-### Medium Impact
-- PyQt6 not supported (PyQt5 required)
-- Config changes require application restart
-- Windows-specific file paths in some scripts
-
-### Low Impact
-- No keyboard shortcuts implemented
-- Limited color theme options
-- No undo/redo for operations
+- VectorBT Pro dependency for full P&L functionality
+- Some Windows-specific file paths in legacy modules
+- PyQt5 requirement (PyQt6 not yet supported)
+- Maximum practical dataset size ~10M bars
