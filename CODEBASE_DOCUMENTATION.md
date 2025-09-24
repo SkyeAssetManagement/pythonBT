@@ -288,8 +288,57 @@ python src/trading/visualization/pyqtgraph_range_bars_final.py
 - Some legacy code in archive/ folder not maintained
 - Windows-specific paths in some configurations
 
+## Recent Additions (2025-09-24)
+
+### 🚀 Phased Entry System (NEW)
+A comprehensive pyramid/scaling entry system that allows gradual position building:
+
+#### **Core Components:**
+- **`src/trading/core/phased_entry.py`**: Core phased entry logic and configuration
+- **`src/trading/core/phased_execution_engine.py`**: Enhanced execution engine with phased support
+- **`src/trading/strategies/phased_strategy_base.py`**: Strategy base class with phased capabilities
+
+#### **Visualization Enhancements:**
+- **`src/trading/visualization/phased_trade_panel.py`**: Enhanced trade panel showing phases
+- **`src/trading/visualization/phased_trade_marks.py`**: Chart overlays with phase markers
+
+#### **Key Features:**
+- **Multiple Phase Support**: Up to configurable number of phases per position
+- **Flexible Triggers**: Percentage, points, or ATR-based phase triggers
+- **Smart Sizing**: Equal, decreasing, increasing, or custom phase sizing
+- **Risk Management**: Adverse move limits, profit requirements, time limits
+- **Enhanced Visualization**: Phase-specific markers, connection lines, statistics
+- **Backward Compatibility**: Existing strategies work unchanged
+
+#### **Configuration Example:**
+```yaml
+phased_entries:
+  enabled: true
+  max_phases: 3
+  initial_size_percent: 40.0
+  phase_trigger:
+    type: "percent"
+    value: 1.5
+  risk_management:
+    max_adverse_move: 3.0
+    require_profit: true
+```
+
+#### **Usage:**
+```python
+from src.trading.strategies.phased_strategy_base import PhasedTradingStrategy
+
+class MyStrategy(PhasedTradingStrategy):
+    def generate_signals(self, df):
+        return signals
+
+# Run with phased entries
+trades, performance = strategy.run_backtest_with_phases(df)
+```
+
 ## Future Enhancements
 
+- [x] **Phased Entry System** - Implemented pyramid/scaling entry strategies
 - [ ] Add more trading strategies
 - [ ] Implement real-time data feeds
 - [ ] Add portfolio optimization

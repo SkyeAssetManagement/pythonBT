@@ -54,3 +54,31 @@ system:
 
 # Unified execution engine configuration
 use_unified_engine: true                 # Enable unified execution engine (false = use legacy path)
+
+# Phased Entry Configuration (Pyramid/Scaling Strategies)
+phased_entries:
+  enabled: false                          # Enable phased/pyramid entries
+  max_phases: 3                          # Maximum number of phases per position
+  initial_size_percent: 40.0             # Percentage of total position for first phase
+
+  # Phase Trigger Configuration
+  phase_trigger:
+    type: "percent"                      # Trigger type: "percent", "points", "atr_multiple"
+    value: 1.5                           # Trigger value (1.5% move in favor for next phase)
+
+  # Phase Size Configuration
+  phase_sizing:
+    type: "equal"                        # Size type: "equal", "decreasing", "increasing", "custom"
+    multiplier: 1.0                      # Multiplier for non-equal sizing
+    custom_ratios: [0.4, 0.35, 0.25]   # Custom phase size ratios (must sum to 1.0)
+
+  # Risk Management
+  risk_management:
+    max_adverse_move: 3.0                # Stop scaling if adverse move exceeds this %
+    require_profit: true                 # Only add phases when current position is profitable
+    time_limit_bars: 50                  # Maximum bars to complete all phases
+
+  # Stop Loss Adaptation
+  stop_loss:
+    adapt_to_phases: true                # Adjust stop loss as phases are added
+    use_average_price: true              # Base stop loss on average entry price vs first entry
