@@ -30,11 +30,13 @@ class StrategyRunnerAdapter:
         """Initialize adapter with configuration"""
         self.config = self._load_config(config_path)
         self.use_unified_engine = self.config.get('use_unified_engine', False)
+        self.use_pure_array_processing = self.config.get('use_pure_array_processing', True)
         self.execution_config = None
 
         if self.use_unified_engine:
             self.execution_config = ExecutionConfig.from_yaml(config_path)
-            print("[ADAPTER] Using unified execution engine")
+            engine_type = "Pure Array (O(1))" if self.use_pure_array_processing else "Standalone (O(n))"
+            print(f"[ADAPTER] Using unified execution engine with {engine_type} processing")
         else:
             print("[ADAPTER] Using legacy execution path")
 
@@ -87,11 +89,12 @@ class StrategyRunnerAdapter:
         """Run strategy using unified execution engine"""
         print(f"[ADAPTER] Running {strategy_name} with unified engine")
 
-        # Create wrapped strategy
+        # Create wrapped strategy with pure array processing flag
         wrapped_strategy = StrategyFactory.create_from_name(
             strategy_name,
             parameters,
-            self.execution_config
+            self.execution_config,
+            use_pure_array=self.use_pure_array_processing
         )
 
         # Execute trades with unified engine

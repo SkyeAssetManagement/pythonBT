@@ -52,8 +52,9 @@ system:
   max_workers: null                       # Maximum parallel workers (null = auto-detect)
   memory_limit: null                      # Memory limit in GB (null = no limit)
 
-# Unified execution engine configuration
+# Execution engine configuration
 use_unified_engine: true                 # Enable unified execution engine (false = use legacy path)
+use_pure_array_processing: true          # Use O(1) pure array processing engine (false = use O(n) legacy engine)
 
 # Phased Entry Configuration (Pyramid/Scaling Strategies)
 phased_entries:

@@ -23,9 +23,10 @@ except ImportError:
     from sma_crossover import SMACrossoverStrategy
     from rsi_momentum import RSIMomentumStrategy
 
-# Import execution engine
+# Import execution engines
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.standalone_execution import StandaloneExecutionEngine, ExecutionConfig
+from core.pure_array_execution import PureArrayExecutionEngine
 from core.trade_types import TradeRecord, TradeRecordCollection
 
 
@@ -68,11 +69,21 @@ class WrappedStrategy:
     def __init__(self,
                  strategy: TradingStrategy,
                  metadata: StrategyMetadata,
-                 execution_config: ExecutionConfig = None):
+                 execution_config: ExecutionConfig = None,
+                 use_pure_array: bool = True):
         self.strategy = strategy
         self.metadata = metadata
         self.execution_config = execution_config or ExecutionConfig()
-        self.execution_engine = StandaloneExecutionEngine(self.execution_config)
+
+        # Select execution engine based on performance preference
+        if use_pure_array:
+            print(f"[STRATEGY_WRAPPER] Using Pure Array Execution Engine (O(1) scaling)")
+            self.execution_engine = PureArrayExecutionEngine(self.execution_config)
+            self.engine_type = "pure_array"
+        else:
+            print(f"[STRATEGY_WRAPPER] Using Legacy Standalone Execution Engine (O(n) scaling)")
+            self.execution_engine = StandaloneExecutionEngine(self.execution_config)
+            self.engine_type = "standalone"
 
         # Cache for indicator values
         self._indicator_cache = {}
@@ -83,7 +94,7 @@ class WrappedStrategy:
 
     def execute_trades(self, df: pd.DataFrame) -> TradeRecordCollection:
         """
-        Generate and execute trades using the unified execution engine
+        Generate and execute trades using the selected execution engine
 
         Args:
             df: Price data DataFrame
@@ -94,8 +105,11 @@ class WrappedStrategy:
         # Generate signals
         signals = self.generate_signals(df)
 
-        # Execute with unified engine
-        trade_records = self.execution_engine.execute_signals(signals, df)
+        # Execute with selected engine using appropriate method
+        if self.engine_type == "pure_array":
+            trade_records = self.execution_engine.execute_signals_pure_array(signals, df)
+        else:
+            trade_records = self.execution_engine.execute_signals(signals, df)
 
         # Convert to TradeRecord objects
         trades = []
@@ -174,7 +188,8 @@ class StrategyFactory:
     def create_sma_crossover(fast_period: int = 10,
                             slow_period: int = 30,
                             long_only: bool = True,
-                            execution_config: ExecutionConfig = None) -> WrappedStrategy:
+                            execution_config: ExecutionConfig = None,
+                            use_pure_array: bool = True) -> WrappedStrategy:
         """Create wrapped SMA crossover strategy"""
 
         # Create base strategy
@@ -217,14 +232,15 @@ class StrategyFactory:
             supports_short=not long_only
         )
 
-        return WrappedStrategy(strategy, metadata, execution_config)
+        return WrappedStrategy(strategy, metadata, execution_config, use_pure_array)
 
     @staticmethod
     def create_rsi_momentum(rsi_period: int = 14,
                            oversold: float = 30,
                            overbought: float = 70,
                            long_only: bool = True,
-                           execution_config: ExecutionConfig = None) -> WrappedStrategy:
+                           execution_config: ExecutionConfig = None,
+                           use_pure_array: bool = True) -> WrappedStrategy:
         """Create wrapped RSI momentum strategy"""
 
         # Create base strategy
@@ -278,12 +294,13 @@ class StrategyFactory:
             supports_short=not long_only
         )
 
-        return WrappedStrategy(strategy, metadata, execution_config)
+        return WrappedStrategy(strategy, metadata, execution_config, use_pure_array)
 
     @staticmethod
     def create_from_name(strategy_name: str,
                         parameters: Dict[str, Any] = None,
-                        execution_config: ExecutionConfig = None) -> WrappedStrategy:
+                        execution_config: ExecutionConfig = None,
+                        use_pure_array: bool = True) -> WrappedStrategy:
         """Create strategy by name with parameters"""
         parameters = parameters or {}
 
@@ -292,7 +309,8 @@ class StrategyFactory:
                 fast_period=parameters.get('fast_period', 10),
                 slow_period=parameters.get('slow_period', 30),
                 long_only=parameters.get('long_only', True),
-                execution_config=execution_config
+                execution_config=execution_config,
+                use_pure_array=use_pure_array
             )
 
         elif strategy_name.lower() in ['rsi', 'rsi_momentum']:
@@ -301,7 +319,8 @@ class StrategyFactory:
                 oversold=parameters.get('oversold', 30),
                 overbought=parameters.get('overbought', 70),
                 long_only=parameters.get('long_only', True),
-                execution_config=execution_config
+                execution_config=execution_config,
+                use_pure_array=use_pure_array
             )
 
         else:
