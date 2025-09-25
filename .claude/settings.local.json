@@ -28,5 +28,9 @@
       "Bash(git add:*)"
     ],
     "defaultMode": "acceptEdits"
-  }
+  },
+  "enabledMcpjsonServers": [
+    "vectorbt_pro"
+  ],
+  "enableAllProjectMcpServers": true
 }

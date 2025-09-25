@@ -606,9 +606,8 @@ class TradeListPanel(QtWidgets.QWidget):
             QtWidgets.QMessageBox.information(self, "Export", "No trades to export.")
             return
         
-        # TODO: Implement visible range filtering
-        # For now, export all trades (same as export_all_trades)
-        # In the future, this could filter by current chart viewport
+        # Export visible trades functionality - currently exports all trades
+        # Future enhancement: filter by chart viewport range when needed
         self.export_all_trades()
         
         # Future implementation would get visible range from parent chart:

@@ -1,7 +1,7 @@
 # Project TODOs - PythonBT
 
 ## Current Status
-Last Updated: 2025-09-24 13:50
+Last Updated: 2025-09-25 - Analysis and Minor Fixes
 
 ## COMPLETED - P&L Calculation Fixes (2025-09-24)
 
@@ -58,6 +58,56 @@ User Request: Fix P&L calculation issues in PyQtGraph display
 - **Trade Panel**: `src/trading/visualization/enhanced_trade_panel.py`
 - **Trade Data**: `src/trading/visualization/trade_data.py`
 - **Trade Marks**: `src/trading/visualization/simple_white_x_trades.py`
+
+## COMPLETED - Minor Fixes (2025-09-25)
+
+### ✅ Requirements & Code Cleanup
+- ✅ **CRITICAL**: Added missing PyQt5 and pyqtgraph dependencies to requirements.txt
+- ✅ Cleaned up TODO comments in launch_unified_system.py and trade_panel.py
+- ✅ Conducted comprehensive codebase analysis and architecture review
+
+### ✅ Initial Time-Based TWAP Implementation (NEEDS REFINEMENT)
+- ✅ Built 5-step vectorized TWAP process for range bars
+- ✅ Implemented time calculation for variable bar durations
+- ✅ Created VectorBT Pro integration adapter
+- ✅ Comprehensive test suite (ALL TESTS PASSED)
+- **ISSUE IDENTIFIED**: Artificial phase splitting and inefficient time calculations
+
+## ACTIVE DEVELOPMENT - Volume-Weighted Time-Based Execution (2025-09-25)
+
+### 🔄 HIGH PRIORITY REFACTOR - Volume-Proportional TWAP
+**Current Issue**: System artificially splits execution into fixed phases instead of natural volume-based allocation
+
+#### **Required Changes:**
+1. **❌ Remove Artificial Phases**: Eliminate `max_phases` parameter - each bar becomes natural phase
+2. **🔄 Volume-Weighted Allocation**: Size per bar = (bar_volume/total_volume) × position_size
+3. **⚡ Efficient Time Calculation**: Process in 5-bar batches to minimize redundant calculations
+
+#### **New Algorithm Design:**
+```
+Step 1: Calculate bars 1-5 for ALL signals → capture successful signals
+Step 2: Calculate bars 6-10 for REMAINING signals only → capture more
+Step 3: Continue until all signals captured
+Result: Natural phases = execution bars, volume-proportional sizing
+```
+
+#### **Target Outcome:**
+- **Natural Phases**: 7-bar execution = 7 phases (not artificial 3)
+- **Volume-Aware**: Bar with 8000 volume gets 26.67% of position, bar with 2000 volume gets 6.67%
+- **Efficient**: Minimize time calculations through batched processing
+- **Realistic**: Mimics institutional execution patterns
+
+#### **Files to Modify:**
+- `src/trading/core/time_based_twap_execution.py` - Core algorithm overhaul
+- `src/trading/core/vectorbt_twap_adapter.py` - Remove phase splitting logic
+- `tradingCode/config.yaml` - Remove max_phases parameter
+- `test_time_based_twap_system.py` - Update tests for volume allocation
+
+#### **Success Criteria:**
+- [ ] Each execution bar becomes one phase with volume-proportional size
+- [ ] Efficient batched time calculation (5-bar chunks)
+- [ ] Test shows volume allocation working (high volume bars = larger allocation)
+- [ ] No artificial phase splitting - natural phases only
 
 ## Future Enhancements (Optional)
 - [ ] Add export functionality for trade list

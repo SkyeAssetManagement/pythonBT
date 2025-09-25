@@ -74,6 +74,37 @@ phased_entries:
   execution_method: "volume"              # "volume", "time", or "hybrid"
   use_vectorbt_accumulate: true           # Use VectorBT Pro native accumulate=True feature
 
+# Time-Based TWAP Execution System (Volume-Weighted Natural Phases)
+time_based_twap:
+  enabled: true                           # Enable volume-weighted time-based TWAP execution
+  minimum_execution_minutes: 5.0         # Minimum time to spread execution over
+  max_bars_to_check: 20                  # Maximum bars to look ahead for time calculation
+  batch_size: 5                          # Bars to process per batch for efficiency
+
+  # Risk management
+  max_adverse_move: 3.0                  # Stop execution if adverse move exceeds this %
+  require_profit: true                   # Only continue phases when position profitable
+
+# Minimum Execution Time Phased Entry System (LEGACY - Fixed bar assumptions)
+minimum_time_phased_entries:
+  enabled: false                          # Disable - replaced by time_based_twap
+  max_phases: 3                          # Maximum number of phases per position
+
+  # Minimum execution time approach - spread phases across fixed timeframe
+  minimum_execution_minutes: 5.0         # Minimum time to complete all phases (minutes)
+  data_frequency_minutes: 5.0             # Data bar frequency in minutes (5min bars)
+  spread_method: "equal"                  # "equal", "weighted_front", "weighted_back"
+
+  # Phase sizing
+  initial_size_percent: 33.33            # Percentage for equal sizing (33.33% each phase)
+  phase_size_type: "equal"               # "equal", "decreasing", "increasing"
+  phase_size_multiplier: 1.0             # Multiplier for non-equal sizing
+
+  # Risk management
+  max_adverse_move: 3.0                  # Stop scaling if adverse move exceeds this %
+  require_profit: true                   # Only add phases when current position is profitable
+  allow_early_completion: true           # Complete early if all phases trigger before time limit
+
   # Volume-Based Phasing (VWAP/Liquidity Execution)
   volume_based:
     target_participation: 0.10            # Target % of average volume per phase (10% = conservative)

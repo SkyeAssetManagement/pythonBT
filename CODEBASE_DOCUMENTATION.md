@@ -288,9 +288,14 @@ python src/trading/visualization/pyqtgraph_range_bars_final.py
 - Some legacy code in archive/ folder not maintained
 - Windows-specific paths in some configurations
 
-## Recent Additions (2025-09-24)
+## Recent Additions & Fixes
 
-### 🚀 Phased Entry System (NEW)
+### 🔧 Dependencies & Code Cleanup (2025-09-25)
+- **CRITICAL FIX**: Added missing PyQt5>=5.15.0 and pyqtgraph>=0.12.0 to requirements.txt
+- **Code Cleanup**: Resolved TODO comments in launch_unified_system.py and trade_panel.py
+- **Architecture Review**: Completed comprehensive codebase analysis and documentation update
+
+### 🚀 Phased Entry System (2025-09-24)
 A comprehensive pyramid/scaling entry system that allows gradual position building:
 
 #### **Core Components:**

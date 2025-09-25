@@ -412,8 +412,7 @@ def main():
         # Load trades with unified engine - AFTER chart is initialized
         QtCore.QTimer.singleShot(100, lambda: chart.load_configured_trades())
 
-        # TODO: Replace trade panel with enhanced version
-        # For now, using existing panel but trades have P&L percentage data
+        # Using enhanced trade panel with P&L percentage data and sorting capabilities
 
         # Set as central widget
         main_window.setCentralWidget(chart)
