@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "VectorBT PRO": {
+      "command": "C:\\Python313\\python.exe",
+      "args": [
+        "-m",
+        "vectorbtpro.mcp_server"
+      ],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}",
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}"
+      }
+    }
+  }
+}

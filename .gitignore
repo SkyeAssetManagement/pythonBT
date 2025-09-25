@@ -108,6 +108,13 @@ desktop.ini
 *.rar
 *.7z
 
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+*.key
+api_keys.txt
+
 # Keep directory structure
 !.gitkeep
 

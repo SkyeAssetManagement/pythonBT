@@ -51,6 +51,10 @@ Before completing any task, verify:
 
 ### Library Documentation & Research
 - **ALWAYS use Context7 MCP FIRST** for library documentation and code examples
+- **VectorBT Pro MCP SERVER**: This workspace has a dedicated VectorBT Pro MCP server configured
+  - Use the VectorBT Pro MCP for ALL VectorBT Pro related questions and documentation
+  - Server provides access to complete VectorBT Pro documentation at https://vectorbt.pro/pvt_6d1b3986/#website
+  - Includes advanced features: native hlc3 property, accumulate parameter, VWAP/TWAP execution
 - **MANDATORY workflow for any library questions:**
   1. Use `resolve-library-id` to find the correct library ID
   2. Use `get-library-docs` with specific topic/tokens for focused results

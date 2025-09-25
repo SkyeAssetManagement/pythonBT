@@ -33,16 +33,33 @@ def find_all_signal_changes_numba(signals):
 
 @jit(nopython=True, cache=True)
 def create_trade_pairs_numba(change_bars, change_values):
-    """Create entry/exit pairs using pure array operations"""
+    """Create entry/exit pairs by matching entries (non-zero) with exits (zero)"""
     entry_bars = []
     exit_bars = []
 
-    for i in range(0, len(change_bars), 2):
-        entry_bars.append(change_bars[i])
-        if i + 1 < len(change_bars):
-            exit_bars.append(change_bars[i + 1])
-        else:
-            exit_bars.append(-1)  # No exit signal
+    i = 0
+    while i < len(change_bars):
+        current_bar = change_bars[i]
+        current_signal = change_values[i]
+
+        # If this is an entry signal (non-zero)
+        if current_signal != 0:
+            entry_bars.append(current_bar)
+
+            # Look for the next exit signal (zero)
+            exit_found = False
+            for j in range(i + 1, len(change_bars)):
+                if change_values[j] == 0:
+                    exit_bars.append(change_bars[j])
+                    exit_found = True
+                    i = j  # Skip to the exit
+                    break
+
+            # If no exit found, use -1 to indicate open position
+            if not exit_found:
+                exit_bars.append(-1)
+
+        i += 1
 
     return np.array(entry_bars), np.array(exit_bars)
 
@@ -100,7 +117,7 @@ class PureArrayExecutionEngine:
             print(f"[PURE_ARRAY] No signal changes found")
             return []
 
-        # Create all trade pairs simultaneously
+        # Create all trade pairs simultaneously by analyzing signal values
         entry_bars, exit_bars = create_trade_pairs_numba(change_bars, change_values)
 
         if len(entry_bars) == 0:

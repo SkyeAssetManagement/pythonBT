@@ -14,11 +14,19 @@ backtest:
   position_size: 1                        # Position size per trade ($1 for clean percentage/dollar relationship)
   position_size_type: "value"             # Size type: "value" (dollars), "amount" (shares), "percent" (% of portfolio)
   
-  # Execution settings
-  execution_price: "formula"              # Price for execution: "close", "open", "high", "low", or "formula"
-  signal_lag: 2                           # Bars to lag signals (1 = signal today, execute next bar, 0 = same bar)
-  
-  # Formula-based execution pricing (OHLC variables: O, H, L, C)
+  # VectorBT Pro execution timing settings
+  signal_lag: 2                           # Bars to lag signals - VectorBT Pro native support
+                                          # 0 = same bar execution (best-case)
+                                          # 1 = next bar execution (realistic)
+                                          # 2+ = multi-bar delay (conservative)
+
+  # VectorBT Pro execution pricing options
+  # Native options: "close", "open", "high", "low", "nextopen", "nextclose"
+  # Custom formulas: "(H+L+C)/3" (typical), "(H+L)/2" (median), "hlc3" (built-in typical)
+  # Advanced: Custom price arrays can be calculated and passed to execution engine
+  execution_price: "close"                    # VectorBT Pro native price option
+
+  # Legacy formula-based execution pricing (for non-VectorBT engines)
   # Common formulas: "C" (close), "(H+L+C)/3" (typical), "(H+L)/2" (median), "H" (high), "L" (low)
   buy_execution_formula: "(H + L + C) / 3"    # Formula for buy signals (long entries, short exits)
   sell_execution_formula: "(H + L + C) / 3"   # Formula for sell signals (long exits, short entries)
@@ -56,13 +64,37 @@ system:
 use_unified_engine: true                 # Enable unified execution engine (false = use legacy path)
 use_pure_array_processing: true          # Use O(1) pure array processing engine (false = use O(n) legacy engine)
 
-# Phased Entry Configuration (Pyramid/Scaling Strategies)
+# Phased Entry Configuration (Pyramid/Scaling Strategies) - VectorBT Pro Integration
 phased_entries:
   enabled: false                          # Enable phased/pyramid entries
   max_phases: 3                          # Maximum number of phases per position
   initial_size_percent: 40.0             # Percentage of total position for first phase
 
-  # Phase Trigger Configuration
+  # VectorBT Pro Execution Method
+  execution_method: "volume"              # "volume", "time", or "hybrid"
+  use_vectorbt_accumulate: true           # Use VectorBT Pro native accumulate=True feature
+
+  # Volume-Based Phasing (VWAP/Liquidity Execution)
+  volume_based:
+    target_participation: 0.10            # Target % of average volume per phase (10% = conservative)
+    min_volume_threshold: 1000            # Minimum volume required per bar to execute
+    max_bars_per_phase: 20                # Maximum bars to complete one phase
+    volume_lookback: 20                   # Bars to calculate average volume
+    use_vwap_pricing: true                # Use VWAP over execution period
+
+  # Time-Based Phasing (TWAP Execution)
+  time_based:
+    phase_interval_bars: 5                # Bars between each phase entry
+    max_total_time_bars: 50               # Maximum total bars to complete all phases
+    use_twap_pricing: true                # Use TWAP over execution period
+
+  # Hybrid Method (Volume + Time Constraints)
+  hybrid:
+    prefer_volume: true                   # Prioritize volume over time constraints
+    volume_timeout_bars: 10               # Switch to time-based if volume unavailable
+    time_fallback: true                   # Fall back to time-based if volume insufficient
+
+  # Phase Trigger Configuration (Traditional - for non-VectorBT execution)
   phase_trigger:
     type: "percent"                      # Trigger type: "percent", "points", "atr_multiple"
     value: 1.5                           # Trigger value (1.5% move in favor for next phase)
@@ -78,6 +110,7 @@ phased_entries:
     max_adverse_move: 3.0                # Stop scaling if adverse move exceeds this %
     require_profit: true                 # Only add phases when current position is profitable
     time_limit_bars: 50                  # Maximum bars to complete all phases
+    max_slippage_percent: 1.0            # Maximum acceptable slippage per phase
 
   # Stop Loss Adaptation
   stop_loss:
