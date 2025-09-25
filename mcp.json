@@ -7,8 +7,8 @@
         "vectorbtpro.mcp_server"
       ],
       "env": {
-        "GITHUB_TOKEN": "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",
-        "OPENAI_API_KEY": "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"
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}",
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}"
       }
     }
   }
