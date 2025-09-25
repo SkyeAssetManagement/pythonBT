@@ -1,7 +1,7 @@
 # Project TODOs - PythonBT
 
 ## Current Status
-Last Updated: 2025-09-25 - Analysis and Minor Fixes
+Last Updated: 2025-09-26 - Architectural Separation Complete
 
 ## COMPLETED - P&L Calculation Fixes (2025-09-24)
 
@@ -73,41 +73,53 @@ User Request: Fix P&L calculation issues in PyQtGraph display
 - ✅ Comprehensive test suite (ALL TESTS PASSED)
 - **ISSUE IDENTIFIED**: Artificial phase splitting and inefficient time calculations
 
-## ACTIVE DEVELOPMENT - Volume-Weighted Time-Based Execution (2025-09-25)
+## COMPLETED - Architectural Separation (2025-09-26)
 
-### 🔄 HIGH PRIORITY REFACTOR - Volume-Proportional TWAP
-**Current Issue**: System artificially splits execution into fixed phases instead of natural volume-based allocation
+### ✅ Complete System Overhaul - Headless Architecture
+**Problem Solved**: Original unified system hanging with 192k+ signals on strategy execution
+**Solution**: Complete separation of backtesting from chart visualization
 
-#### **Required Changes:**
-1. **❌ Remove Artificial Phases**: Eliminate `max_phases` parameter - each bar becomes natural phase
-2. **🔄 Volume-Weighted Allocation**: Size per bar = (bar_volume/total_volume) × position_size
-3. **⚡ Efficient Time Calculation**: Process in 5-bar batches to minimize redundant calculations
+#### **✅ Key Achievements:**
+1. **✅ Headless Backtesting Engine**: Independent execution with organized CSV storage
+2. **✅ Chart-Only Visualization**: Same 1000-bar rendering performance without hanging
+3. **✅ Button-Based Integration**: Load previous backtests OR run new + auto-load
+4. **✅ P&L Integration**: Raw P&L and cumulative profit columns in CSV output
+5. **✅ Error-First Approach**: Clear errors instead of silent fallbacks
+6. **✅ Folder Structure Organization**: Timestamped results with complete metadata
 
-#### **New Algorithm Design:**
-```
-Step 1: Calculate bars 1-5 for ALL signals → capture successful signals
-Step 2: Calculate bars 6-10 for REMAINING signals only → capture more
-Step 3: Continue until all signals captured
-Result: Natural phases = execution bars, volume-proportional sizing
-```
+#### **✅ Files Created/Modified:**
+- **✅ src/trading/backtesting/headless_backtester.py** - Core headless engine
+- **✅ src/trading/visualization/backtest_result_loader.py** - CSV to chart converter
+- **✅ launch_unified_system.py** - Updated with button controls (no separate files)
+- **✅ src/trading/core/optimized_twap_adapter.py** - Chunked processing for large datasets
 
-#### **Target Outcome:**
-- **Natural Phases**: 7-bar execution = 7 phases (not artificial 3)
-- **Volume-Aware**: Bar with 8000 volume gets 26.67% of position, bar with 2000 volume gets 6.67%
-- **Efficient**: Minimize time calculations through batched processing
-- **Realistic**: Mimics institutional execution patterns
+#### **✅ Architecture Benefits:**
+- **No Hanging**: Backtesting runs independent of GUI
+- **Same Chart Performance**: Exact 1000-bar rendering as before
+- **Result Persistence**: All backtests saved to organized CSV structure
+- **User Control**: Manual button triggers prevent unwanted executions
 
-#### **Files to Modify:**
-- `src/trading/core/time_based_twap_execution.py` - Core algorithm overhaul
-- `src/trading/core/vectorbt_twap_adapter.py` - Remove phase splitting logic
-- `tradingCode/config.yaml` - Remove max_phases parameter
-- `test_time_based_twap_system.py` - Update tests for volume allocation
+## ACTIVE DEVELOPMENT - TWAP System Implementation (2025-09-26)
+
+### 🔄 NEXT: Volume-Weighted Natural Phases
+**Current Focus**: Complete TWAP system with volume-proportional allocation
+
+#### **Implementation Requirements:**
+1. **🔄 Volume-Weighted Allocation**: Size per bar = (bar_volume/total_volume) × position_size
+2. **🔄 Natural Phases**: Each bar = one phase (no artificial splitting)
+3. **🔄 Minimum Time Enforcement**: 5-minute execution spread across available bars
+4. **🔄 Import Fixes**: Resolve module import issues for TWAP adapter
+
+#### **Files Needing Completion:**
+- `src/trading/core/time_based_twap_execution.py` - Volume-weighted algorithm
+- `src/trading/core/vectorbt_twap_adapter.py` - VectorBT integration
+- `src/trading/core/minimum_time_phased_entry.py` - Range bar time enforcement
 
 #### **Success Criteria:**
-- [ ] Each execution bar becomes one phase with volume-proportional size
-- [ ] Efficient batched time calculation (5-bar chunks)
-- [ ] Test shows volume allocation working (high volume bars = larger allocation)
-- [ ] No artificial phase splitting - natural phases only
+- [ ] TWAP imports resolve correctly
+- [ ] Volume-proportional allocation working
+- [ ] Minimum 5-minute execution time enforced
+- [ ] Natural phases (7 bars = 7 phases) confirmed via CSV output
 
 ## Future Enhancements (Optional)
 - [ ] Add export functionality for trade list
