@@ -55,6 +55,14 @@ class TimeBasedTWAPConfig:
 
         return cls()
 
+    @classmethod
+    def from_dict(cls, config_dict: Dict) -> 'TimeBasedTWAPConfig':
+        """Load configuration from dictionary"""
+        # Filter only valid parameters for the dataclass
+        valid_fields = {field.name for field in cls.__dataclass_fields__.values()}
+        filtered_config = {k: v for k, v in config_dict.items() if k in valid_fields}
+        return cls(**filtered_config)
+
 
 class TimeBasedTWAPEngine:
     """

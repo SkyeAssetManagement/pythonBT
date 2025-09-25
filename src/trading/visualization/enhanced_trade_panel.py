@@ -32,6 +32,7 @@ class EnhancedTradeTableModel(QtCore.QAbstractTableModel):
         ("Size", "size"),
         ("P&L %", "pnl_percent"),  # Changed to percentage display
         ("Cum P&L %", "cumulative_pnl_percent"),  # Added cumulative P&L
+        ("execBars", "exec_bars"),  # TWAP execution bars
         ("Bar #", "bar_index")
     ]
 
@@ -163,6 +164,14 @@ class EnhancedTradeTableModel(QtCore.QAbstractTableModel):
                 value = getattr(trade, column_attr, 1)
                 return str(value)
 
+            elif column_attr == "exec_bars":
+                # Check for execBars in metadata first (from TWAP)
+                if hasattr(trade, 'metadata') and trade.metadata and 'exec_bars' in trade.metadata:
+                    return str(trade.metadata['exec_bars'])
+                # Fallback to direct attribute
+                value = getattr(trade, column_attr, None)
+                return str(value) if value is not None else "-"
+
             else:
                 value = getattr(trade, column_attr, None)
                 return str(value) if value is not None else ""
@@ -192,7 +201,7 @@ class EnhancedTradeTableModel(QtCore.QAbstractTableModel):
                         return QtGui.QColor(255, 120, 120)
 
         elif role == QtCore.Qt.TextAlignmentRole:
-            if column_attr in ["price", "size", "pnl_percent", "cumulative_pnl_percent", "trade_id"]:
+            if column_attr in ["price", "size", "pnl_percent", "cumulative_pnl_percent", "trade_id", "exec_bars"]:
                 return QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter
             elif column_attr == "trade_type":
                 return QtCore.Qt.AlignCenter

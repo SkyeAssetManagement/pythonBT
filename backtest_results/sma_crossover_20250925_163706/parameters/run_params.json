@@ -1,0 +1,16 @@
+{
+  "run_id": "sma_crossover_20250925_163706",
+  "strategy_name": "sma_crossover",
+  "timestamp": "20250925_163706",
+  "execution_mode": "twap",
+  "data_file": "test_es_data.csv",
+  "parameters": {
+    "fast_period": 10,
+    "slow_period": 30,
+    "long_only": false,
+    "signal_lag": 2,
+    "position_size": 1.0,
+    "min_execution_time": 5.0,
+    "fees": 0.0
+  }
+}

@@ -18,6 +18,26 @@ from strategies.strategy_wrapper import StrategyFactory, WrappedStrategy
 from strategies.base import TradingStrategy
 from data.trade_data import TradeData, TradeCollection
 
+# Import TWAP system
+try:
+    from core.time_based_twap_execution import TimeBasedTWAPConfig
+    from core.vectorbt_twap_adapter import VectorBTTWAPAdapter
+    from core.optimized_twap_adapter import OptimizedTWAPAdapter, OptimizedTWAPConfig
+    TWAP_AVAILABLE = True
+    OPTIMIZED_TWAP_AVAILABLE = True
+    print("[ADAPTER] TWAP system available (with optimization)")
+except ImportError as e:
+    try:
+        from core.time_based_twap_execution import TimeBasedTWAPConfig
+        from core.vectorbt_twap_adapter import VectorBTTWAPAdapter
+        TWAP_AVAILABLE = True
+        OPTIMIZED_TWAP_AVAILABLE = False
+        print("[ADAPTER] TWAP system available (standard only)")
+    except ImportError as e2:
+        TWAP_AVAILABLE = False
+        OPTIMIZED_TWAP_AVAILABLE = False
+        print(f"[ADAPTER] TWAP system not available: {e2}")
+
 
 class StrategyRunnerAdapter:
     """
@@ -33,11 +53,38 @@ class StrategyRunnerAdapter:
         self.use_pure_array_processing = self.config.get('use_pure_array_processing', True)
         self.execution_config = None
 
-        if self.use_unified_engine:
+        # Initialize TWAP system if available and enabled
+        self.twap_adapter = None
+        self.optimized_twap_adapter = None
+        self.use_twap = False
+        if TWAP_AVAILABLE:
+            twap_config = self.config.get('time_based_twap', {})
+            if twap_config.get('enabled', False):
+                try:
+                    # Initialize both standard and optimized adapters
+                    self.twap_adapter = VectorBTTWAPAdapter(TimeBasedTWAPConfig.from_dict(twap_config))
+
+                    if OPTIMIZED_TWAP_AVAILABLE:
+                        # Create optimized config with large dataset settings
+                        optimized_config = OptimizedTWAPConfig.from_dict(twap_config)
+                        optimized_config.chunk_size = 5000  # Process 5k signals at a time
+                        optimized_config.max_signals_before_chunking = 10000  # Use chunking for 10k+ signals
+                        optimized_config.skip_vectorbt_portfolio = False  # Try VectorBT first, fallback if needed
+
+                        self.optimized_twap_adapter = OptimizedTWAPAdapter(optimized_config)
+                        print(f"[ADAPTER] Optimized TWAP system enabled (min_time: {twap_config.get('minimum_execution_minutes', 5.0)} minutes, chunk_size: 5000)")
+                    else:
+                        print(f"[ADAPTER] Standard TWAP system enabled (min_time: {twap_config.get('minimum_execution_minutes', 5.0)} minutes)")
+
+                    self.use_twap = True
+                except Exception as e:
+                    print(f"[ADAPTER] Failed to initialize TWAP system: {e}")
+
+        if self.use_unified_engine and not self.use_twap:
             self.execution_config = ExecutionConfig.from_yaml(config_path)
             engine_type = "Pure Array (O(1))" if self.use_pure_array_processing else "Standalone (O(n))"
             print(f"[ADAPTER] Using unified execution engine with {engine_type} processing")
-        else:
+        elif not self.use_twap:
             print("[ADAPTER] Using legacy execution path")
 
     def _load_config(self, config_path: str = None) -> Dict:
@@ -77,7 +124,9 @@ class StrategyRunnerAdapter:
         Returns:
             TradeCollection (legacy) or TradeRecordCollection (unified)
         """
-        if self.use_unified_engine:
+        if self.use_twap:
+            return self._run_twap(strategy_name, parameters, df)
+        elif self.use_unified_engine:
             return self._run_unified(strategy_name, parameters, df)
         else:
             return self._run_legacy(strategy_name, parameters, df)
@@ -263,6 +312,122 @@ class StrategyRunnerAdapter:
             legacy_trades.append(legacy_trade)
 
         return TradeCollection(legacy_trades)
+
+    def _run_twap(self,
+                 strategy_name: str,
+                 parameters: Dict[str, Any],
+                 df: pd.DataFrame) -> TradeCollection:
+        """Run strategy using volume-weighted TWAP execution"""
+        print(f"[ADAPTER] Running {strategy_name} with volume-weighted TWAP execution")
+
+        # Generate signals using legacy strategy
+        from strategies.sma_crossover import SMACrossoverStrategy
+
+        if strategy_name.lower() in ['sma', 'sma_crossover']:
+            strategy = SMACrossoverStrategy(
+                fast_period=parameters.get('fast_period', 10),
+                slow_period=parameters.get('slow_period', 30),
+                long_only=parameters.get('long_only', False)  # Enable both long and short for TWAP
+            )
+        else:
+            raise ValueError(f"TWAP execution not yet supported for strategy: {strategy_name}")
+
+        # Generate signals
+        signals = strategy.generate_signals(df)
+        long_signals = (signals > 0)
+        short_signals = (signals < 0)
+
+        # Validate DataFrame has required columns
+        required_columns = ['open', 'high', 'low', 'close', 'volume']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+
+        if missing_columns:
+            print(f"[ADAPTER] Missing required columns for TWAP: {missing_columns}")
+            print(f"[ADAPTER] Available columns: {list(df.columns)}")
+
+            # Try to map common alternative column names
+            column_mapping = {
+                'Close': 'close', 'CLOSE': 'close',
+                'Open': 'open', 'OPEN': 'open',
+                'High': 'high', 'HIGH': 'high',
+                'Low': 'low', 'LOW': 'low',
+                'Volume': 'volume', 'VOLUME': 'volume',
+                'Vol': 'volume', 'VOL': 'volume'
+            }
+
+            # Create a copy with standardized column names
+            df_twap = df.copy()
+            for old_name, new_name in column_mapping.items():
+                if old_name in df_twap.columns and new_name not in df_twap.columns:
+                    df_twap[new_name] = df_twap[old_name]
+                    print(f"[ADAPTER] Mapped column '{old_name}' -> '{new_name}'")
+        else:
+            df_twap = df
+
+        # Execute with TWAP
+        signal_lag = self.config.get('backtest', {}).get('signal_lag', 2)
+        position_size = self.config.get('backtest', {}).get('position_size', 1.0)
+        fees = self.config.get('backtest', {}).get('fees', 0.0)
+
+        try:
+            twap_results = self.twap_adapter.execute_portfolio_with_twap(
+                df=df_twap,
+                long_signals=long_signals,
+                short_signals=short_signals,
+                signal_lag=signal_lag,
+                size=position_size,
+                fees=fees
+            )
+        except Exception as e:
+            print(f"[ADAPTER] TWAP execution failed: {e}")
+            print(f"[ADAPTER] DataFrame shape: {df_twap.shape}")
+            print(f"[ADAPTER] DataFrame columns: {list(df_twap.columns)}")
+            if hasattr(df_twap, 'index'):
+                print(f"[ADAPTER] DataFrame index type: {type(df_twap.index)}")
+            raise
+
+        # Store TWAP metadata for trade panel
+        self.last_twap_results = twap_results
+        # Calculate indicators if method exists
+        if hasattr(strategy, 'calculate_indicators'):
+            self.last_indicators = strategy.calculate_indicators(df)
+        else:
+            # Generate basic indicators for display
+            self.last_indicators = {
+                f'SMA_{strategy.fast_period}': df['close'].rolling(strategy.fast_period).mean(),
+                f'SMA_{strategy.slow_period}': df['close'].rolling(strategy.slow_period).mean()
+            }
+
+        # Convert TWAP trade metadata to TradeCollection
+        trade_metadata = twap_results['trade_metadata']
+        trades = []
+
+        for _, row in trade_metadata.iterrows():
+            # Map direction to trade_type
+            trade_type = 'BUY' if row['direction'] == 'long' else 'SELL'
+
+            trade = TradeData(
+                bar_index=int(row['signal_bar']),
+                trade_type=trade_type,
+                price=row['twap_price'],
+                timestamp=df.index[row['signal_bar']] if row['signal_bar'] < len(df) else df.index[-1],
+                size=row['total_position_size'],
+                strategy=strategy_name
+            )
+
+            # Add TWAP metadata
+            trade.metadata = {
+                'exec_bars': row['exec_bars'],
+                'execution_time_minutes': row['execution_time_minutes'],
+                'num_phases': row['num_phases'],
+                'total_volume': row['total_volume']
+            }
+            trades.append(trade)
+
+        trade_collection = TradeCollection(trades)
+        print(f"[ADAPTER] Generated {len(trades)} TWAP trades with execBars data")
+
+        return trade_collection
 
     def get_indicators(self) -> Dict:
         """Get calculated indicators from last run"""

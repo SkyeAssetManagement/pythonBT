@@ -1,0 +1,14 @@
+{
+  "run_id": "sma_crossover_20250925_195232",
+  "strategy_name": "sma_crossover",
+  "timestamp": "20250925_195232",
+  "execution_mode": "standard",
+  "data_file": "data/sample_trading_data_small.csv",
+  "parameters": {
+    "fast_period": 20,
+    "slow_period": 50,
+    "long_only": true,
+    "signal_lag": 2,
+    "position_size": 1.0
+  }
+}
